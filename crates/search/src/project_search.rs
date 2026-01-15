@@ -1125,7 +1125,8 @@ impl ProjectSearchView {
                     .update(cx, |editor, cx| editor.set_text(excluded_files, window, cx));
                 search.filters_enabled = true;
             }
-            search.focus_query_editor(window, cx)
+            search.focus_query_editor(window, cx);
+            search.search(cx);
         });
     }
 
