@@ -915,11 +915,7 @@ impl ProjectSearchView {
         subscriptions.push(cx.on_focus(&focus_handle, window, |_, window, cx| {
             cx.on_next_frame(window, |this, window, cx| {
                 if this.focus_handle.is_focused(window) {
-                    if this.has_matches() {
-                        this.results_editor.focus_handle(cx).focus(window, cx);
-                    } else {
-                        this.query_editor.focus_handle(cx).focus(window, cx);
-                    }
+                    this.query_editor.focus_handle(cx).focus(window, cx);
                 }
             });
         }));
@@ -1483,9 +1479,6 @@ impl ProjectSearchView {
                     editor.scroll(Point::default(), Some(Axis::Vertical), window, cx);
                 }
             });
-            if is_new_search && self.query_editor.focus_handle(cx).is_focused(window) {
-                self.focus_results_editor(window, cx);
-            }
         }
 
         cx.emit(ViewEvent::UpdateTab);
