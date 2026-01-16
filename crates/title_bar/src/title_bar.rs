@@ -226,11 +226,13 @@ impl Render for TitleBar {
             let title_bar_color = self.platform_titlebar.update(cx, |platform_titlebar, cx| {
                 platform_titlebar.title_bar_color(window, cx)
             });
+            _ = height;
+            _ = title_bar_color;
 
             v_flex()
                 .w_full()
                 .child(self.platform_titlebar.clone().into_any_element())
-                .child(
+                /*.child(
                     h_flex()
                         .bg(title_bar_color)
                         .h(height)
@@ -238,7 +240,7 @@ impl Render for TitleBar {
                         .justify_between()
                         .w_full()
                         .children(children),
-                )
+                )*/
                 .into_any_element()
         } else {
             self.platform_titlebar.update(cx, |this, _| {
