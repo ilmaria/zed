@@ -43,7 +43,7 @@ use std::{
     },
     time::Duration,
 };
-use text::Point;
+use text::{EditType, Point};
 use util::{path, rel_path::rel_path, uri};
 use workspace::{CloseIntent, Workspace};
 
@@ -988,7 +988,7 @@ async fn test_collaborating_with_renames(cx_a: &mut TestAppContext, cx_b: &mut T
                 "Rename that was triggered from zero selection caret, should propose the whole word."
             );
             rename_editor.buffer().update(cx, |rename_buffer, cx| {
-                rename_buffer.edit([(MultiBufferOffset(0)..MultiBufferOffset(3), "THREE")], None, cx);
+                rename_buffer.edit([(MultiBufferOffset(0)..MultiBufferOffset(3), "THREE")], None, EditType::Other,cx);
             });
         });
     });
@@ -1035,7 +1035,7 @@ async fn test_collaborating_with_renames(cx_a: &mut TestAppContext, cx_b: &mut T
                 "Rename that was triggered from a selection, should have the same selection range in the rename proposal"
             );
             rename_editor.buffer().update(cx, |rename_buffer, cx| {
-                rename_buffer.edit([(MultiBufferOffset(0)..MultiBufferOffset(lsp_rename_end - lsp_rename_start), "THREE")], None, cx);
+                rename_buffer.edit([(MultiBufferOffset(0)..MultiBufferOffset(lsp_rename_end - lsp_rename_start), "THREE")], None, EditType::Other,cx);
             });
         });
     });
@@ -3612,7 +3612,11 @@ async fn test_git_blame_is_forwarded(cx_a: &mut TestAppContext, cx_b: &mut TestA
     // editor_b updates the file, which gets sent to client_a, which updates git blame,
     // which gets back to client_b.
     editor_b.update_in(cx_b, |editor_b, _, cx| {
-        editor_b.edit([(Point::new(0, 3)..Point::new(0, 3), "FOO")], cx);
+        editor_b.edit(
+            [(Point::new(0, 3)..Point::new(0, 3), "FOO")],
+            EditType::Other,
+            cx,
+        );
     });
 
     cx_a.executor().run_until_parked();
@@ -3648,7 +3652,11 @@ async fn test_git_blame_is_forwarded(cx_a: &mut TestAppContext, cx_b: &mut TestA
 
     // Now editor_a also updates the file
     editor_a.update_in(cx_a, |editor_a, _, cx| {
-        editor_a.edit([(Point::new(1, 3)..Point::new(1, 3), "FOO")], cx);
+        editor_a.edit(
+            [(Point::new(1, 3)..Point::new(1, 3), "FOO")],
+            EditType::Other,
+            cx,
+        );
     });
 
     cx_a.executor().run_until_parked();

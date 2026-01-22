@@ -2,7 +2,7 @@ use editor::display_map::DisplaySnapshot;
 use editor::{Bias, DisplayPoint, MultiBufferOffset};
 use gpui::{Context, Window};
 use multi_buffer::Anchor;
-use text::Selection;
+use text::{EditType, Selection};
 
 use crate::Vim;
 use crate::object::surrounding_markers;
@@ -65,7 +65,7 @@ fn apply_helix_surround_edits<F>(
             let (mut edits, anchors) = build(&display_map, selections);
 
             edits.sort_by(|a, b| b.0.start.cmp(&a.0.start));
-            editor.edit(edits, cx);
+            editor.edit(edits, EditType::Other, cx);
 
             editor.change_selections(Default::default(), window, cx, |s| {
                 s.select_anchor_ranges(anchors);
@@ -301,7 +301,7 @@ mod test {
         cx.simulate_keystrokes("m d {");
         cx.assert_state(
             indoc! {"
-            function test() 
+            function test()
                 return ˇvalue;
             "},
             Mode::HelixNormal,

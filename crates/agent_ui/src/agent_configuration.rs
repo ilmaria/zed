@@ -34,6 +34,7 @@ use project::{
     context_server_store::{ContextServerConfiguration, ContextServerStatus, ContextServerStore},
 };
 use settings::{Settings, SettingsStore, update_settings_file};
+use text::EditType;
 use ui::{
     ButtonStyle, Chip, CommonAnimationExt, ContextMenu, ContextMenuEntry, Disclosure, Divider,
     DividerColor, ElevationIndex, Indicator, LabelSize, PopoverMenu, Switch, Tooltip,
@@ -1395,6 +1396,7 @@ async fn open_new_agent_servers_entry_in_settings_editor(
                         s,
                     )
                 }),
+                EditType::Other,
                 cx,
             );
             if let Some((unique_server_name, buffer)) =

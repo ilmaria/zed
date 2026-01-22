@@ -1202,6 +1202,7 @@ async fn get_copilot_lsp(fs: Arc<dyn Fs>, node_runtime: NodeRuntime) -> anyhow::
 mod tests {
     use super::*;
     use gpui::TestAppContext;
+    use language::EditType;
     use util::{
         path,
         paths::PathStyle,
@@ -1248,7 +1249,9 @@ mod tests {
             }
         );
 
-        buffer_1.update(cx, |buffer, cx| buffer.edit([(5..5, " world")], None, cx));
+        buffer_1.update(cx, |buffer, cx| {
+            buffer.edit([(5..5, " world")], None, EditType::Other, cx)
+        });
         assert_eq!(
             lsp.receive_notification::<lsp::notification::DidChangeTextDocument>()
                 .await,

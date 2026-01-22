@@ -192,6 +192,7 @@ use std::{
     time::{Duration, Instant},
 };
 use task::{ResolvedTask, RunnableTag, TaskTemplate, TaskVariables};
+pub use text::EditType;
 use text::{BufferId, FromAnchor, OffsetUtf16, Rope, ToOffset as _};
 use theme::{
     AccentColors, ActiveTheme, PlayerColor, StatusColors, SyntaxTheme, Theme, ThemeSettings,
@@ -3702,7 +3703,7 @@ impl Editor {
         }
     }
 
-    pub fn edit<I, S, T>(&mut self, edits: I, cx: &mut Context<Self>)
+    pub fn edit<I, S, T>(&mut self, edits: I, edit_type: EditType, cx: &mut Context<Self>)
     where
         I: IntoIterator<Item = (Range<S>, T)>,
         S: ToOffset,
@@ -3713,7 +3714,7 @@ impl Editor {
         }
 
         self.buffer
-            .update(cx, |buffer, cx| buffer.edit(edits, None, cx));
+            .update(cx, |buffer, cx| buffer.edit(edits, None, edit_type, cx));
     }
 
     pub fn edit_with_autoindent<I, S, T>(&mut self, edits: I, cx: &mut Context<Self>)
@@ -3727,7 +3728,7 @@ impl Editor {
         }
 
         self.buffer.update(cx, |buffer, cx| {
-            buffer.edit(edits, self.autoindent_mode.clone(), cx)
+            buffer.edit(edits, self.autoindent_mode.clone(), EditType::Other, cx)
         });
     }
 
@@ -3751,6 +3752,7 @@ impl Editor {
                 Some(AutoindentMode::Block {
                     original_indent_columns,
                 }),
+                EditType::Other,
                 cx,
             )
         });
@@ -4691,10 +4693,15 @@ impl Editor {
                 jsx_tag_auto_close::construct_initial_buffer_versions_map(this, &edits, cx);
 
             this.buffer.update(cx, |buffer, cx| {
-                if has_adjacent_edits {
-                    buffer.edit_non_coalesce(edits, this.autoindent_mode.clone(), cx);
+                let edit_type = if text.as_ref() == " " {
+                    EditType::TypingFirstSpace
                 } else {
-                    buffer.edit(edits, this.autoindent_mode.clone(), cx);
+                    EditType::TypingOther
+                };
+                if has_adjacent_edits {
+                    buffer.edit_non_coalesce(edits, this.autoindent_mode.clone(), edit_type, cx);
+                } else {
+                    buffer.edit(edits, this.autoindent_mode.clone(), edit_type, cx);
                 }
             });
             for (buffer, edits) in linked_edits {
@@ -4709,7 +4716,17 @@ impl Editor {
                             (start_point..end_point, text)
                         })
                         .sorted_by_key(|(range, _)| range.start);
-                    buffer.edit(edits, None, cx);
+                    let prev_edit_type = buffer.last_edit_type();
+                    let edit_type = if text.as_ref() == " " {
+                        if prev_edit_type == EditType::TypingFirstSpace {
+                            EditType::TypingConsecutiveSpace
+                        } else {
+                            EditType::TypingFirstSpace
+                        }
+                    } else {
+                        EditType::TypingOther
+                    };
+                    buffer.edit(edits, None, edit_type, cx);
                 })
             }
             let new_anchor_selections = new_selections.iter().map(|e| &e.0);
@@ -5034,7 +5051,7 @@ impl Editor {
                 }
             }
             if !edits.is_empty() {
-                this.edit(edits, cx);
+                this.edit(edits, EditType::TypingOther, cx);
             }
             if !auto_indent_edits.is_empty() {
                 this.edit_with_autoindent(auto_indent_edits, cx);
@@ -5088,7 +5105,7 @@ impl Editor {
         }
 
         self.transact(window, cx, |editor, window, cx| {
-            editor.edit(edits, cx);
+            editor.edit(edits, EditType::TypingOther, cx);
 
             editor.change_selections(Default::default(), window, cx, |s| {
                 let mut index = 0;
@@ -5121,7 +5138,7 @@ impl Editor {
                     indent_edits.push((point..point, text));
                 }
             }
-            editor.edit(indent_edits, cx);
+            editor.edit(indent_edits, EditType::TypingOther, cx);
             if let Some(format) = editor.trigger_on_type_formatting("\n".to_owned(), window, cx) {
                 format.detach_and_log_err(cx);
             }
@@ -5153,7 +5170,7 @@ impl Editor {
         }
 
         self.transact(window, cx, |editor, window, cx| {
-            editor.edit(edits, cx);
+            editor.edit(edits, EditType::TypingOther, cx);
 
             editor.change_selections(Default::default(), window, cx, |s| {
                 let mut index = 0;
@@ -5186,7 +5203,7 @@ impl Editor {
                     indent_edits.push((point..point, text));
                 }
             }
-            editor.edit(indent_edits, cx);
+            editor.edit(indent_edits, EditType::TypingOther, cx);
             if let Some(format) = editor.trigger_on_type_formatting("\n".to_owned(), window, cx) {
                 format.detach_and_log_err(cx);
             }
@@ -5197,13 +5214,14 @@ impl Editor {
         let autoindent = text.is_empty().not().then(|| AutoindentMode::Block {
             original_indent_columns: Vec::new(),
         });
-        self.insert_with_autoindent_mode(text, autoindent, window, cx);
+        self.insert_with_autoindent_mode(text, autoindent, EditType::Other, window, cx);
     }
 
     fn insert_with_autoindent_mode(
         &mut self,
         text: &str,
         autoindent_mode: Option<AutoindentMode>,
+        edit_type: EditType,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
@@ -5230,6 +5248,7 @@ impl Editor {
                         .iter()
                         .map(|s| (s.start..s.end, text.clone())),
                     autoindent_mode,
+                    edit_type,
                     cx,
                 );
                 anchors
@@ -5542,7 +5561,7 @@ impl Editor {
             if let Some(transaction) = on_type_formatting.await? {
                 if push_to_client_history {
                     buffer.update(cx, |buffer, _| {
-                        buffer.push_transaction(transaction, Instant::now());
+                        buffer.push_transaction(transaction);
                         buffer.finalize_last_transaction();
                     });
                 }
@@ -6243,7 +6262,7 @@ impl Editor {
                         _ => editor.autoindent_mode.clone(),
                     };
                     let edits = ranges.into_iter().map(|range| (range, new_text.as_str()));
-                    multi_buffer.edit(edits, auto_indent, cx);
+                    multi_buffer.edit(edits, auto_indent, EditType::Other, cx);
                 });
             }
             for (buffer, edits) in linked_edits {
@@ -6258,7 +6277,7 @@ impl Editor {
                             (start_point..end_point, text)
                         })
                         .sorted_by_key(|(range, _)| range.start);
-                    buffer.edit(edits, None, cx);
+                    buffer.edit(edits, None, EditType::Other, cx);
                 })
             }
 
@@ -7744,7 +7763,7 @@ impl Editor {
                         let last_edit_end = edits.last().unwrap().0.end.bias_right(&snapshot);
 
                         self.buffer.update(cx, |buffer, cx| {
-                            buffer.edit(edits.iter().cloned(), None, cx)
+                            buffer.edit(edits.iter().cloned(), None, EditType::Other, cx)
                         });
 
                         self.change_selections(SelectionEffects::no_scroll(), window, cx, |s| {
@@ -7815,7 +7834,13 @@ impl Editor {
                                 text: text_to_insert.clone().into(),
                             });
 
-                            self.insert_with_autoindent_mode(&text_to_insert, None, window, cx);
+                            self.insert_with_autoindent_mode(
+                                &text_to_insert,
+                                None,
+                                EditType::Other,
+                                window,
+                                cx,
+                            );
                             self.refresh_edit_prediction(true, true, window, cx);
                             cx.notify();
                         } else {
@@ -10138,7 +10163,7 @@ impl Editor {
             let autoindent_mode = AutoindentMode::Block {
                 original_indent_columns: Vec::new(),
             };
-            buffer.edit(edits, Some(autoindent_mode), cx);
+            buffer.edit(edits, Some(autoindent_mode), EditType::Other, cx);
 
             let snapshot = &*buffer.read(cx);
             let snippet = &snippet;
@@ -10408,8 +10433,16 @@ impl Editor {
                 }
             }
 
+            let old_selections = this.selections.all_adjusted(&this.display_snapshot(cx));
+            let is_multiline_replace = old_selections.iter().any(|s| s.start.row != s.end.row);
+            let edit_type = if is_multiline_replace {
+                EditType::Other
+            } else {
+                EditType::DeletingLeft
+            };
             this.change_selections(Default::default(), window, cx, |s| s.select(selections));
-            this.insert("", window, cx);
+            this.insert_with_autoindent_mode("", None, edit_type, window, cx);
+
             let empty_str: Arc<str> = Arc::from("");
             for (buffer, edits) in linked_ranges {
                 let snapshot = buffer.read(cx).snapshot();
@@ -10433,7 +10466,7 @@ impl Editor {
                     .sorted_by_key(|(range, _)| range.start)
                     .collect::<Vec<_>>();
                 buffer.update(cx, |this, cx| {
-                    this.edit(edits, None, cx);
+                    this.edit(edits, None, EditType::DeletingLeft, cx);
                 })
             }
             this.refresh_edit_prediction(true, false, window, cx);
@@ -10447,6 +10480,9 @@ impl Editor {
         }
         self.hide_mouse_cursor(HideMouseCursorOrigin::TypingAction, cx);
         self.transact(window, cx, |this, window, cx| {
+            let old_selections = this.selections.all_adjusted(&this.display_snapshot(cx));
+            let is_multiline_replace = old_selections.iter().any(|s| s.start.row != s.end.row);
+
             this.change_selections(Default::default(), window, cx, |s| {
                 s.move_with(|map, selection| {
                     if selection.is_empty() {
@@ -10457,7 +10493,13 @@ impl Editor {
                     }
                 })
             });
-            this.insert("", window, cx);
+
+            let edit_type = if is_multiline_replace {
+                EditType::Other
+            } else {
+                EditType::DeletingRight
+            };
+            this.insert_with_autoindent_mode("", None, edit_type, window, cx);
             this.refresh_edit_prediction(true, false, window, cx);
         });
     }
@@ -10641,7 +10683,8 @@ impl Editor {
         }
 
         self.transact(window, cx, |this, window, cx| {
-            this.buffer.update(cx, |b, cx| b.edit(edits, None, cx));
+            this.buffer
+                .update(cx, |b, cx| b.edit(edits, None, EditType::Other, cx));
             this.change_selections(Default::default(), window, cx, |s| s.select(selections));
             this.refresh_edit_prediction(true, false, window, cx);
         });
@@ -10674,7 +10717,8 @@ impl Editor {
         }
 
         self.transact(window, cx, |this, window, cx| {
-            this.buffer.update(cx, |b, cx| b.edit(edits, None, cx));
+            this.buffer
+                .update(cx, |b, cx| b.edit(edits, None, EditType::Other, cx));
             this.change_selections(Default::default(), window, cx, |s| s.select(selections));
         });
     }
@@ -10824,6 +10868,7 @@ impl Editor {
                         .into_iter()
                         .map(|range| (range, empty_str.clone())),
                     None,
+                    EditType::Other,
                     cx,
                 );
             });
@@ -10924,6 +10969,7 @@ impl Editor {
                         .into_iter()
                         .map(|range| (range, empty_str.clone())),
                     None,
+                    EditType::Other,
                     cx,
                 );
                 buffer.snapshot(cx)
@@ -11003,7 +11049,12 @@ impl Editor {
                         };
 
                     this.buffer.update(cx, |buffer, cx| {
-                        buffer.edit([(end_of_line..start_of_next_line, replace)], None, cx)
+                        buffer.edit(
+                            [(end_of_line..start_of_next_line, replace)],
+                            None,
+                            EditType::Other,
+                            cx,
+                        )
                     });
                 }
             }
@@ -11136,7 +11187,7 @@ impl Editor {
 
         self.transact(window, cx, |this, window, cx| {
             let buffer = this.buffer.update(cx, |buffer, cx| {
-                buffer.edit(edits, None, cx);
+                buffer.edit(edits, None, EditType::Other, cx);
                 buffer.snapshot(cx)
             });
 
@@ -11801,7 +11852,7 @@ impl Editor {
 
         self.transact(window, cx, |this, window, cx| {
             this.buffer.update(cx, |buffer, cx| {
-                buffer.edit(edits, None, cx);
+                buffer.edit(edits, None, EditType::Other, cx);
             });
             this.change_selections(Default::default(), window, cx, |s| {
                 s.select(new_selections);
@@ -11877,7 +11928,7 @@ impl Editor {
 
         self.transact(window, cx, |this, window, cx| {
             let buffer = this.buffer.update(cx, |buffer, cx| {
-                buffer.edit(edits, None, cx);
+                buffer.edit(edits, None, EditType::Other, cx);
                 buffer.snapshot(cx)
             });
 
@@ -12260,7 +12311,7 @@ impl Editor {
 
         self.transact(window, cx, |this, window, cx| {
             this.buffer.update(cx, |buffer, cx| {
-                buffer.edit(edits, None, cx);
+                buffer.edit(edits, None, EditType::Other, cx);
             });
 
             this.change_selections(Default::default(), window, cx, |s| {
@@ -12297,7 +12348,7 @@ impl Editor {
         let last_edit_end = insert_anchor.bias_right(buffer);
         self.transact(window, cx, |this, window, cx| {
             this.buffer.update(cx, |buffer, cx| {
-                buffer.edit(edits, None, cx);
+                buffer.edit(edits, None, EditType::Other, cx);
             });
             this.change_selections(Default::default(), window, cx, |s| {
                 s.select_anchor_ranges([last_edit_start..last_edit_end]);
@@ -12380,7 +12431,7 @@ impl Editor {
 
         self.transact(window, cx, |this, window, cx| {
             this.buffer.update(cx, |buffer, cx| {
-                buffer.edit(edits, None, cx);
+                buffer.edit(edits, None, EditType::Other, cx);
             });
 
             // When duplicating upward with whole lines, move the cursor to the duplicated line
@@ -12556,7 +12607,7 @@ impl Editor {
             this.unfold_ranges(&unfold_ranges, true, true, cx);
             this.buffer.update(cx, |buffer, cx| {
                 for (range, text) in edits {
-                    buffer.edit([(range, text)], None, cx);
+                    buffer.edit([(range, text)], None, EditType::Other, cx);
                 }
             });
             this.fold_creases(refold_creases, true, window, cx);
@@ -12657,7 +12708,7 @@ impl Editor {
             this.unfold_ranges(&unfold_ranges, true, true, cx);
             this.buffer.update(cx, |buffer, cx| {
                 for (range, text) in edits {
-                    buffer.edit([(range, text)], None, cx);
+                    buffer.edit([(range, text)], None, EditType::Other, cx);
                 }
             });
             this.fold_creases(refold_creases, true, window, cx);
@@ -12716,8 +12767,9 @@ impl Editor {
                 });
                 edits
             });
-            this.buffer
-                .update(cx, |buffer, cx| buffer.edit(edits, None, cx));
+            this.buffer.update(cx, |buffer, cx| {
+                buffer.edit(edits, None, EditType::Other, cx)
+            });
             let selections = this
                 .selections
                 .all::<MultiBufferOffset>(&this.display_snapshot(cx));
@@ -13103,8 +13155,9 @@ impl Editor {
             rewrapped_row_ranges.push(start_row..=end_row);
         }
 
-        self.buffer
-            .update(cx, |buffer, cx| buffer.edit(edits, None, cx));
+        self.buffer.update(cx, |buffer, cx| {
+            buffer.edit(edits, None, EditType::Other, cx)
+        });
     }
 
     pub fn cut_common(
@@ -13416,6 +13469,7 @@ impl Editor {
                         } else {
                             None
                         },
+                        EditType::Other,
                         cx,
                     );
                 });
@@ -13464,7 +13518,7 @@ impl Editor {
                     }
 
                     drop(snapshot);
-                    buffer.edit(edits, auto_indent_mode, cx);
+                    buffer.edit(edits, auto_indent_mode, EditType::Other, cx);
 
                     anchors
                 });
@@ -15891,7 +15945,7 @@ impl Editor {
 
             drop(snapshot);
             this.buffer.update(cx, |buffer, cx| {
-                buffer.edit(edits, None, cx);
+                buffer.edit(edits, None, EditType::Other, cx);
             });
 
             // Adjust selections so that they end before any comment suffixes that
@@ -16230,6 +16284,7 @@ impl Editor {
                         .map(|(_, p, t)| (p.clone(), t.clone()))
                         .collect::<Vec<_>>(),
                     None,
+                    EditType::Other,
                     cx,
                 );
             });
@@ -18177,6 +18232,7 @@ impl Editor {
                             buffer.edit(
                                 [(MultiBufferOffset(0)..MultiBufferOffset(0), old_name.clone())],
                                 None,
+                                EditType::Other,
                                 cx,
                             )
                         });
@@ -21313,7 +21369,7 @@ impl Editor {
 
                     (selection.range(), uuid.to_string())
                 });
-            this.edit(edits, cx);
+            this.edit(edits, EditType::Other, cx);
             this.refresh_edit_prediction(true, false, window, cx);
         });
     }
@@ -23014,7 +23070,7 @@ impl Editor {
                 let edits = selections
                     .iter()
                     .map(|selection| (selection.end..selection.end, pending.clone()));
-                this.edit(edits, cx);
+                this.edit(edits, EditType::Other, cx);
                 this.change_selections(SelectionEffects::no_scroll(), window, cx, |s| {
                     s.select_ranges(selections.into_iter().enumerate().map(|(ix, sel)| {
                         sel.start + ix * pending.len()..sel.end + ix * pending.len()
@@ -23022,7 +23078,7 @@ impl Editor {
                 });
                 if let Some(existing_ranges) = existing_pending {
                     let edits = existing_ranges.iter().map(|range| (range.clone(), ""));
-                    this.edit(edits, cx);
+                    this.edit(edits, EditType::Other, cx);
                 }
             });
 
@@ -23127,6 +23183,7 @@ impl Editor {
                                 .into_iter()
                                 .map(|(range, text)| (range, text.to_string())),
                             None,
+                            EditType::Other,
                             cx,
                         );
                     });

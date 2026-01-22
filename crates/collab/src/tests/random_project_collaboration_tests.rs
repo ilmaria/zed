@@ -27,6 +27,7 @@ use std::{
     rc::Rc,
     sync::Arc,
 };
+use text::EditType;
 use util::{
     ResultExt, path,
     paths::PathStyle,
@@ -741,6 +742,7 @@ impl RandomizedTest for ProjectCollaborationTest {
                             (start..end, text)
                         }),
                         None,
+                        EditType::Other,
                         cx,
                     );
                 });

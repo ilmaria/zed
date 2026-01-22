@@ -4,6 +4,7 @@ use language::{Bias, Point};
 use schemars::JsonSchema;
 use serde::Deserialize;
 use std::ops::Range;
+use text::EditType;
 
 use crate::{Vim, state::Mode};
 
@@ -101,7 +102,7 @@ impl Vim {
                 }
             }
             editor.transact(window, cx, |editor, window, cx| {
-                editor.edit(edits, cx);
+                editor.edit(edits, EditType::Other, cx);
 
                 let snapshot = editor.buffer().read(cx).snapshot(cx);
                 editor.change_selections(Default::default(), window, cx, |s| {

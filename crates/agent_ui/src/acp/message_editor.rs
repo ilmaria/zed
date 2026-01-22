@@ -31,6 +31,7 @@ use prompt_store::PromptStore;
 use rope::Point;
 use settings::Settings;
 use std::{cell::RefCell, fmt::Write, rc::Rc, sync::Arc};
+use text::EditType;
 use theme::ThemeSettings;
 use ui::{ContextMenu, prelude::*};
 use util::{ResultExt, debug_panic};
@@ -782,6 +783,7 @@ impl MessageEditor {
                         multi_buffer::Anchor::max()..multi_buffer::Anchor::max(),
                         new_text,
                     )],
+                    EditType::Other,
                     cx,
                 );
             });
@@ -835,7 +837,11 @@ impl MessageEditor {
         };
 
         self.editor.update(cx, |message_editor, cx| {
-            message_editor.edit([(cursor_anchor..cursor_anchor, completion.new_text)], cx);
+            message_editor.edit(
+                [(cursor_anchor..cursor_anchor, completion.new_text)],
+                EditType::Other,
+                cx,
+            );
             message_editor.request_autoscroll(Autoscroll::fit(), cx);
         });
         if let Some(confirm) = completion.confirm {
@@ -1085,7 +1091,7 @@ mod tests {
     use lsp::{CompletionContext, CompletionTriggerKind};
     use project::{CompletionIntent, Project, ProjectPath};
     use serde_json::json;
-    use text::Point;
+    use text::{EditType, Point};
     use ui::{App, Context, IntoElement, Render, SharedString, Window};
     use util::{path, paths::PathStyle, rel_path::rel_path};
     use workspace::{AppState, Item, Workspace};
@@ -1174,7 +1180,7 @@ mod tests {
             let range = snapshot
                 .anchor_range_in_excerpt(excerpt_id, completion.replace_range)
                 .unwrap();
-            editor.edit([(range, completion.new_text)], cx);
+            editor.edit([(range, completion.new_text)], EditType::Other, cx);
             (completion.confirm.unwrap())(CompletionIntent::Complete, window, cx);
         });
 

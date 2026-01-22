@@ -43,7 +43,9 @@ use editor::Bias;
 use futures::{FutureExt, channel::oneshot, future::BoxFuture};
 use gpui::{AppContext, AsyncApp, Context, Entity, EventEmitter, SharedString, Task, WeakEntity};
 use itertools::Itertools;
-use language::{Anchor, Buffer, BufferSnapshot, LanguageRegistry, Point, ToPoint, text_diff};
+use language::{
+    Anchor, Buffer, BufferSnapshot, EditType, LanguageRegistry, Point, ToPoint, text_diff,
+};
 use markdown::Markdown;
 use project::{AgentLocation, Project, git_store::GitStoreCheckpoint};
 use std::collections::HashMap;
@@ -2327,7 +2329,7 @@ impl AcpThread {
                 });
 
                 let format_on_save = buffer.update(cx, |buffer, cx| {
-                    buffer.edit(edits, None, cx);
+                    buffer.edit(edits, None, EditType::Other, cx);
 
                     let settings = language::language_settings::language_settings(
                         buffer.language().map(|l| l.name()),
@@ -2574,6 +2576,7 @@ mod tests {
     use futures::{channel::mpsc, future::LocalBoxFuture, select};
     use gpui::{App, AsyncApp, TestAppContext, WeakEntity};
     use indoc::indoc;
+    use language::EditType;
     use project::{FakeFs, Fs};
     use rand::{distr, prelude::*};
     use serde_json::json;
@@ -3046,7 +3049,7 @@ mod tests {
         });
         read_file_rx.await.ok();
         buffer.update(cx, |buffer, cx| {
-            buffer.edit([(0..0, "zero\n".to_string())], None, cx);
+            buffer.edit([(0..0, "zero\n".to_string())], None, EditType::Other, cx);
         });
         cx.run_until_parked();
         assert_eq!(

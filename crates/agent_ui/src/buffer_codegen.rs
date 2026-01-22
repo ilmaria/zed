@@ -1,6 +1,7 @@
 use crate::{context::LoadedContext, inline_prompt_editor::CodegenStatus};
 use agent_settings::AgentSettings;
 use anyhow::{Context as _, Result};
+use text::EditType;
 use uuid::Uuid;
 
 use cloud_llm_client::CompletionIntent;
@@ -972,7 +973,7 @@ impl CodegenAlternative {
             // Avoid grouping agent edits with user edits.
             buffer.finalize_last_transaction(cx);
             buffer.start_transaction(cx);
-            buffer.edit(edits, None, cx);
+            buffer.edit(edits, None, EditType::Other, cx);
             buffer.end_transaction(cx)
         });
 

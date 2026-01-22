@@ -9,7 +9,7 @@ use gpui::{
 use language::{Anchor, Buffer, BufferEvent, Point, ToPoint};
 use project::{Project, ProjectItem, lsp_store::OpenLspBufferHandle};
 use std::{cmp, ops::Range, sync::Arc};
-use text::{Edit, Patch, Rope};
+use text::{Edit, EditType, Patch, Rope};
 use util::{RangeExt, ResultExt as _};
 
 /// Tracks actions performed by tools in a thread
@@ -703,7 +703,7 @@ impl ActionLog {
                         }
                     }
 
-                    buffer.edit(edits_to_revert, None, cx);
+                    buffer.edit(edits_to_revert, None, EditType::Other, cx);
                 });
                 self.project
                     .update(cx, |project, cx| project.save_buffer(buffer, cx))
@@ -1019,6 +1019,7 @@ mod tests {
     use serde_json::json;
     use settings::SettingsStore;
     use std::env;
+    use text::EditType;
     use util::{RandomCharIter, path};
 
     #[ctor::ctor]
@@ -1054,12 +1055,22 @@ mod tests {
             action_log.update(cx, |log, cx| log.buffer_read(buffer.clone(), cx));
             buffer.update(cx, |buffer, cx| {
                 buffer
-                    .edit([(Point::new(1, 1)..Point::new(1, 2), "E")], None, cx)
+                    .edit(
+                        [(Point::new(1, 1)..Point::new(1, 2), "E")],
+                        None,
+                        EditType::Other,
+                        cx,
+                    )
                     .unwrap()
             });
             buffer.update(cx, |buffer, cx| {
                 buffer
-                    .edit([(Point::new(4, 2)..Point::new(4, 3), "O")], None, cx)
+                    .edit(
+                        [(Point::new(4, 2)..Point::new(4, 3), "O")],
+                        None,
+                        EditType::Other,
+                        cx,
+                    )
                     .unwrap()
             });
             action_log.update(cx, |log, cx| log.buffer_edited(buffer.clone(), cx));
@@ -1135,13 +1146,23 @@ mod tests {
             action_log.update(cx, |log, cx| log.buffer_read(buffer.clone(), cx));
             buffer.update(cx, |buffer, cx| {
                 buffer
-                    .edit([(Point::new(1, 0)..Point::new(2, 0), "")], None, cx)
+                    .edit(
+                        [(Point::new(1, 0)..Point::new(2, 0), "")],
+                        None,
+                        EditType::Other,
+                        cx,
+                    )
                     .unwrap();
                 buffer.finalize_last_transaction();
             });
             buffer.update(cx, |buffer, cx| {
                 buffer
-                    .edit([(Point::new(3, 0)..Point::new(4, 0), "")], None, cx)
+                    .edit(
+                        [(Point::new(3, 0)..Point::new(4, 0), "")],
+                        None,
+                        EditType::Other,
+                        cx,
+                    )
                     .unwrap();
                 buffer.finalize_last_transaction();
             });
@@ -1217,7 +1238,12 @@ mod tests {
             action_log.update(cx, |log, cx| log.buffer_read(buffer.clone(), cx));
             buffer.update(cx, |buffer, cx| {
                 buffer
-                    .edit([(Point::new(1, 2)..Point::new(2, 3), "F\nGHI")], None, cx)
+                    .edit(
+                        [(Point::new(1, 2)..Point::new(2, 3), "F\nGHI")],
+                        None,
+                        EditType::Other,
+                        cx,
+                    )
                     .unwrap()
             });
             action_log.update(cx, |log, cx| log.buffer_edited(buffer.clone(), cx));
@@ -1246,6 +1272,7 @@ mod tests {
                     (Point::new(3, 0)..Point::new(3, 0), "Y"),
                 ],
                 None,
+                EditType::Other,
                 cx,
             )
         });
@@ -1267,7 +1294,12 @@ mod tests {
         );
 
         buffer.update(cx, |buffer, cx| {
-            buffer.edit([(Point::new(1, 1)..Point::new(1, 1), "Z")], None, cx)
+            buffer.edit(
+                [(Point::new(1, 1)..Point::new(1, 1), "Z")],
+                None,
+                EditType::Other,
+                cx,
+            )
         });
         cx.run_until_parked();
         assert_eq!(
@@ -1331,7 +1363,9 @@ mod tests {
             )]
         );
 
-        buffer.update(cx, |buffer, cx| buffer.edit([(0..0, "X")], None, cx));
+        buffer.update(cx, |buffer, cx| {
+            buffer.edit([(0..0, "X")], None, EditType::Other, cx)
+        });
         cx.run_until_parked();
         assert_eq!(
             unreviewed_hunks(&action_log, cx),
@@ -1621,12 +1655,22 @@ mod tests {
             action_log.update(cx, |log, cx| log.buffer_read(buffer.clone(), cx));
             buffer.update(cx, |buffer, cx| {
                 buffer
-                    .edit([(Point::new(1, 1)..Point::new(1, 2), "E\nXYZ")], None, cx)
+                    .edit(
+                        [(Point::new(1, 1)..Point::new(1, 2), "E\nXYZ")],
+                        None,
+                        EditType::Other,
+                        cx,
+                    )
                     .unwrap()
             });
             buffer.update(cx, |buffer, cx| {
                 buffer
-                    .edit([(Point::new(5, 2)..Point::new(5, 3), "O")], None, cx)
+                    .edit(
+                        [(Point::new(5, 2)..Point::new(5, 3), "O")],
+                        None,
+                        EditType::Other,
+                        cx,
+                    )
                     .unwrap()
             });
             action_log.update(cx, |log, cx| log.buffer_edited(buffer.clone(), cx));
@@ -1759,12 +1803,22 @@ mod tests {
             action_log.update(cx, |log, cx| log.buffer_read(buffer.clone(), cx));
             buffer.update(cx, |buffer, cx| {
                 buffer
-                    .edit([(Point::new(1, 1)..Point::new(1, 2), "E\nXYZ")], None, cx)
+                    .edit(
+                        [(Point::new(1, 1)..Point::new(1, 2), "E\nXYZ")],
+                        None,
+                        EditType::Other,
+                        cx,
+                    )
                     .unwrap()
             });
             buffer.update(cx, |buffer, cx| {
                 buffer
-                    .edit([(Point::new(5, 2)..Point::new(5, 3), "O")], None, cx)
+                    .edit(
+                        [(Point::new(5, 2)..Point::new(5, 3), "O")],
+                        None,
+                        EditType::Other,
+                        cx,
+                    )
                     .unwrap()
             });
             action_log.update(cx, |log, cx| log.buffer_edited(buffer.clone(), cx));
@@ -1962,7 +2016,12 @@ mod tests {
         // User makes additional edits
         cx.update(|cx| {
             buffer.update(cx, |buffer, cx| {
-                buffer.edit([(10..10, "\nuser added this line")], None, cx);
+                buffer.edit(
+                    [(10..10, "\nuser added this line")],
+                    None,
+                    EditType::Other,
+                    cx,
+                );
             });
         });
 
@@ -2272,6 +2331,7 @@ mod tests {
                         (Point::new(9, 0)..Point::new(9, 1), "J"),
                     ],
                     None,
+                    EditType::Other,
                     cx,
                 );
             });

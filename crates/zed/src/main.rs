@@ -15,7 +15,7 @@ use collab_ui::channel_view::ChannelView;
 use collections::HashMap;
 use crashes::InitCrashHandler;
 use db::kvp::{GLOBAL_KEY_VALUE_STORE, KEY_VALUE_STORE};
-use editor::Editor;
+use editor::{EditType, Editor};
 use extension::ExtensionHostProxy;
 use fs::{Fs, RealFs};
 use futures::{StreamExt, channel::oneshot, future};
@@ -946,10 +946,16 @@ fn handle_open_request(request: OpenRequest, app_state: Arc<AppState>, cx: &mut 
                             workspace.update_in(cx, |workspace, window, cx| {
                                 buffer.update(cx, |buffer, cx| {
                                     buffer.set_language(json, cx);
-                                    buffer.edit([(0..0, json_schema_content)], None, cx);
+                                    buffer.edit(
+                                        [(0..0, json_schema_content)],
+                                        None,
+                                        EditType::Other,
+                                        cx,
+                                    );
                                     buffer.edit(
                                         [(0..0, format!("// {} JSON Schema\n", schema_path))],
                                         None,
+                                        EditType::Other,
                                         cx,
                                     );
                                 });

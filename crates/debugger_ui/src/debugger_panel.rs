@@ -31,6 +31,7 @@ use rpc::proto::{self};
 use settings::Settings;
 use std::sync::{Arc, LazyLock};
 use task::{DebugScenario, TaskContext};
+use text::EditType;
 use tree_sitter::{Query, StreamingIterator as _};
 use ui::{
     ContextMenu, Divider, PopoverMenu, PopoverMenuHandle, SplitButton, Tab, Tooltip, prelude::*,
@@ -1284,7 +1285,7 @@ impl DebugPanel {
             }
         }
         editor.transact(window, cx, |editor, window, cx| {
-            editor.edit(edits, cx);
+            editor.edit(edits, EditType::Other, cx);
             let snapshot = editor.buffer().read(cx).read(cx);
             let point = cursor_position.to_point(&snapshot);
             drop(snapshot);

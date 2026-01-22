@@ -2499,9 +2499,6 @@ async fn test_wrap_selections_in_tag_line_mode(cx: &mut gpui::TestAppContext) {
 async fn test_repeat_grouping_41735(cx: &mut gpui::TestAppContext) {
     let mut cx = NeovimBackedTestContext::new(cx).await;
 
-    // typically transaction gropuing is disabled in tests, but here we need to test it.
-    cx.update_buffer(|buffer, _cx| buffer.set_group_interval(Duration::from_millis(300)));
-
     cx.set_shared_state("ˇ").await;
 
     cx.simulate_shared_keystrokes("i a escape").await;

@@ -22,6 +22,7 @@ use alacritty_terminal::{
     term::Config,
     vte::ansi::Processor,
 };
+use editor::EditType;
 use gpui::{Bounds, ClipboardItem, Entity, FontStyle, TextStyle, WhiteSpace, canvas, size};
 use language::Buffer;
 use settings::Settings as _;
@@ -192,7 +193,12 @@ impl TerminalOutput {
         // This will keep the buffer up to date, though with some terminal codes it won't be perfect
         if let Some(buffer) = self.full_buffer.as_ref() {
             buffer.update(cx, |buffer, cx| {
-                buffer.edit([(buffer.len()..buffer.len(), text)], None, cx);
+                buffer.edit(
+                    [(buffer.len()..buffer.len(), text)],
+                    None,
+                    EditType::Other,
+                    cx,
+                );
             });
         }
     }

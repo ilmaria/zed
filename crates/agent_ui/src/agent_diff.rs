@@ -1723,6 +1723,7 @@ mod tests {
     use serde_json::json;
     use settings::SettingsStore;
     use std::{path::Path, rc::Rc};
+    use text::EditType;
     use util::path;
 
     #[gpui::test]
@@ -1783,6 +1784,7 @@ mod tests {
                             (Point::new(7, 1)..Point::new(7, 2), "W"),
                         ],
                         None,
+                        EditType::Other,
                         cx,
                     )
                     .unwrap()
@@ -1998,6 +2000,7 @@ mod tests {
                             (Point::new(7, 1)..Point::new(7, 2), "W"),
                         ],
                         None,
+                        EditType::Other,
                         cx,
                     )
                     .unwrap()
@@ -2013,6 +2016,7 @@ mod tests {
                             (Point::new(2, 1)..Point::new(2, 2), "H"),
                         ],
                         None,
+                        EditType::Other,
                         cx,
                     )
                     .unwrap();

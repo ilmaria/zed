@@ -7,7 +7,7 @@ use gpui::{
     Render, SharedString, StatefulInteractiveElement, Styled, Window, actions,
 };
 use language::{
-    BinaryStatus, LanguageRegistry, LanguageServerId, LanguageServerName,
+    BinaryStatus, EditType, LanguageRegistry, LanguageServerId, LanguageServerName,
     LanguageServerStatusUpdate, ServerHealth,
 };
 use project::{
@@ -243,6 +243,7 @@ impl ActivityIndicator {
                         buffer.edit(
                             [(0..0, format!("Language server {server_name}:\n\n{status}"))],
                             None,
+                            EditType::Other,
                             cx,
                         );
                         buffer.set_capability(language::Capability::ReadOnly, cx);

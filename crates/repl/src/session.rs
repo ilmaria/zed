@@ -10,7 +10,7 @@ use crate::{
 };
 use anyhow::Context as _;
 use collections::{HashMap, HashSet};
-use editor::SelectionEffects;
+use editor::{EditType, SelectionEffects};
 use editor::{
     Anchor, AnchorRangeExt as _, Editor, Inlay, MultiBuffer, ToOffset, ToPoint,
     display_map::{
@@ -88,6 +88,7 @@ impl EditorBlock {
                             "\n",
                         )],
                         None,
+                        EditType::Other,
                         cx,
                     )
                 });

@@ -5,7 +5,7 @@ use std::{ops::Range, path::PathBuf};
 
 use anyhow::Result;
 use editor::scroll::Autoscroll;
-use editor::{Editor, EditorEvent, MultiBufferOffset, SelectionEffects};
+use editor::{EditType, Editor, EditorEvent, MultiBufferOffset, SelectionEffects};
 use gpui::{
     App, ClickEvent, Context, Entity, EventEmitter, FocusHandle, Focusable, InteractiveElement,
     IntoElement, IsZero, ListState, ParentElement, Render, RetainAllImageCache, Styled,
@@ -594,6 +594,7 @@ impl Render for MarkdownPreviewView {
                                                                 ),
                                                             task_marker,
                                                         )],
+                                                        EditType::Other,
                                                         cx,
                                                     );
                                                 });

@@ -23,7 +23,7 @@ use breadcrumbs::Breadcrumbs;
 use client::zed_urls;
 use collections::VecDeque;
 use debugger_ui::debugger_panel::DebugPanel;
-use editor::{Editor, MultiBuffer};
+use editor::{EditType, Editor, MultiBuffer};
 use extension_host::ExtensionStore;
 use feature_flags::{FeatureFlagAppExt, PanicFeatureFlag};
 use fs::Fs;
@@ -1964,7 +1964,7 @@ fn open_local_file(
                         && buffer.read(cx).is_empty()
                     {
                         buffer.update(cx, |buffer, cx| {
-                            buffer.edit([(0..0, initial_contents)], None, cx)
+                            buffer.edit([(0..0, initial_contents)], None, EditType::Other, cx)
                         });
                     }
                 })

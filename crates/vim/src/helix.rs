@@ -15,7 +15,7 @@ use gpui::{Context, Window};
 use language::{CharClassifier, CharKind, Point};
 use search::{BufferSearchBar, SearchOptions};
 use settings::Settings;
-use text::{Bias, SelectionGoal};
+use text::{Bias, EditType, SelectionGoal};
 use workspace::searchable::FilteredSearchRange;
 use workspace::searchable::{self, Direction};
 
@@ -649,7 +649,7 @@ impl Vim {
                     }
                 }
 
-                editor.edit(edits, cx);
+                editor.edit(edits, EditType::Other, cx);
 
                 // Restore selections based on original info
                 let snapshot = editor.buffer().read(cx).snapshot(cx);
@@ -773,7 +773,7 @@ impl Vim {
                     .all::<Point>(&editor.display_snapshot(cx))
                     .into_iter();
                 let edits = selections.map(|selection| (selection.start..selection.end, ""));
-                editor.edit(edits, cx);
+                editor.edit(edits, EditType::Other, cx);
             });
         });
         self.switch_mode(Mode::Insert, true, window, cx);

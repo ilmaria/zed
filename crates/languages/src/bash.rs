@@ -22,6 +22,7 @@ mod tests {
     use language::{AutoindentMode, Buffer};
     use settings::SettingsStore;
     use std::num::NonZeroU32;
+    use text::EditType;
     use unindent::Unindent;
     use util::test::marked_text_offsets;
 
@@ -47,6 +48,7 @@ mod tests {
                     buffer.edit(
                         [(0..buffer.len(), input)],
                         Some(AutoindentMode::EachLine),
+                        EditType::Other,
                         cx,
                     );
                     assert_eq!(buffer.text(), expected);
@@ -135,15 +137,16 @@ mod tests {
                 .unindent(),
             );
 
-            buffer.edit([(0..buffer.len(), input)], None, cx);
+            buffer.edit([(0..buffer.len(), input)], None,EditType::Other, cx);
             buffer.edit(
                 [(offsets[0]..offsets[0], "\n")],
-                Some(AutoindentMode::EachLine),
+                Some(AutoindentMode::EachLine),EditType::Other,
                 cx,
             );
             buffer.edit(
                 [(offsets[0] + 3..offsets[0] + 3, "elif")],
                 Some(AutoindentMode::EachLine),
+                EditType::Other,
                 cx,
             );
             let expected = r#"

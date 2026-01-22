@@ -42,7 +42,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use text::{BufferSnapshot, ToPoint};
+use text::{BufferSnapshot, EditType, ToPoint};
 use ui::IconName;
 use util::{ResultExt, TryFutureExt, post_inc};
 use uuid::Uuid;
@@ -1688,6 +1688,7 @@ impl TextThread {
                         insertion,
                     )],
                     None,
+                    EditType::Other,
                     cx,
                 );
                 let first_transaction = buffer.end_transaction(cx).unwrap();
@@ -1758,7 +1759,12 @@ impl TextThread {
                                 this.buffer.update(cx, |buffer, cx| {
                                     let insert_point = insert_position.to_point(buffer);
                                     if insert_point.column > 0 {
-                                        buffer.edit([(insert_point..insert_point, "\n")], None, cx);
+                                        buffer.edit(
+                                            [(insert_point..insert_point, "\n")],
+                                            None,
+                                            EditType::Other,
+                                            cx,
+                                        );
                                     }
 
                                     pending_section_stack.push(PendingSection {
@@ -1779,6 +1785,7 @@ impl TextThread {
                                     buffer.edit(
                                         [(insert_position..insert_position, text)],
                                         None,
+                                        EditType::Other,
                                         cx,
                                     )
                                 });
@@ -1859,7 +1866,7 @@ impl TextThread {
                             }
                         }
 
-                        buffer.edit(deletions, None, cx);
+                        buffer.edit(deletions, None, EditType::Other, cx);
 
                         if let Some(deletion_transaction) = buffer.end_transaction(cx) {
                             buffer.merge_transactions(deletion_transaction, first_transaction);
@@ -2099,7 +2106,7 @@ impl TextThread {
                                                     message_old_end_offset..message_old_end_offset,
                                                     chunk,
                                                 )],
-                                                None,
+                                                None, EditType::Other,
                                                 cx,
                                             );
                                             let end = buffer
@@ -2113,7 +2120,7 @@ impl TextThread {
                                                 message_old_end_offset - THOUGHT_PROCESS_END_MARKER.len();
                                             buffer.edit(
                                                 [(insertion_position..insertion_position, chunk)],
-                                                None,
+                                                None, EditType::Other,
                                                 cx,
                                             );
                                         }
@@ -2136,7 +2143,7 @@ impl TextThread {
                                                 message_old_end_offset..message_old_end_offset,
                                                 chunk,
                                             )],
-                                            None,
+                                            None, EditType::Other,
                                             cx,
                                         );
                                     }
@@ -2458,7 +2465,7 @@ impl TextThread {
         cx: &mut Context<Self>,
     ) -> MessageAnchor {
         let start = self.buffer.update(cx, |buffer, cx| {
-            buffer.edit([(offset..offset, "\n")], None, cx);
+            buffer.edit([(offset..offset, "\n")], None, EditType::Other, cx);
             buffer.anchor_before(offset + 1)
         });
 
@@ -2556,7 +2563,7 @@ impl TextThread {
                 }
             } else {
                 self.buffer.update(cx, |buffer, cx| {
-                    buffer.edit([(range.end..range.end, "\n")], None, cx);
+                    buffer.edit([(range.end..range.end, "\n")], None, EditType::Other, cx);
                 });
                 edited_buffer = true;
                 MessageAnchor {
@@ -2606,7 +2613,12 @@ impl TextThread {
                         }
                     } else {
                         self.buffer.update(cx, |buffer, cx| {
-                            buffer.edit([(range.start..range.start, "\n")], None, cx)
+                            buffer.edit(
+                                [(range.start..range.start, "\n")],
+                                None,
+                                EditType::Other,
+                                cx,
+                            )
                         });
                         edited_buffer = true;
                         MessageAnchor {

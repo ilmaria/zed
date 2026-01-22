@@ -4,7 +4,7 @@ use dap::{
     debugger_settings::DebuggerSettings,
     transport::{IoKind, LogKind},
 };
-use editor::{Editor, EditorEvent};
+use editor::{EditType, Editor, EditorEvent};
 use futures::{
     StreamExt,
     channel::mpsc::{UnboundedSender, unbounded},
@@ -706,6 +706,7 @@ impl DapLogView {
                                 (last_point..last_point, entry.trim()),
                                 (last_point..last_point, "\n"),
                             ],
+                            EditType::Other,
                             cx,
                         );
                         editor.set_read_only(true);

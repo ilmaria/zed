@@ -7,6 +7,7 @@ use crate::{
 use editor::{Bias, MultiBufferOffset, movement};
 use gpui::{Context, Window};
 use language::BracketPair;
+use text::EditType;
 
 use std::sync::Arc;
 
@@ -157,7 +158,7 @@ impl Vim {
                     }
                 }
 
-                editor.edit(edits, cx);
+                editor.edit(edits, EditType::Other, cx);
                 editor.set_clip_at_line_ends(true, cx);
                 editor.change_selections(Default::default(), window, cx, |s| {
                     if mode == Mode::VisualBlock {
@@ -264,7 +265,7 @@ impl Vim {
                     s.select_ranges(anchors);
                 });
                 edits.sort_by_key(|(range, _)| range.start);
-                editor.edit(edits, cx);
+                editor.edit(edits, EditType::Other, cx);
                 editor.set_clip_at_line_ends(true, cx);
             });
         });
@@ -401,7 +402,7 @@ impl Vim {
                         })
                         .collect::<Vec<_>>();
                     edits.sort_by_key(|(range, _)| range.start);
-                    editor.edit(edits, cx);
+                    editor.edit(edits, EditType::Other, cx);
                     editor.set_clip_at_line_ends(true, cx);
                     editor.change_selections(Default::default(), window, cx, |s| {
                         s.select_anchor_ranges(stable_anchors);

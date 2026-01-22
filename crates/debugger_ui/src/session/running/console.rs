@@ -953,6 +953,7 @@ mod tests {
     use editor::{MultiBufferOffset, test::editor_test_context::EditorTestContext};
     use gpui::TestAppContext;
     use language::Point;
+    use text::EditType;
 
     #[track_caller]
     fn assert_completion_range(
@@ -986,6 +987,7 @@ mod tests {
                         ..MultiBufferOffset(snapshot.offset_for_anchor(&replace_range.end)),
                     replacement,
                 )],
+                EditType::Other,
                 cx,
             );
         });

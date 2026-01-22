@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 use buffer_diff::BufferDiff;
-use editor::{Editor, EditorEvent, MultiBuffer, ToPoint, actions::DiffClipboardWithSelectionData};
+use editor::{EditType, Editor, EditorEvent, MultiBuffer, ToPoint, actions::DiffClipboardWithSelectionData};
 use futures::{FutureExt, select_biased};
 use gpui::{
     AnyElement, App, AppContext as _, AsyncApp, Context, Entity, EventEmitter, FocusHandle,
@@ -244,7 +244,7 @@ fn build_clipboard_buffer(
 
         let range_start = source_buffer_snapshot.point_to_offset(replacement_range.start);
         let range_end = source_buffer_snapshot.point_to_offset(replacement_range.end);
-        buffer.edit([(range_start..range_end, text)], None, cx);
+        buffer.edit([(range_start..range_end, text)], None, EditType::Other, cx);
 
         buffer
     })

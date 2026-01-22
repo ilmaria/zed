@@ -3,6 +3,7 @@ use editor::{SelectionEffects, display_map::ToDisplayPoint};
 use gpui::{Context, Window};
 use language::{Bias, Point, SelectionGoal};
 use multi_buffer::MultiBufferRow;
+use text::EditType;
 
 use crate::{
     Vim,
@@ -249,7 +250,7 @@ impl Vim {
                         .flat_map(|s| s.chars())
                         .flat_map(transform)
                         .collect::<String>();
-                    editor.edit([(range, text)], cx)
+                    editor.edit([(range, text)], EditType::Other, cx)
                 }
                 editor.change_selections(Default::default(), window, cx, |s| {
                     s.select_ranges(cursor_positions)

@@ -27,6 +27,7 @@ use project::{FakeFs, Project};
 use serde_json::json;
 use settings::SettingsStore;
 use std::{path::Path, sync::Arc, time::Duration};
+use text::EditType;
 use util::{path, rel_path::rel_path};
 use uuid::Uuid;
 use zeta_prompt::ZetaPromptInput;
@@ -262,7 +263,7 @@ async fn test_request_events(cx: &mut TestAppContext) {
     });
 
     buffer.update(cx, |buffer, cx| {
-        buffer.edit(vec![(7..7, "How")], None, cx);
+        buffer.edit(vec![(7..7, "How")], None, EditType::Other, cx);
     });
 
     let snapshot = buffer.read_with(cx, |buffer, _cx| buffer.snapshot());
@@ -336,7 +337,7 @@ async fn test_edit_history_getter_pause_splits_last_event(cx: &mut TestAppContex
 
     // First burst: insert "How"
     buffer.update(cx, |buffer, cx| {
-        buffer.edit(vec![(7..7, "How")], None, cx);
+        buffer.edit(vec![(7..7, "How")], None, EditType::Other, cx);
     });
 
     // Simulate a pause longer than the grouping threshold (e.g. 500ms).
@@ -348,13 +349,13 @@ async fn test_edit_history_getter_pause_splits_last_event(cx: &mut TestAppContex
     // Keeping both bursts on the same line ensures the existing line-span coalescing logic
     // groups them into a single `LastEvent`, allowing the pause-split getter to return two diffs.
     buffer.update(cx, |buffer, cx| {
-        buffer.edit(vec![(10..10, " are you?")], None, cx);
+        buffer.edit(vec![(10..10, " are you?")], None, EditType::Other, cx);
     });
 
     // A second edit shortly after the first post-pause edit ensures the last edit timestamp is
     // advanced after the pause boundary is recorded, making pause-splitting deterministic.
     buffer.update(cx, |buffer, cx| {
-        buffer.edit(vec![(19..19, "!")], None, cx);
+        buffer.edit(vec![(19..19, "!")], None, EditType::Other, cx);
     });
 
     // Without time-based splitting, there is one event.
@@ -438,7 +439,12 @@ async fn test_event_grouping_line_span_coalescing(cx: &mut TestAppContext) {
     buffer.update(cx, |buffer, cx| {
         let start = Point::new(10, 0).to_offset(buffer);
         let end = Point::new(13, 0).to_offset(buffer);
-        buffer.edit(vec![(start..end, "Middle A\nMiddle B\n")], None, cx);
+        buffer.edit(
+            vec![(start..end, "Middle A\nMiddle B\n")],
+            None,
+            EditType::Other,
+            cx,
+        );
     });
 
     let events = ep_store.update(cx, |ep_store, cx| {
@@ -467,7 +473,7 @@ async fn test_event_grouping_line_span_coalescing(cx: &mut TestAppContext) {
     // This tests that coalescing considers the START of the existing range
     buffer.update(cx, |buffer, cx| {
         let offset = Point::new(5, 0).to_offset(buffer);
-        buffer.edit(vec![(offset..offset, "Above\n")], None, cx);
+        buffer.edit(vec![(offset..offset, "Above\n")], None, EditType::Other, cx);
     });
 
     let events = ep_store.update(cx, |ep_store, cx| {
@@ -502,7 +508,7 @@ async fn test_event_grouping_line_span_coalescing(cx: &mut TestAppContext) {
     // This tests that coalescing considers the END of the existing range
     buffer.update(cx, |buffer, cx| {
         let offset = Point::new(14, 0).to_offset(buffer);
-        buffer.edit(vec![(offset..offset, "Below\n")], None, cx);
+        buffer.edit(vec![(offset..offset, "Below\n")], None, EditType::Other, cx);
     });
 
     let events = ep_store.update(cx, |ep_store, cx| {
@@ -539,7 +545,12 @@ async fn test_event_grouping_line_span_coalescing(cx: &mut TestAppContext) {
     // This should NOT coalesce - creates a new event
     buffer.update(cx, |buffer, cx| {
         let offset = Point::new(25, 0).to_offset(buffer);
-        buffer.edit(vec![(offset..offset, "Far below\n")], None, cx);
+        buffer.edit(
+            vec![(offset..offset, "Far below\n")],
+            None,
+            EditType::Other,
+            cx,
+        );
     });
 
     let events = ep_store.update(cx, |ep_store, cx| {
@@ -1476,7 +1487,9 @@ async fn test_edit_prediction_basic_interpolation(cx: &mut TestAppContext) {
             vec![(2..5, "REM".into()), (9..11, "".into())]
         );
 
-        buffer.update(cx, |buffer, cx| buffer.edit([(2..5, "")], None, cx));
+        buffer.update(cx, |buffer, cx| {
+            buffer.edit([(2..5, "")], None, EditType::Other, cx)
+        });
         assert_eq!(
             from_completion_edits(
                 &prediction.interpolate(&buffer.read(cx).snapshot()).unwrap(),
@@ -1496,7 +1509,9 @@ async fn test_edit_prediction_basic_interpolation(cx: &mut TestAppContext) {
             vec![(2..5, "REM".into()), (9..11, "".into())]
         );
 
-        buffer.update(cx, |buffer, cx| buffer.edit([(2..5, "R")], None, cx));
+        buffer.update(cx, |buffer, cx| {
+            buffer.edit([(2..5, "R")], None, EditType::Other, cx)
+        });
         assert_eq!(
             from_completion_edits(
                 &prediction.interpolate(&buffer.read(cx).snapshot()).unwrap(),
@@ -1506,7 +1521,9 @@ async fn test_edit_prediction_basic_interpolation(cx: &mut TestAppContext) {
             vec![(3..3, "EM".into()), (7..9, "".into())]
         );
 
-        buffer.update(cx, |buffer, cx| buffer.edit([(3..3, "E")], None, cx));
+        buffer.update(cx, |buffer, cx| {
+            buffer.edit([(3..3, "E")], None, EditType::Other, cx)
+        });
         assert_eq!(
             from_completion_edits(
                 &prediction.interpolate(&buffer.read(cx).snapshot()).unwrap(),
@@ -1516,7 +1533,9 @@ async fn test_edit_prediction_basic_interpolation(cx: &mut TestAppContext) {
             vec![(4..4, "M".into()), (8..10, "".into())]
         );
 
-        buffer.update(cx, |buffer, cx| buffer.edit([(4..4, "M")], None, cx));
+        buffer.update(cx, |buffer, cx| {
+            buffer.edit([(4..4, "M")], None, EditType::Other, cx)
+        });
         assert_eq!(
             from_completion_edits(
                 &prediction.interpolate(&buffer.read(cx).snapshot()).unwrap(),
@@ -1526,7 +1545,9 @@ async fn test_edit_prediction_basic_interpolation(cx: &mut TestAppContext) {
             vec![(9..11, "".into())]
         );
 
-        buffer.update(cx, |buffer, cx| buffer.edit([(4..5, "")], None, cx));
+        buffer.update(cx, |buffer, cx| {
+            buffer.edit([(4..5, "")], None, EditType::Other, cx)
+        });
         assert_eq!(
             from_completion_edits(
                 &prediction.interpolate(&buffer.read(cx).snapshot()).unwrap(),
@@ -1536,7 +1557,9 @@ async fn test_edit_prediction_basic_interpolation(cx: &mut TestAppContext) {
             vec![(4..4, "M".into()), (8..10, "".into())]
         );
 
-        buffer.update(cx, |buffer, cx| buffer.edit([(8..10, "")], None, cx));
+        buffer.update(cx, |buffer, cx| {
+            buffer.edit([(8..10, "")], None, EditType::Other, cx)
+        });
         assert_eq!(
             from_completion_edits(
                 &prediction.interpolate(&buffer.read(cx).snapshot()).unwrap(),
@@ -1546,7 +1569,9 @@ async fn test_edit_prediction_basic_interpolation(cx: &mut TestAppContext) {
             vec![(4..4, "M".into())]
         );
 
-        buffer.update(cx, |buffer, cx| buffer.edit([(4..6, "")], None, cx));
+        buffer.update(cx, |buffer, cx| {
+            buffer.edit([(4..6, "")], None, EditType::Other, cx)
+        });
         assert_eq!(prediction.interpolate(&buffer.read(cx).snapshot()), None);
     })
 }
@@ -1892,7 +1917,12 @@ async fn test_no_data_collection_for_events_in_uncollectable_buffers(cx: &mut Te
     );
 
     private_buffer.update(cx, |private_buffer, cx| {
-        private_buffer.edit([(0..0, "An edit for the history!")], None, cx);
+        private_buffer.edit(
+            [(0..0, "An edit for the history!")],
+            None,
+            EditType::Other,
+            cx,
+        );
     });
 
     run_edit_prediction(&buffer, &project, &ep_store, cx).await;
@@ -1910,6 +1940,7 @@ async fn test_no_data_collection_for_events_in_uncollectable_buffers(cx: &mut Te
                 " ".repeat(MAX_EVENT_TOKENS * cursor_excerpt::BYTES_PER_TOKEN_GUESS),
             )],
             None,
+            EditType::Other,
             cx,
         );
     });
@@ -1940,7 +1971,12 @@ async fn apply_edit_prediction(
     *response.lock() = completion_response.to_string();
     let edit_prediction = run_edit_prediction(&buffer, &project, &ep_store, cx).await;
     buffer.update(cx, |buffer, cx| {
-        buffer.edit(edit_prediction.edits.iter().cloned(), None, cx)
+        buffer.edit(
+            edit_prediction.edits.iter().cloned(),
+            None,
+            EditType::Other,
+            cx,
+        )
     });
     buffer.read_with(cx, |buffer, _| buffer.text())
 }
@@ -2294,9 +2330,19 @@ fn test_compute_diff_between_snapshots(cx: &mut TestAppContext) {
 
     buffer.update(cx, |buffer, cx| {
         let point = Point::new(12, 0);
-        buffer.edit([(point..point, "SECOND INSERTION\n")], None, cx);
+        buffer.edit(
+            [(point..point, "SECOND INSERTION\n")],
+            None,
+            EditType::Other,
+            cx,
+        );
         let point = Point::new(8, 0);
-        buffer.edit([(point..point, "FIRST INSERTION\n")], None, cx);
+        buffer.edit(
+            [(point..point, "FIRST INSERTION\n")],
+            None,
+            EditType::Other,
+            cx,
+        );
     });
 
     let new_snapshot = buffer.read_with(cx, |buffer, _| buffer.text_snapshot());

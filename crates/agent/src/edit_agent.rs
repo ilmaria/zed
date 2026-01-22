@@ -29,6 +29,7 @@ use serde::{Deserialize, Serialize};
 use std::{cmp, iter, mem, ops::Range, pin::Pin, sync::Arc, task::Poll};
 use streaming_diff::{CharOperation, StreamingDiff};
 use streaming_fuzzy_matcher::StreamingFuzzyMatcher;
+use text::EditType;
 
 #[derive(Serialize)]
 struct CreateFilePromptTemplate {
@@ -345,7 +346,7 @@ impl EditAgent {
                 // user made it.
                 let (min_edit_start, max_edit_end) = cx.update(|cx| {
                     let (min_edit_start, max_edit_end) = buffer.update(cx, |buffer, cx| {
-                        buffer.edit(edits.iter().cloned(), None, cx);
+                        buffer.edit(edits.iter().cloned(), None, EditType::Other, cx);
                         let max_edit_end = buffer
                             .summaries_for_anchors::<Point, _>(
                                 edits.iter().map(|(range, _)| &range.end),

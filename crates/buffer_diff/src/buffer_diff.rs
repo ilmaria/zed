@@ -1661,7 +1661,7 @@ mod tests {
     use gpui::TestAppContext;
     use pretty_assertions::{assert_eq, assert_ne};
     use rand::{Rng as _, rngs::StdRng};
-    use text::{Buffer, BufferId, ReplicaId, Rope};
+    use text::{Buffer, BufferId, EditType, ReplicaId, Rope};
     use unindent::Unindent as _;
     use util::test::marked_text_ranges;
 
@@ -1698,7 +1698,7 @@ mod tests {
             &[(1..2, "two\n", "HELLO\n", DiffHunkStatus::modified_none())],
         );
 
-        buffer.edit([(0..0, "point five\n")]);
+        buffer.edit([(0..0, "point five\n")], EditType::Other);
         diff = BufferDiffSnapshot::new_sync(buffer.clone(), diff_base.clone(), cx);
         assert_hunks(
             diff.hunks_intersecting_range(

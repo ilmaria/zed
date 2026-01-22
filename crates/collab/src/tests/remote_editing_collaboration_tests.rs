@@ -39,6 +39,7 @@ use std::{
     time::Duration,
 };
 use task::TcpArgumentsTemplate;
+use text::EditType;
 use util::{path, rel_path::rel_path};
 
 #[gpui::test(iterations = 10)]
@@ -164,7 +165,7 @@ async fn test_sharing_an_ssh_remote_project(
     buffer_b.update(cx_b, |buffer, cx| {
         assert_eq!(buffer.text(), "fn one() -> usize { 1 }");
         let ix = buffer.text().find('1').unwrap();
-        buffer.edit([(ix..ix + 1, "100")], None, cx);
+        buffer.edit([(ix..ix + 1, "100")], None, EditType::Other, cx);
     });
 
     executor.run_until_parked();

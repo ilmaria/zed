@@ -3,7 +3,7 @@ use editor::{Bias, Editor};
 use gpui::{Action, Context, Window, actions};
 use language::SelectionGoal;
 use settings::Settings;
-use text::Point;
+use text::{EditType, Point};
 use vim_mode_setting::HelixModeSetting;
 use workspace::searchable::Direction;
 
@@ -105,7 +105,7 @@ impl Vim {
                 }
             }
 
-            editor.edit(edits, cx);
+            editor.edit(edits, EditType::Other, cx);
         });
     }
 }

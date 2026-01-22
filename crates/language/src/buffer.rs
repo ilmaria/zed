@@ -54,7 +54,7 @@ use std::{
     path::PathBuf,
     rc,
     sync::{Arc, LazyLock},
-    time::{Duration, Instant},
+    time::Duration,
     vec,
 };
 use sum_tree::TreeMap;
@@ -62,7 +62,7 @@ use text::operation_queue::OperationQueue;
 use text::*;
 pub use text::{
     Anchor, Bias, Buffer as TextBuffer, BufferId, BufferSnapshot as TextBufferSnapshot, Edit,
-    LineIndent, OffsetRangeExt, OffsetUtf16, Patch, Point, PointUtf16, Rope, Selection,
+    EditType, LineIndent, OffsetRangeExt, OffsetUtf16, Patch, Point, PointUtf16, Rope, Selection,
     SelectionGoal, Subscription, TextDimension, TextSummary, ToOffset, ToOffsetUtf16, ToPoint,
     ToPointUtf16, Transaction, TransactionId, Unclipped,
 };
@@ -1292,6 +1292,10 @@ impl Buffer {
         })
     }
 
+    pub fn last_edit_type(&self) -> EditType {
+        self.text.history.last_edit_type
+    }
+
     pub fn preview_edits(
         &self,
         edits: Arc<[(Range<Anchor>, Arc<str>)]>,
@@ -1308,7 +1312,7 @@ impl Buffer {
                     syntax_snapshot.reparse(&old_snapshot, registry.clone(), language);
                 }
 
-                branch_buffer.edit(edits.iter().cloned());
+                branch_buffer.edit(edits.iter().cloned(), EditType::Other);
                 let snapshot = branch_buffer.snapshot();
                 syntax_snapshot.interpolate(&snapshot);
 
@@ -1367,7 +1371,7 @@ impl Buffer {
 
         let operation = base_buffer.update(cx, |base_buffer, cx| {
             // cx.emit(BufferEvent::DiffBaseChanged);
-            base_buffer.edit(edits, None, cx)
+            base_buffer.edit(edits, None, EditType::Other, cx)
         });
 
         if let Some(operation) = operation
@@ -2103,7 +2107,7 @@ impl Buffer {
             .collect();
 
         let preserve_preview = self.preserve_preview();
-        self.edit(edits, None, cx);
+        self.edit(edits, None, EditType::Other, cx);
         if preserve_preview {
             self.refresh_preview();
         }
@@ -2206,7 +2210,7 @@ impl Buffer {
                 break;
             }
         }
-        self.edit([(offset..len, "\n")], None, cx);
+        self.edit([(offset..len, "\n")], None, EditType::TypingOther, cx);
     }
 
     /// Applies a diff to the buffer. If the buffer has changed since the given diff was
@@ -2242,7 +2246,7 @@ impl Buffer {
 
         self.start_transaction();
         self.text.set_line_ending(diff.line_ending);
-        self.edit(adjusted_edits, None, cx);
+        self.edit(adjusted_edits, None, EditType::Other, cx);
         self.end_transaction(cx)
     }
 
@@ -2334,37 +2338,17 @@ impl Buffer {
         });
     }
 
-    /// Starts a transaction, if one is not already in-progress. When undoing or
-    /// redoing edits, all of the edits performed within a transaction are undone
-    /// or redone together.
+    /// Starts a transaction, providing the current time.
     pub fn start_transaction(&mut self) -> Option<TransactionId> {
-        self.start_transaction_at(Instant::now())
-    }
-
-    /// Starts a transaction, providing the current time. Subsequent transactions
-    /// that occur within a short period of time will be grouped together. This
-    /// is controlled by the buffer's undo grouping duration.
-    pub fn start_transaction_at(&mut self, now: Instant) -> Option<TransactionId> {
         self.transaction_depth += 1;
         if self.was_dirty_before_starting_transaction.is_none() {
             self.was_dirty_before_starting_transaction = Some(self.is_dirty());
         }
-        self.text.start_transaction_at(now)
+        self.text.start_transaction()
     }
 
-    /// Terminates the current transaction, if this is the outermost transaction.
+    /// Terminates the current transaction, providing the current time.
     pub fn end_transaction(&mut self, cx: &mut Context<Self>) -> Option<TransactionId> {
-        self.end_transaction_at(Instant::now(), cx)
-    }
-
-    /// Terminates the current transaction, providing the current time. Subsequent transactions
-    /// that occur within a short period of time will be grouped together. This
-    /// is controlled by the buffer's undo grouping duration.
-    pub fn end_transaction_at(
-        &mut self,
-        now: Instant,
-        cx: &mut Context<Self>,
-    ) -> Option<TransactionId> {
         assert!(self.transaction_depth > 0);
         self.transaction_depth -= 1;
         let was_dirty = if self.transaction_depth == 0 {
@@ -2372,7 +2356,7 @@ impl Buffer {
         } else {
             false
         };
-        if let Some((transaction_id, start_version)) = self.text.end_transaction_at(now) {
+        if let Some((transaction_id, start_version)) = self.text.end_transaction() {
             self.did_edit(&start_version, was_dirty, cx);
             Some(transaction_id)
         } else {
@@ -2381,8 +2365,8 @@ impl Buffer {
     }
 
     /// Manually add a transaction to the buffer's undo history.
-    pub fn push_transaction(&mut self, transaction: Transaction, now: Instant) {
-        self.text.push_transaction(transaction, now);
+    pub fn push_transaction(&mut self, transaction: Transaction) {
+        self.text.push_transaction(transaction);
     }
 
     /// Differs from `push_transaction` in that it does not clear the redo
@@ -2396,8 +2380,8 @@ impl Buffer {
     /// cleared is to create transactions with the usual `start_transaction` and
     /// `end_transaction` methods and merging the resulting transactions into
     /// the transaction created by this method
-    pub fn push_empty_transaction(&mut self, now: Instant) -> TransactionId {
-        self.text.push_empty_transaction(now)
+    pub fn push_empty_transaction(&mut self) -> TransactionId {
+        self.text.push_empty_transaction()
     }
 
     /// Prevent the last transaction from being grouped with any subsequent transactions,
@@ -2541,7 +2525,7 @@ impl Buffer {
         T: Into<Arc<str>>,
     {
         self.autoindent_requests.clear();
-        self.edit([(0..self.len(), text)], None, cx)
+        self.edit([(0..self.len(), text)], None, EditType::Other, cx)
     }
 
     /// Appends the given text to the end of the buffer.
@@ -2549,7 +2533,7 @@ impl Buffer {
     where
         T: Into<Arc<str>>,
     {
-        self.edit([(self.len()..self.len(), text)], None, cx)
+        self.edit([(self.len()..self.len(), text)], None, EditType::Other, cx)
     }
 
     /// Applies the given edits to the buffer. Each edit is specified as a range of text to
@@ -2565,6 +2549,7 @@ impl Buffer {
         &mut self,
         edits_iter: I,
         autoindent_mode: Option<AutoindentMode>,
+        edit_type: EditType,
         cx: &mut Context<Self>,
     ) -> Option<clock::Lamport>
     where
@@ -2572,7 +2557,7 @@ impl Buffer {
         S: ToOffset,
         T: Into<Arc<str>>,
     {
-        self.edit_internal(edits_iter, autoindent_mode, true, cx)
+        self.edit_internal(edits_iter, autoindent_mode, edit_type, true, cx)
     }
 
     /// Like [`edit`](Self::edit), but does not coalesce adjacent edits.
@@ -2580,6 +2565,7 @@ impl Buffer {
         &mut self,
         edits_iter: I,
         autoindent_mode: Option<AutoindentMode>,
+        edit_type: EditType,
         cx: &mut Context<Self>,
     ) -> Option<clock::Lamport>
     where
@@ -2587,13 +2573,14 @@ impl Buffer {
         S: ToOffset,
         T: Into<Arc<str>>,
     {
-        self.edit_internal(edits_iter, autoindent_mode, false, cx)
+        self.edit_internal(edits_iter, autoindent_mode, edit_type, false, cx)
     }
 
     fn edit_internal<I, S, T>(
         &mut self,
         edits_iter: I,
         autoindent_mode: Option<AutoindentMode>,
+        edit_type: EditType,
         coalesce_adjacent: bool,
         cx: &mut Context<Self>,
     ) -> Option<clock::Lamport>
@@ -2641,7 +2628,7 @@ impl Buffer {
         let autoindent_request = autoindent_mode
             .and_then(|mode| self.language.as_ref().map(|_| (self.snapshot(), mode)));
 
-        let edit_operation = self.text.edit(edits.iter().cloned());
+        let edit_operation = self.text.edit(edits.iter().cloned(), edit_type);
         let edit_id = edit_operation.timestamp();
 
         if let Some((before_edit, mode)) = autoindent_request {
@@ -2814,6 +2801,7 @@ impl Buffer {
         self.edit(
             [(position..position, "\n")],
             Some(AutoindentMode::EachLine),
+            EditType::Other,
             cx,
         );
 
@@ -2825,6 +2813,7 @@ impl Buffer {
             self.edit(
                 [(position..position, "\n")],
                 Some(AutoindentMode::EachLine),
+                EditType::Other,
                 cx,
             );
         }
@@ -2833,6 +2822,7 @@ impl Buffer {
             self.edit(
                 [(position..position, "\n")],
                 Some(AutoindentMode::EachLine),
+                EditType::Other,
                 cx,
             );
             position.row += 1;
@@ -2844,6 +2834,7 @@ impl Buffer {
             self.edit(
                 [(position..position, "\n")],
                 Some(AutoindentMode::EachLine),
+                EditType::Other,
                 cx,
             );
         }
@@ -3188,11 +3179,7 @@ impl Buffer {
         cx: &mut Context<Self>,
     ) {
         let edits = self.edits_for_marked_text(marked_string);
-        self.edit(edits, autoindent_mode, cx);
-    }
-
-    pub fn set_group_interval(&mut self, group_interval: Duration) {
-        self.text.set_group_interval(group_interval);
+        self.edit(edits, autoindent_mode, EditType::Other, cx);
     }
 
     pub fn randomly_edit<T>(&mut self, rng: &mut T, old_range_count: usize, cx: &mut Context<Self>)
@@ -3220,7 +3207,7 @@ impl Buffer {
             edits.push((range, new_text));
         }
         log::info!("mutating buffer {:?} with {:?}", self.replica_id(), edits);
-        self.edit(edits, None, cx);
+        self.edit(edits, None, EditType::Other, cx);
     }
 
     pub fn randomly_undo_redo(&mut self, rng: &mut impl rand::Rng, cx: &mut Context<Self>) {

@@ -6,7 +6,7 @@ use std::ops::Range;
 use util::ResultExt as _;
 
 use language::{BufferSnapshot, JsxTagAutoCloseConfig, Node};
-use text::{Anchor, OffsetRangeExt as _};
+use text::{Anchor, EditType, OffsetRangeExt as _};
 
 use crate::{Editor, SelectionEffects};
 
@@ -568,7 +568,7 @@ pub(crate) fn handle_from(
             }
 
             buffer.update(cx, |buffer, cx| {
-                buffer.edit(edits, None, cx);
+                buffer.edit(edits, None, EditType::Other, cx);
             });
 
             if any_selections_need_update {

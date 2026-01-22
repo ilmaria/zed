@@ -12,6 +12,7 @@ use gpui::{ClipboardEntry, Context, Window, actions};
 use language::{Point, SelectionGoal};
 use std::ops::Range;
 use std::sync::Arc;
+use text::EditType;
 
 actions!(
     vim,
@@ -130,7 +131,7 @@ impl Vim {
                     })
                     .collect::<Vec<_>>();
 
-                editor.edit(edits, cx);
+                editor.edit(edits, EditType::Other, cx);
 
                 editor.change_selections(SelectionEffects::no_scroll(), window, cx, |s| {
                     s.select_ranges(new_selections);
@@ -251,15 +252,19 @@ impl Vim {
                 let new_text = text_for(new_range.clone());
                 final_cursor_position = Some(new_range.start.to_display_point(snapshot));
 
-                editor.edit([(previous_range, new_text), (new_range, previous_text)], cx);
+                editor.edit(
+                    [(previous_range, new_text), (new_range, previous_text)],
+                    EditType::Other,
+                    cx,
+                );
             } else if new_range_start <= previous_range_start && new_range_end >= previous_range_end
             {
                 final_cursor_position = Some(new_range.start.to_display_point(snapshot));
-                editor.edit([(new_range, text_for(previous_range))], cx);
+                editor.edit([(new_range, text_for(previous_range))], EditType::Other, cx);
             } else if previous_range_start <= new_range_start && previous_range_end >= new_range_end
             {
                 final_cursor_position = Some(previous_range.start.to_display_point(snapshot));
-                editor.edit([(previous_range, text_for(new_range))], cx);
+                editor.edit([(previous_range, text_for(new_range))], EditType::Other, cx);
             }
 
             if let Some(position) = final_cursor_position {

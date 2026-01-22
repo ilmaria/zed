@@ -51,6 +51,7 @@ use std::{
     },
     time::Duration,
 };
+use text::EditType;
 use unindent::Unindent as _;
 use util::{path, rel_path::rel_path, uri};
 use workspace::Pane;
@@ -1669,8 +1670,12 @@ async fn test_project_reconnect(
     cx_a.update(|_| drop(project_a2));
 
     // While client A is disconnected, mutate a buffer on both the host and the guest.
-    buffer_a1.update(cx_a, |buf, cx| buf.edit([(0..0, "W")], None, cx));
-    buffer_b1.update(cx_b, |buf, cx| buf.edit([(1..1, "Z")], None, cx));
+    buffer_a1.update(cx_a, |buf, cx| {
+        buf.edit([(0..0, "W")], None, EditType::Other, cx)
+    });
+    buffer_b1.update(cx_b, |buf, cx| {
+        buf.edit([(1..1, "Z")], None, EditType::Other, cx)
+    });
     executor.run_until_parked();
 
     // Client A reconnects. Their project is re-shared, and client B re-joins it.
@@ -1783,8 +1788,12 @@ async fn test_project_reconnect(
     executor.run_until_parked();
 
     // While client B is disconnected, mutate a buffer on both the host and the guest.
-    buffer_a1.update(cx_a, |buf, cx| buf.edit([(1..1, "X")], None, cx));
-    buffer_b1.update(cx_b, |buf, cx| buf.edit([(2..2, "Y")], None, cx));
+    buffer_a1.update(cx_a, |buf, cx| {
+        buf.edit([(1..1, "X")], None, EditType::Other, cx)
+    });
+    buffer_b1.update(cx_b, |buf, cx| {
+        buf.edit([(2..2, "Y")], None, EditType::Other, cx)
+    });
     executor.run_until_parked();
 
     // While disconnected, close project 3
@@ -2387,8 +2396,12 @@ async fn test_propagate_saves_and_fs_changes(
     buffer_c.read_with(cx_c, |buffer, _| {
         assert_eq!(buffer.language().unwrap().name(), "Rust".into());
     });
-    buffer_b.update(cx_b, |buf, cx| buf.edit([(0..0, "i-am-b, ")], None, cx));
-    buffer_c.update(cx_c, |buf, cx| buf.edit([(0..0, "i-am-c, ")], None, cx));
+    buffer_b.update(cx_b, |buf, cx| {
+        buf.edit([(0..0, "i-am-b, ")], None, EditType::Other, cx)
+    });
+    buffer_c.update(cx_c, |buf, cx| {
+        buf.edit([(0..0, "i-am-c, ")], None, EditType::Other, cx)
+    });
 
     // Open and edit that buffer as the host.
     let buffer_a = project_a
@@ -2402,7 +2415,12 @@ async fn test_propagate_saves_and_fs_changes(
 
     buffer_a.read_with(cx_a, |buf, _| assert_eq!(buf.text(), "i-am-c, i-am-b, "));
     buffer_a.update(cx_a, |buf, cx| {
-        buf.edit([(buf.len()..buf.len(), "i-am-a")], None, cx)
+        buf.edit(
+            [(buf.len()..buf.len(), "i-am-a")],
+            None,
+            EditType::Other,
+            cx,
+        )
     });
 
     executor.run_until_parked();
@@ -2423,7 +2441,9 @@ async fn test_propagate_saves_and_fs_changes(
     let save_b = project_b.update(cx_b, |project, cx| {
         project.save_buffer(buffer_b.clone(), cx)
     });
-    buffer_a.update(cx_a, |buf, cx| buf.edit([(0..0, "hi-a, ")], None, cx));
+    buffer_a.update(cx_a, |buf, cx| {
+        buf.edit([(0..0, "hi-a, ")], None, EditType::Other, cx)
+    });
     save_b.await.unwrap();
     assert_eq!(
         client_a.fs().load("/a/file1.rs".as_ref()).await.unwrap(),
@@ -2517,7 +2537,7 @@ async fn test_propagate_saves_and_fs_changes(
     });
 
     new_buffer_a.update(cx_a, |buffer, cx| {
-        buffer.edit([(0..0, "ok")], None, cx);
+        buffer.edit([(0..0, "ok")], None, EditType::Other, cx);
     });
     project_a
         .update(cx_a, |project, cx| {
@@ -3622,7 +3642,9 @@ async fn test_buffer_conflict_after_save(
         .await
         .unwrap();
 
-    buffer_b.update(cx_b, |buf, cx| buf.edit([(0..0, "world ")], None, cx));
+    buffer_b.update(cx_b, |buf, cx| {
+        buf.edit([(0..0, "world ")], None, EditType::Other, cx)
+    });
 
     buffer_b.read_with(cx_b, |buf, _| {
         assert!(buf.is_dirty());
@@ -3642,7 +3664,9 @@ async fn test_buffer_conflict_after_save(
         assert!(!buf.has_conflict());
     });
 
-    buffer_b.update(cx_b, |buf, cx| buf.edit([(0..0, "hello ")], None, cx));
+    buffer_b.update(cx_b, |buf, cx| {
+        buf.edit([(0..0, "hello ")], None, EditType::Other, cx)
+    });
 
     buffer_b.read_with(cx_b, |buf, _| {
         assert!(buf.is_dirty());
@@ -3756,9 +3780,13 @@ async fn test_editing_while_guest_opens_buffer(
 
     // Edit the buffer as client A while client B is still opening it.
     cx_b.executor().simulate_random_delay().await;
-    buffer_a.update(cx_a, |buf, cx| buf.edit([(0..0, "X")], None, cx));
+    buffer_a.update(cx_a, |buf, cx| {
+        buf.edit([(0..0, "X")], None, EditType::Other, cx)
+    });
     cx_b.executor().simulate_random_delay().await;
-    buffer_a.update(cx_a, |buf, cx| buf.edit([(1..1, "Y")], None, cx));
+    buffer_a.update(cx_a, |buf, cx| {
+        buf.edit([(1..1, "Y")], None, EditType::Other, cx)
+    });
 
     let text = buffer_a.read_with(cx_a, |buf, _| buf.text());
     let buffer_b = buffer_b.await.unwrap();
@@ -4465,8 +4493,8 @@ async fn test_reloading_buffer_manually(
     });
     let buffer_b = cx_b.executor().spawn(open_buffer).await.unwrap();
     buffer_b.update(cx_b, |buffer, cx| {
-        buffer.edit([(4..7, "six")], None, cx);
-        buffer.edit([(10..11, "6")], None, cx);
+        buffer.edit([(4..7, "six")], None, EditType::Other, cx);
+        buffer.edit([(10..11, "6")], None, EditType::Other, cx);
         assert_eq!(buffer.text(), "let six = 6;");
         assert!(buffer.is_dirty());
         assert!(!buffer.has_conflict());
@@ -6922,12 +6950,12 @@ async fn test_context_collaboration_with_reconnect(
     // Host and guest make changes
     text_thread_a.update(cx_a, |text_thread, cx| {
         text_thread.buffer().update(cx, |buffer, cx| {
-            buffer.edit([(0..0, "Host change\n")], None, cx)
+            buffer.edit([(0..0, "Host change\n")], None, EditType::Other, cx)
         })
     });
     text_thread_b.update(cx_b, |text_thread, cx| {
         text_thread.buffer().update(cx, |buffer, cx| {
-            buffer.edit([(0..0, "Guest change\n")], None, cx)
+            buffer.edit([(0..0, "Guest change\n")], None, EditType::Other, cx)
         })
     });
     executor.run_until_parked();
@@ -6945,12 +6973,17 @@ async fn test_context_collaboration_with_reconnect(
     server.forbid_connections();
     text_thread_a.update(cx_a, |text_thread, cx| {
         text_thread.buffer().update(cx, |buffer, cx| {
-            buffer.edit([(0..0, "Host offline change\n")], None, cx)
+            buffer.edit([(0..0, "Host offline change\n")], None, EditType::Other, cx)
         })
     });
     text_thread_b.update(cx_b, |text_thread, cx| {
         text_thread.buffer().update(cx, |buffer, cx| {
-            buffer.edit([(0..0, "Guest offline change\n")], None, cx)
+            buffer.edit(
+                [(0..0, "Guest offline change\n")],
+                None,
+                EditType::Other,
+                cx,
+            )
         })
     });
     executor.run_until_parked();

@@ -13,6 +13,7 @@ use gpui::{BackgroundExecutor, Context, Entity, TestAppContext, Window};
 use rpc::{RECEIVE_TIMEOUT, proto::PeerId};
 use serde_json::json;
 use std::ops::Range;
+use text::EditType;
 use util::rel_path::rel_path;
 use workspace::CollaboratorId;
 
@@ -40,13 +41,13 @@ async fn test_core_channel_buffers(
     // Client A edits the buffer
     let buffer_a = channel_buffer_a.read_with(cx_a, |buffer, _| buffer.buffer());
     buffer_a.update(cx_a, |buffer, cx| {
-        buffer.edit([(0..0, "hello world")], None, cx)
+        buffer.edit([(0..0, "hello world")], None, EditType::Other, cx)
     });
     buffer_a.update(cx_a, |buffer, cx| {
-        buffer.edit([(5..5, ", cruel")], None, cx)
+        buffer.edit([(5..5, ", cruel")], None, EditType::Other, cx)
     });
     buffer_a.update(cx_a, |buffer, cx| {
-        buffer.edit([(0..5, "goodbye")], None, cx)
+        buffer.edit([(0..5, "goodbye")], None, EditType::Other, cx)
     });
     buffer_a.update(cx_a, |buffer, cx| buffer.undo(cx));
     assert_eq!(buffer_text(&buffer_a, cx_a), "hello, cruel world");
@@ -73,7 +74,7 @@ async fn test_core_channel_buffers(
     );
     assert_eq!(buffer_text(&buffer_b, cx_b), "hello, cruel world");
     buffer_b.update(cx_b, |buffer, cx| {
-        buffer.edit([(7..12, "beautiful")], None, cx)
+        buffer.edit([(7..12, "beautiful")], None, EditType::Other, cx)
     });
 
     // Both A and B see the new edit
@@ -369,7 +370,7 @@ async fn test_multiple_handles_to_channel_buffer(
 
     channel_buffer.update(cx_a, |buffer, cx| {
         buffer.buffer().update(cx, |buffer, cx| {
-            buffer.edit([(0..0, "hello")], None, cx);
+            buffer.edit([(0..0, "hello")], None, EditType::Other, cx);
         })
     });
     deterministic.run_until_parked();
@@ -490,7 +491,7 @@ async fn test_rejoin_channel_buffer(
 
     channel_buffer_a.update(cx_a, |buffer, cx| {
         buffer.buffer().update(cx, |buffer, cx| {
-            buffer.edit([(0..0, "1")], None, cx);
+            buffer.edit([(0..0, "1")], None, EditType::Other, cx);
         })
     });
     deterministic.run_until_parked();
@@ -502,12 +503,12 @@ async fn test_rejoin_channel_buffer(
     // Both clients make an edit.
     channel_buffer_a.update(cx_a, |buffer, cx| {
         buffer.buffer().update(cx, |buffer, cx| {
-            buffer.edit([(1..1, "2")], None, cx);
+            buffer.edit([(1..1, "2")], None, EditType::Other, cx);
         })
     });
     channel_buffer_b.update(cx_b, |buffer, cx| {
         buffer.buffer().update(cx, |buffer, cx| {
-            buffer.edit([(0..0, "0")], None, cx);
+            buffer.edit([(0..0, "0")], None, EditType::Other, cx);
         })
     });
 
@@ -577,7 +578,7 @@ async fn test_channel_buffers_and_server_restarts(
 
     channel_buffer_a.update(cx_a, |buffer, cx| {
         buffer.buffer().update(cx, |buffer, cx| {
-            buffer.edit([(0..0, "1")], None, cx);
+            buffer.edit([(0..0, "1")], None, EditType::Other, cx);
         })
     });
     deterministic.run_until_parked();
@@ -592,12 +593,12 @@ async fn test_channel_buffers_and_server_restarts(
     // While the server is down, both clients make an edit.
     channel_buffer_a.update(cx_a, |buffer, cx| {
         buffer.buffer().update(cx, |buffer, cx| {
-            buffer.edit([(1..1, "2")], None, cx);
+            buffer.edit([(1..1, "2")], None, EditType::Other, cx);
         })
     });
     channel_buffer_b.update(cx_b, |buffer, cx| {
         buffer.buffer().update(cx, |buffer, cx| {
-            buffer.edit([(0..0, "0")], None, cx);
+            buffer.edit([(0..0, "0")], None, EditType::Other, cx);
         })
     });
 

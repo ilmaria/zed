@@ -194,7 +194,7 @@ mod tests {
     use gpui::{AppContext as _, BackgroundExecutor, TestAppContext, UpdateGlobal};
     use indoc::indoc;
     use language::{
-        Point,
+        EditType, Point,
         language_settings::{CompletionSettingsContent, LspInsertMode, WordsCompletionMode},
     };
     use lsp::Uri;
@@ -371,7 +371,7 @@ mod tests {
         });
 
         // If an edit occurs outside of this editor, the suggestion is still correctly interpolated.
-        cx.update_buffer(|buffer, cx| buffer.edit([(5..5, "o")], None, cx));
+        cx.update_buffer(|buffer, cx| buffer.edit([(5..5, "o")], None, EditType::Other, cx));
         cx.update_editor(|editor, window, cx| {
             assert!(editor.has_active_edit_prediction());
             assert_eq!(editor.display_text(cx), "one.copilot2\ntwo\nthree\n");
@@ -398,7 +398,7 @@ mod tests {
 
         // If an edit occurs outside of this editor but no suggestion is being shown,
         // we won't make it visible.
-        cx.update_buffer(|buffer, cx| buffer.edit([(6..6, "p")], None, cx));
+        cx.update_buffer(|buffer, cx| buffer.edit([(6..6, "p")], None, EditType::Other, cx));
         cx.update_editor(|editor, _, cx| {
             assert!(!editor.has_active_edit_prediction());
             assert_eq!(editor.display_text(cx), "one.cop\ntwo\nthree\n");

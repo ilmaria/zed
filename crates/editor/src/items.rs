@@ -37,7 +37,7 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
-use text::{BufferId, BufferSnapshot, Selection};
+use text::{BufferId, BufferSnapshot, EditType, Selection};
 use theme::Theme;
 use ui::{IconDecorationKind, prelude::*};
 use util::{ResultExt, TryFutureExt, paths::PathExt};
@@ -1630,7 +1630,11 @@ impl SearchableItem for Editor {
 
         if let Some(replacement) = query.replacement_for(&text) {
             self.transact(window, cx, |this, _, cx| {
-                this.edit([(identifier.clone(), Arc::from(&*replacement))], cx);
+                this.edit(
+                    [(identifier.clone(), Arc::from(&*replacement))],
+                    EditType::Other,
+                    cx,
+                );
             });
         }
     }
@@ -1670,7 +1674,7 @@ impl SearchableItem for Editor {
 
         if !edits.is_empty() {
             self.transact(window, cx, |this, _, cx| {
-                this.edit(edits, cx);
+                this.edit(edits, EditType::Other, cx);
             });
         }
     }

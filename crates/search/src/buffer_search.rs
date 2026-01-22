@@ -13,7 +13,7 @@ use crate::{
 use any_vec::AnyVec;
 use collections::HashMap;
 use editor::{
-    DisplayPoint, Editor, EditorSettings, MultiBufferOffset,
+    DisplayPoint, EditType, Editor, EditorSettings, MultiBufferOffset,
     actions::{Backtab, FoldAll, Tab, ToggleFoldAll, UnfoldAll},
 };
 use futures::channel::oneshot;
@@ -1073,6 +1073,7 @@ impl BufferSearchBar {
                         replacement_buffer.edit(
                             [(MultiBufferOffset(0)..len, replacement.unwrap())],
                             None,
+                            EditType::Other,
                             cx,
                         );
                     });
@@ -1098,7 +1099,12 @@ impl BufferSearchBar {
             self.query_editor.update(cx, |query_editor, cx| {
                 query_editor.buffer().update(cx, |query_buffer, cx| {
                     let len = query_buffer.len(cx);
-                    query_buffer.edit([(MultiBufferOffset(0)..len, query)], None, cx);
+                    query_buffer.edit(
+                        [(MultiBufferOffset(0)..len, query)],
+                        None,
+                        EditType::Other,
+                        cx,
+                    );
                 });
             });
             self.set_search_options(options, cx);

@@ -1285,7 +1285,7 @@ mod tests {
     use settings::SettingsStore;
     use std::{any::TypeId, cmp::Reverse, env, sync::Arc};
     use sum_tree::TreeMap;
-    use text::{Patch, Rope};
+    use text::{EditType, Patch, Rope};
     use util::RandomCharIter;
     use util::post_inc;
 
@@ -1473,6 +1473,7 @@ mod tests {
                     (MultiBufferOffset(4)..MultiBufferOffset(4), "z"),
                 ],
                 None,
+                EditType::Other,
                 cx,
             )
         });
@@ -1487,6 +1488,7 @@ mod tests {
             buffer.edit(
                 [(MultiBufferOffset(4)..MultiBufferOffset(5), "D")],
                 None,
+                EditType::Other,
                 cx,
             )
         });
@@ -1524,6 +1526,7 @@ mod tests {
             buffer.edit(
                 [(MultiBufferOffset(3)..MultiBufferOffset(3), "JKL")],
                 None,
+                EditType::Other,
                 cx,
             )
         });

@@ -7,7 +7,7 @@ use std::{
 
 use client::proto;
 use collections::HashSet;
-use editor::{Editor, EditorEvent};
+use editor::{EditType, Editor, EditorEvent};
 use gpui::{Corner, Entity, Subscription, Task, WeakEntity, actions};
 use language::{BinaryStatus, BufferId, ServerHealth};
 use lsp::{LanguageServerId, LanguageServerName, LanguageServerSelector};
@@ -339,6 +339,7 @@ impl LanguageServerState {
                                                 ),
                                             )],
                                             None,
+                                            EditType::Other,
                                             cx,
                                         );
                                         buffer.set_capability(language::Capability::ReadOnly, cx);

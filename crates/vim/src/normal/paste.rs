@@ -8,6 +8,7 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 use settings::Settings;
 use std::cmp;
+use text::EditType;
 use vim_mode_setting::HelixModeSetting;
 
 use crate::{
@@ -190,7 +191,7 @@ impl Vim {
                 {
                     editor.edit_with_block_indent(edits, original_indent_columns, cx);
                 } else {
-                    editor.edit(edits, cx);
+                    editor.edit(edits, EditType::Other, cx);
                 }
 
                 // in line_mode vim will insert the new text on the next (or previous if before) line

@@ -1742,7 +1742,7 @@ pub mod tests {
     use settings::{SettingsContent, SettingsStore};
     use smol::stream::StreamExt;
     use std::{env, sync::Arc};
-    use text::PointUtf16;
+    use text::{EditType, PointUtf16};
     use theme::{LoadThemes, SyntaxTheme};
     use unindent::Unindent as _;
     use util::test::{marked_text_ranges, sample_text};
@@ -2120,7 +2120,7 @@ pub mod tests {
 
             let ix = MultiBufferOffset(snapshot.buffer_snapshot().text().find("seven").unwrap());
             buffer.update(cx, |buffer, cx| {
-                buffer.edit([(ix..ix, "and ")], None, cx);
+                buffer.edit([(ix..ix, "and ")], None, EditType::Other, cx);
             });
 
             let snapshot = map.update(cx, |map, cx| map.snapshot(cx));
@@ -2181,6 +2181,7 @@ pub mod tests {
                     ),
                 ],
                 None,
+                EditType::Other,
                 cx,
             )
         });
@@ -2261,6 +2262,7 @@ pub mod tests {
             buffer.edit(
                 [(MultiBufferOffset(1)..MultiBufferOffset(1), "b")],
                 None,
+                EditType::Other,
                 cx,
             );
         });

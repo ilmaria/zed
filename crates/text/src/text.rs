@@ -33,7 +33,6 @@ use std::{
     ops::{self, Deref, Range, Sub},
     str,
     sync::{Arc, LazyLock},
-    time::{Duration, Instant},
 };
 pub use subscription::*;
 pub use sum_tree::Bias;
@@ -51,7 +50,7 @@ pub type TransactionId = clock::Lamport;
 
 pub struct Buffer {
     snapshot: BufferSnapshot,
-    history: History,
+    pub history: History,
     deferred_ops: OperationQueue<Operation>,
     deferred_replicas: HashSet<ReplicaId>,
     pub lamport_clock: clock::Lamport,
@@ -119,9 +118,37 @@ pub struct BufferSnapshot {
 #[derive(Clone, Debug)]
 pub struct HistoryEntry {
     transaction: Transaction,
-    first_edit_at: Instant,
-    last_edit_at: Instant,
+    pub edit_type: EditType,
     suppress_grouping: bool,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EditType {
+    Other,
+    DeletingLeft,
+    DeletingRight,
+    TypingOther,
+    TypingFirstSpace,
+    TypingConsecutiveSpace,
+}
+
+impl EditType {
+    pub fn is_typing_op(self: Self) -> bool {
+        match self {
+            EditType::TypingOther => true,
+            EditType::TypingFirstSpace => true,
+            EditType::TypingConsecutiveSpace => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_space_op(self: Self) -> bool {
+        match self {
+            EditType::TypingFirstSpace => true,
+            EditType::TypingConsecutiveSpace => true,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -143,13 +170,13 @@ impl HistoryEntry {
     }
 }
 
-struct History {
+pub struct History {
     base_text: Rope,
     operations: TreeMap<clock::Lamport, Operation>,
     undo_stack: Vec<HistoryEntry>,
     redo_stack: Vec<HistoryEntry>,
     transaction_depth: usize,
-    group_interval: Duration,
+    pub last_edit_type: EditType,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -193,11 +220,7 @@ impl History {
             undo_stack: Vec::new(),
             redo_stack: Vec::new(),
             transaction_depth: 0,
-            // Don't group transactions in tests unless we opt in, because it's a footgun.
-            #[cfg(any(test, feature = "test-support"))]
-            group_interval: Duration::ZERO,
-            #[cfg(not(any(test, feature = "test-support")))]
-            group_interval: Duration::from_millis(300),
+            last_edit_type: EditType::Other,
         }
     }
 
@@ -208,7 +231,6 @@ impl History {
     fn start_transaction(
         &mut self,
         start: clock::Global,
-        now: Instant,
         clock: &mut clock::Lamport,
     ) -> Option<TransactionId> {
         self.transaction_depth += 1;
@@ -220,8 +242,7 @@ impl History {
                     start,
                     edit_ids: Default::default(),
                 },
-                first_edit_at: now,
-                last_edit_at: now,
+                edit_type: EditType::Other,
                 suppress_grouping: false,
             });
             Some(id)
@@ -230,7 +251,7 @@ impl History {
         }
     }
 
-    fn end_transaction(&mut self, now: Instant) -> Option<&HistoryEntry> {
+    fn end_transaction(&mut self) -> Option<&HistoryEntry> {
         assert_ne!(self.transaction_depth, 0);
         self.transaction_depth -= 1;
         if self.transaction_depth == 0 {
@@ -247,7 +268,6 @@ impl History {
             } else {
                 self.redo_stack.clear();
                 let entry = self.undo_stack.last_mut().unwrap();
-                entry.last_edit_at = now;
                 Some(entry)
             }
         } else {
@@ -260,14 +280,19 @@ impl History {
         let mut entries = self.undo_stack.iter();
         if let Some(mut entry) = entries.next_back() {
             while let Some(prev_entry) = entries.next_back() {
-                if !prev_entry.suppress_grouping
-                    && entry.first_edit_at - prev_entry.last_edit_at < self.group_interval
+                if prev_entry.suppress_grouping
+                    || entry.edit_type == EditType::Other
+                    || (prev_entry.edit_type.is_typing_op() && !entry.edit_type.is_typing_op())
                 {
-                    entry = prev_entry;
-                    count += 1;
-                } else {
                     break;
                 }
+                if prev_entry.edit_type != EditType::TypingFirstSpace
+                    && prev_entry.edit_type != entry.edit_type
+                {
+                    break;
+                }
+                entry = prev_entry;
+                count += 1;
             }
         }
         self.group_trailing(count)
@@ -296,14 +321,16 @@ impl History {
                     last_entry.transaction.edit_ids.push(*edit_id);
                 }
             }
-
-            if let Some(entry) = entries_to_merge.last_mut() {
-                last_entry.last_edit_at = entry.last_edit_at;
-            }
         }
 
         self.undo_stack.truncate(new_len);
-        self.undo_stack.last().map(|e| e.transaction.id)
+        if let Some(entry) = self.undo_stack.last() {
+            self.last_edit_type = entry.edit_type;
+            Some(entry.transaction.id)
+        } else {
+            self.last_edit_type = EditType::Other;
+            None
+        }
     }
 
     fn finalize_last_transaction(&mut self) -> Option<&Transaction> {
@@ -313,12 +340,11 @@ impl History {
         })
     }
 
-    fn push_transaction(&mut self, transaction: Transaction, now: Instant) {
+    fn push_transaction(&mut self, transaction: Transaction) {
         assert_eq!(self.transaction_depth, 0);
         self.undo_stack.push(HistoryEntry {
             transaction,
-            first_edit_at: now,
-            last_edit_at: now,
+            edit_type: EditType::Other,
             suppress_grouping: false,
         });
     }
@@ -337,7 +363,6 @@ impl History {
     fn push_empty_transaction(
         &mut self,
         start: clock::Global,
-        now: Instant,
         clock: &mut clock::Lamport,
     ) -> TransactionId {
         assert_eq!(self.transaction_depth, 0);
@@ -349,18 +374,18 @@ impl History {
         };
         self.undo_stack.push(HistoryEntry {
             transaction,
-            first_edit_at: now,
-            last_edit_at: now,
+            edit_type: EditType::Other,
             suppress_grouping: false,
         });
         id
     }
 
-    fn push_undo(&mut self, op_id: clock::Lamport) {
+    fn push_undo(&mut self, op_id: clock::Lamport, edit_type: EditType) {
         assert_ne!(self.transaction_depth, 0);
         if let Some(Operation::Edit(_)) = self.operations.get(&op_id) {
             let last_transaction = self.undo_stack.last_mut().unwrap();
             last_transaction.transaction.edit_ids.push(op_id);
+            last_transaction.edit_type = edit_type;
         }
     }
 
@@ -809,11 +834,7 @@ impl Buffer {
         self.deferred_ops.len()
     }
 
-    pub fn transaction_group_interval(&self) -> Duration {
-        self.history.group_interval
-    }
-
-    pub fn edit<R, I, S, T>(&mut self, edits: R) -> Operation
+    pub fn edit<R, I, S, T>(&mut self, edits: R, edit_type: EditType) -> Operation
     where
         R: IntoIterator<IntoIter = I>,
         I: ExactSizeIterator<Item = (Range<S>, T)>,
@@ -829,7 +850,7 @@ impl Buffer {
         let operation = Operation::Edit(self.apply_local_edit(edits, timestamp));
 
         self.history.push(operation.clone());
-        self.history.push_undo(operation.timestamp());
+        self.history.push_undo(operation.timestamp(), edit_type);
         self.snapshot.version.observe(operation.timestamp());
         self.end_transaction();
         operation
@@ -1391,20 +1412,12 @@ impl Buffer {
     }
 
     pub fn start_transaction(&mut self) -> Option<TransactionId> {
-        self.start_transaction_at(Instant::now())
-    }
-
-    pub fn start_transaction_at(&mut self, now: Instant) -> Option<TransactionId> {
         self.history
-            .start_transaction(self.version.clone(), now, &mut self.lamport_clock)
+            .start_transaction(self.version.clone(), &mut self.lamport_clock)
     }
 
     pub fn end_transaction(&mut self) -> Option<(TransactionId, clock::Global)> {
-        self.end_transaction_at(Instant::now())
-    }
-
-    pub fn end_transaction_at(&mut self, now: Instant) -> Option<(TransactionId, clock::Global)> {
-        if let Some(entry) = self.history.end_transaction(now) {
+        if let Some(entry) = self.history.end_transaction() {
             let since = entry.transaction.start.clone();
             let id = self.history.group().unwrap();
             Some((id, since))
@@ -1524,8 +1537,8 @@ impl Buffer {
         Operation::Undo(undo)
     }
 
-    pub fn push_transaction(&mut self, transaction: Transaction, now: Instant) {
-        self.history.push_transaction(transaction, now);
+    pub fn push_transaction(&mut self, transaction: Transaction) {
+        self.history.push_transaction(transaction);
     }
 
     /// Differs from `push_transaction` in that it does not clear the redo stack.
@@ -1541,9 +1554,9 @@ impl Buffer {
     /// cleared is to create transactions with the usual `start_transaction` and
     /// `end_transaction` methods and merging the resulting transactions into
     /// the transaction created by this method
-    pub fn push_empty_transaction(&mut self, now: Instant) -> TransactionId {
+    pub fn push_empty_transaction(&mut self) -> TransactionId {
         self.history
-            .push_empty_transaction(self.version.clone(), now, &mut self.lamport_clock)
+            .push_empty_transaction(self.version.clone(), &mut self.lamport_clock)
     }
 
     pub fn edited_ranges_for_transaction_id<D>(
@@ -1715,7 +1728,7 @@ impl Buffer {
     #[track_caller]
     pub fn edit_via_marked_text(&mut self, marked_string: &str) {
         let edits = self.edits_for_marked_text(marked_string);
-        self.edit(edits);
+        self.edit(edits, EditType::Other);
     }
 
     #[track_caller]
@@ -1812,10 +1825,6 @@ impl Buffer {
         assert!(!self.text().contains("\r\n"));
     }
 
-    pub fn set_group_interval(&mut self, group_interval: Duration) {
-        self.history.group_interval = group_interval;
-    }
-
     pub fn random_byte_range(&self, start_offset: usize, rng: &mut impl rand::Rng) -> Range<usize> {
         let end = self.clip_offset(rng.random_range(start_offset..=self.len()), Bias::Right);
         let start = self.clip_offset(rng.random_range(start_offset..=end), Bias::Right);
@@ -1859,7 +1868,7 @@ impl Buffer {
         let mut edits = self.get_random_edits(rng, edit_count);
         log::info!("mutating buffer {:?} with {:?}", self.replica_id, edits);
 
-        let op = self.edit(edits.iter().cloned());
+        let op = self.edit(edits.iter().cloned(), EditType::Other);
         if let Operation::Edit(edit) = &op {
             assert_eq!(edits.len(), edit.new_text.len());
             for (edit, new_text) in edits.iter_mut().zip(&edit.new_text) {

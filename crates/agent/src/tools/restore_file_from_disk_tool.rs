@@ -185,6 +185,7 @@ mod tests {
     use project::FakeFs;
     use serde_json::json;
     use settings::SettingsStore;
+    use text::EditType;
     use util::path;
 
     fn init_test(cx: &mut TestAppContext) {
@@ -225,7 +226,12 @@ mod tests {
             .await
             .unwrap();
         dirty_buffer.update(cx, |buffer, cx| {
-            buffer.edit([(0..buffer.len(), "in memory: dirty\n")], None, cx);
+            buffer.edit(
+                [(0..buffer.len(), "in memory: dirty\n")],
+                None,
+                EditType::Other,
+                cx,
+            );
         });
         assert!(
             dirty_buffer.read_with(cx, |buffer, _| buffer.is_dirty()),

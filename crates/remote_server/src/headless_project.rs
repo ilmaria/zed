@@ -1,7 +1,7 @@
 use anyhow::{Context as _, Result, anyhow};
 use client::ProjectId;
 use collections::HashSet;
-use language::File;
+use language::{EditType, File};
 use lsp::LanguageServerId;
 
 use extension::ExtensionHostProxy;
@@ -755,7 +755,12 @@ impl HeadlessProject {
         let buffer_id = cx.update(|cx| {
             if buffer.read(cx).is_empty() {
                 buffer.update(cx, |buffer, cx| {
-                    buffer.edit([(0..0, initial_server_settings_content())], None, cx)
+                    buffer.edit(
+                        [(0..0, initial_server_settings_content())],
+                        None,
+                        EditType::Other,
+                        cx,
+                    )
                 });
             }
 

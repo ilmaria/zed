@@ -33,7 +33,7 @@ use std::{
     rc::Rc,
     sync::Arc,
 };
-use text::OffsetRangeExt;
+use text::{EditType, OffsetRangeExt};
 use ui::{Disclosure, Toggleable, prelude::*};
 use util::{ResultExt, debug_panic, rel_path::RelPath};
 use workspace::{Workspace, notifications::NotifyResultExt as _};
@@ -259,7 +259,7 @@ impl MentionSet {
                 this.update(cx, |this, cx| {
                     editor.update(cx, |editor, cx| {
                         // Remove mention
-                        editor.edit([(start_anchor..end_anchor, "")], cx);
+                        editor.edit([(start_anchor..end_anchor, "")], EditType::Other, cx);
                     });
                     this.mentions.remove(&crease_id);
                 })
@@ -637,6 +637,7 @@ pub(crate) fn paste_images_as_context(
                             multi_buffer::Anchor::max()..multi_buffer::Anchor::max(),
                             format!("{replacement_text} "),
                         )],
+                        EditType::Other,
                         cx,
                     );
                     (*excerpt_id, text_anchor, multibuffer_anchor)
@@ -695,7 +696,7 @@ pub(crate) fn paste_images_as_context(
 
             if task.await.notify_async_err(cx).is_none() {
                 editor.update(cx, |editor, cx| {
-                    editor.edit([(start_anchor..end_anchor, "")], cx);
+                    editor.edit([(start_anchor..end_anchor, "")], EditType::Other, cx);
                 });
                 mention_set.update(cx, |mention_set, _cx| {
                     mention_set.remove_mention(&crease_id)

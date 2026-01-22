@@ -35,6 +35,7 @@ use std::{
     time::Duration,
 };
 use supermaven::{AccountStatus, Supermaven};
+use text::EditType;
 use ui::{
     Clickable, ContextMenu, ContextMenuEntry, DocumentationSide, IconButton, IconButtonShape,
     Indicator, PopoverMenu, PopoverMenuHandle, ProgressBar, Tooltip, prelude::*,
@@ -1279,6 +1280,7 @@ async fn open_disabled_globs_setting_in_editor(
                     edits
                         .into_iter()
                         .map(|(r, s)| (MultiBufferOffset(r.start)..MultiBufferOffset(r.end), s)),
+                    EditType::Other,
                     cx,
                 );
             }

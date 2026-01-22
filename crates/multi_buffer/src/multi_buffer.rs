@@ -49,7 +49,7 @@ use std::{
 };
 use sum_tree::{Bias, Cursor, Dimension, Dimensions, SumTree, TreeMap};
 use text::{
-    BufferId, Edit, LineIndent, TextSummary,
+    BufferId, Edit, EditType, LineIndent, TextSummary,
     locator::Locator,
     subscription::{Subscription, Topic},
 };
@@ -1256,32 +1256,35 @@ impl MultiBuffer {
         &mut self,
         edits: I,
         autoindent_mode: Option<AutoindentMode>,
+        edit_type: EditType,
         cx: &mut Context<Self>,
     ) where
         I: IntoIterator<Item = (Range<S>, T)>,
         S: ToOffset,
         T: Into<Arc<str>>,
     {
-        self.edit_internal(edits, autoindent_mode, true, cx);
+        self.edit_internal(edits, autoindent_mode, edit_type, true, cx);
     }
 
     pub fn edit_non_coalesce<I, S, T>(
         &mut self,
         edits: I,
         autoindent_mode: Option<AutoindentMode>,
+        edit_type: EditType,
         cx: &mut Context<Self>,
     ) where
         I: IntoIterator<Item = (Range<S>, T)>,
         S: ToOffset,
         T: Into<Arc<str>>,
     {
-        self.edit_internal(edits, autoindent_mode, false, cx);
+        self.edit_internal(edits, autoindent_mode, edit_type, false, cx);
     }
 
     fn edit_internal<I, S, T>(
         &mut self,
         edits: I,
         autoindent_mode: Option<AutoindentMode>,
+        edit_type: EditType,
         coalesce_adjacent: bool,
         cx: &mut Context<Self>,
     ) where
@@ -1305,13 +1308,21 @@ impl MultiBuffer {
             })
             .collect::<Vec<_>>();
 
-        return edit_internal(self, edits, autoindent_mode, coalesce_adjacent, cx);
+        return edit_internal(
+            self,
+            edits,
+            autoindent_mode,
+            edit_type,
+            coalesce_adjacent,
+            cx,
+        );
 
         // Non-generic part of edit, hoisted out to avoid blowing up LLVM IR.
         fn edit_internal(
             this: &mut MultiBuffer,
             edits: Vec<(Range<MultiBufferOffset>, Arc<str>)>,
             mut autoindent_mode: Option<AutoindentMode>,
+            mut edit_type: EditType,
             coalesce_adjacent: bool,
             cx: &mut Context<MultiBuffer>,
         ) {
@@ -1403,12 +1414,29 @@ impl MultiBuffer {
                             autoindent_mode.clone()
                         };
 
+                    let prev_edit_type = buffer.last_edit_type();
+                    if edit_type == EditType::TypingFirstSpace
+                        && prev_edit_type == EditType::TypingFirstSpace
+                    {
+                        edit_type = EditType::TypingConsecutiveSpace;
+                    }
+
                     if coalesce_adjacent {
-                        buffer.edit(deletions, deletion_autoindent_mode, cx);
-                        buffer.edit(insertions, insertion_autoindent_mode, cx);
+                        buffer.edit(deletions, deletion_autoindent_mode, edit_type, cx);
+                        buffer.edit(insertions, insertion_autoindent_mode, edit_type, cx);
                     } else {
-                        buffer.edit_non_coalesce(deletions, deletion_autoindent_mode, cx);
-                        buffer.edit_non_coalesce(insertions, insertion_autoindent_mode, cx);
+                        buffer.edit_non_coalesce(
+                            deletions,
+                            deletion_autoindent_mode,
+                            edit_type,
+                            cx,
+                        );
+                        buffer.edit_non_coalesce(
+                            insertions,
+                            insertion_autoindent_mode,
+                            edit_type,
+                            cx,
+                        );
                     }
                 })
             }
@@ -3732,7 +3760,7 @@ impl MultiBuffer {
         log::info!("mutating multi-buffer with {:?}", edits);
         drop(snapshot);
 
-        self.edit(edits, None, cx);
+        self.edit(edits, None, EditType::Other, cx);
     }
 
     pub fn randomly_edit_excerpts(

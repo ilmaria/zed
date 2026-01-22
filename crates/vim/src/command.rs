@@ -29,6 +29,7 @@ use std::{
     time::Instant,
 };
 use task::{HideStrategy, RevealStrategy, SpawnInTerminal, TaskId};
+use text::EditType;
 use ui::ActiveTheme;
 use util::{
     ResultExt,
@@ -735,7 +736,7 @@ pub fn register(editor: &mut Editor, cx: &mut Context<Vim>) {
 
                 let _ = editor.update_in(cx, |editor, window, cx| {
                     editor.transact(window, cx, |editor, window, cx| {
-                        editor.edit([(edit_range.clone(), text)], cx);
+                        editor.edit([(edit_range.clone(), text)], EditType::Other, cx);
                         let snapshot = editor.buffer().read(cx).snapshot(cx);
                         editor.change_selections(Default::default(), window, cx, |s| {
                             let point = if is_end_of_file {
@@ -2585,7 +2586,7 @@ impl ShellExec {
             vim.update_in(cx, |vim, window, cx| {
                 vim.update_editor(cx, |_, editor, cx| {
                     editor.transact(window, cx, |editor, window, cx| {
-                        editor.edit([(range.clone(), text)], cx);
+                        editor.edit([(range.clone(), text)], EditType::Other, cx);
                         let snapshot = editor.buffer().read(cx).snapshot(cx);
                         editor.change_selections(Default::default(), window, cx, |s| {
                             let point = if is_read {

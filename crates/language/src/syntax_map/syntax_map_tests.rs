@@ -6,7 +6,7 @@ use gpui::App;
 use pretty_assertions::assert_eq;
 use rand::rngs::StdRng;
 use std::{env, ops::Range, sync::Arc};
-use text::{Buffer, BufferId, ReplicaId};
+use text::{Buffer, BufferId, EditType, ReplicaId};
 use tree_sitter::Node;
 use unindent::Unindent as _;
 use util::test::marked_text_ranges;
@@ -147,7 +147,7 @@ fn test_syntax_map_layers_for_range(cx: &mut App) {
 
     // Replace a vec! macro invocation with a plain slice, removing a syntactic layer.
     let macro_name_range = range_for_text(&buffer, "vec!");
-    buffer.edit([(macro_name_range, "&")]);
+    buffer.edit([(macro_name_range, "&")], EditType::Other);
     syntax_map.interpolate(&buffer);
     syntax_map.reparse(language.clone(), &buffer);
 
@@ -218,7 +218,7 @@ fn test_dynamic_language_injection(cx: &mut App) {
 
     // Replace `rs` with a path to ending in `.rb` in code block.
     let macro_name_range = range_for_text(&buffer, "rs");
-    buffer.edit([(macro_name_range, "foo/bar/baz.rb")]);
+    buffer.edit([(macro_name_range, "foo/bar/baz.rb")], EditType::Other);
     syntax_map.interpolate(&buffer);
     syntax_map.reparse(markdown.clone(), &buffer);
     syntax_map.reparse(markdown_inline.clone(), &buffer);
@@ -235,7 +235,7 @@ fn test_dynamic_language_injection(cx: &mut App) {
 
     // Replace Ruby with a language that hasn't been loaded yet.
     let macro_name_range = range_for_text(&buffer, "foo/bar/baz.rb");
-    buffer.edit([(macro_name_range, "html")]);
+    buffer.edit([(macro_name_range, "html")], EditType::Other);
     syntax_map.interpolate(&buffer);
     syntax_map.reparse(markdown.clone(), &buffer);
     syntax_map.reparse(markdown_inline.clone(), &buffer);

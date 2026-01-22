@@ -263,11 +263,11 @@ impl MultiBuffer {
         cx: &mut Context<Self>,
     ) -> Option<TransactionId> {
         if let Some(buffer) = self.as_singleton() {
-            return buffer.update(cx, |buffer, _| buffer.start_transaction_at(now));
+            return buffer.update(cx, |buffer, _| buffer.start_transaction());
         }
 
         for BufferState { buffer, .. } in self.buffers.values() {
-            buffer.update(cx, |buffer, _| buffer.start_transaction_at(now));
+            buffer.update(cx, |buffer, _| buffer.start_transaction());
         }
         self.history.start_transaction(now)
     }
@@ -294,13 +294,12 @@ impl MultiBuffer {
         cx: &mut Context<Self>,
     ) -> Option<TransactionId> {
         if let Some(buffer) = self.as_singleton() {
-            return buffer.update(cx, |buffer, cx| buffer.end_transaction_at(now, cx));
+            return buffer.update(cx, |buffer, cx| buffer.end_transaction(cx));
         }
 
         let mut buffer_transactions = HashMap::default();
         for BufferState { buffer, .. } in self.buffers.values() {
-            if let Some(transaction_id) =
-                buffer.update(cx, |buffer, cx| buffer.end_transaction_at(now, cx))
+            if let Some(transaction_id) = buffer.update(cx, |buffer, cx| buffer.end_transaction(cx))
             {
                 buffer_transactions.insert(buffer.read(cx).remote_id(), transaction_id);
             }

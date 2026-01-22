@@ -1,6 +1,6 @@
 use gpui::{App, Context, Entity, EventEmitter, SharedString};
 use std::{cmp::Ordering, ops::Range, sync::Arc};
-use text::{Anchor, BufferId, OffsetRangeExt as _};
+use text::{Anchor, BufferId, EditType, OffsetRangeExt as _};
 
 pub struct ConflictSet {
     pub has_conflict: bool,
@@ -124,7 +124,7 @@ impl ConflictRegion {
         }
 
         buffer.update(cx, |buffer, cx| {
-            buffer.edit(deletions, None, cx);
+            buffer.edit(deletions, None, EditType::Other, cx);
         });
     }
 }
@@ -597,6 +597,7 @@ mod tests {
                     (14..14, "=======\nTWO\n>>>>>>> branch\n"),
                 ],
                 None,
+                EditType::Other,
                 cx,
             );
         });

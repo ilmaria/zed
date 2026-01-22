@@ -32,6 +32,7 @@ use gpui::{Context, Window, actions};
 use language::{Point, SelectionGoal};
 use log::error;
 use multi_buffer::MultiBufferRow;
+use text::EditType;
 
 actions!(
     vim,
@@ -361,7 +362,7 @@ pub(crate) fn register(editor: &mut Editor, cx: &mut Context<Vim>) {
             });
             vim.undo_last_line_tx = editor.transact(window, cx, |editor, window, cx| {
                 editor.change_list.invert_last_group();
-                editor.edit(edits, cx);
+                editor.edit(edits, EditType::Other, cx);
                 editor.change_selections(SelectionEffects::default(), window, cx, |s| {
                     s.select_anchor_ranges(anchors.into_iter().map(|a| a..a));
                 })
@@ -809,7 +810,7 @@ impl Vim {
                         (start_of_line..start_of_line, "\n".repeat(count))
                     })
                     .collect::<Vec<_>>();
-                editor.edit(edits, cx);
+                editor.edit(edits, EditType::Other, cx);
             });
         });
     }
@@ -845,7 +846,7 @@ impl Vim {
                         (end_of_line..end_of_line, "\n".repeat(count))
                     })
                     .collect::<Vec<_>>();
-                editor.edit(edits, cx);
+                editor.edit(edits, EditType::Other, cx);
 
                 editor.change_selections(SelectionEffects::no_scroll(), window, cx, |s| {
                     s.move_with(|_, selection| {
@@ -1019,7 +1020,7 @@ impl Vim {
                     ));
                 }
 
-                editor.edit(edits, cx);
+                editor.edit(edits, EditType::Other, cx);
                 if is_return_char {
                     editor.newline(&editor::actions::Newline, window, cx);
                 }

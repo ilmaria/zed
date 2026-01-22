@@ -2074,6 +2074,7 @@ mod tests {
     use rand::prelude::*;
     use settings::SettingsStore;
     use std::env;
+    use text::EditType;
     use util::RandomCharIter;
 
     #[gpui::test]
@@ -2256,7 +2257,12 @@ mod tests {
 
         // Insert a line break, separating two block decorations into separate lines.
         let buffer_snapshot = buffer.update(cx, |buffer, cx| {
-            buffer.edit([(Point::new(1, 1)..Point::new(1, 1), "!!!\n")], None, cx);
+            buffer.edit(
+                [(Point::new(1, 1)..Point::new(1, 1), "!!!\n")],
+                None,
+                EditType::Other,
+                cx,
+            );
             buffer.snapshot(cx)
         });
 
@@ -2516,7 +2522,12 @@ mod tests {
         assert_eq!(blocks_snapshot.text(), "line1\n\n\n\n\nline5");
 
         let buffer_snapshot = buffer.update(cx, |buffer, cx| {
-            buffer.edit([(Point::new(2, 0)..Point::new(3, 0), "")], None, cx);
+            buffer.edit(
+                [(Point::new(2, 0)..Point::new(3, 0), "")],
+                None,
+                EditType::Other,
+                cx,
+            );
             buffer.snapshot(cx)
         });
         let (inlay_snapshot, inlay_edits) =
@@ -2536,6 +2547,7 @@ mod tests {
                     "\nline 2.1\nline2.2\nline 2.3\nline 2.4",
                 )],
                 None,
+                EditType::Other,
                 cx,
             );
             buffer.snapshot(cx)

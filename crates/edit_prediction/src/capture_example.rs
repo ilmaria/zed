@@ -253,6 +253,7 @@ mod tests {
     use serde_json::json;
     use settings::SettingsStore;
     use std::path::Path;
+    use text::EditType;
 
     #[gpui::test]
     async fn test_capture_example(cx: &mut TestAppContext) {
@@ -337,9 +338,19 @@ mod tests {
 
         buffer.update(cx, |buffer, cx| {
             let point = Point::new(6, 0);
-            buffer.edit([(point..point, "    // comment 3\n")], None, cx);
+            buffer.edit(
+                [(point..point, "    // comment 3\n")],
+                None,
+                EditType::Other,
+                cx,
+            );
             let point = Point::new(4, 0);
-            buffer.edit([(point..point, "    // comment 4\n")], None, cx);
+            buffer.edit(
+                [(point..point, "    // comment 4\n")],
+                None,
+                EditType::Other,
+                cx,
+            );
 
             pretty_assertions::assert_eq!(
                 buffer.text(),
@@ -377,7 +388,12 @@ mod tests {
         cx.run_until_parked();
         external_buffer.update(cx, |buffer, cx| {
             let point = Point::new(0, 0);
-            buffer.edit([(point..point, "// external edit\n")], None, cx);
+            buffer.edit(
+                [(point..point, "// external edit\n")],
+                None,
+                EditType::Other,
+                cx,
+            );
         });
         cx.run_until_parked();
 

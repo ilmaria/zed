@@ -1,6 +1,7 @@
 use editor::{Editor, SelectionEffects, movement};
 use gpui::{Context, Window, actions};
 use language::Point;
+use text::EditType;
 
 use crate::{
     Mode, Vim,
@@ -99,7 +100,7 @@ impl Vim {
                     .all::<Point>(&editor.display_snapshot(cx))
                     .into_iter();
                 let edits = selections.map(|selection| (selection.start..selection.end, ""));
-                editor.edit(edits, cx);
+                editor.edit(edits, EditType::Other, cx);
             });
         });
         self.switch_mode(Mode::Insert, true, window, cx);

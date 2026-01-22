@@ -23,7 +23,7 @@ use rpc::{
 };
 
 use settings::Settings;
-use std::{io, sync::Arc, time::Instant};
+use std::{io, sync::Arc};
 use text::{BufferId, ReplicaId};
 use util::{ResultExt as _, TryFutureExt, debug_panic, maybe, rel_path::RelPath};
 use worktree::{File, PathChange, ProjectEntryId, Worktree, WorktreeId, WorktreeSettings};
@@ -290,7 +290,7 @@ impl RemoteBufferStore {
 
                 if push_to_history {
                     buffer.update(cx, |buffer, _| {
-                        buffer.push_transaction(transaction.clone(), Instant::now());
+                        buffer.push_transaction(transaction.clone());
                         buffer.finalize_last_transaction();
                     });
                 }

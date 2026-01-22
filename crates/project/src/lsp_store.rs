@@ -121,7 +121,7 @@ use std::{
     vec,
 };
 use sum_tree::Dimensions;
-use text::{Anchor, BufferId, LineEnding, OffsetRangeExt, ToPoint as _};
+use text::{Anchor, BufferId, EditType, LineEnding, OffsetRangeExt, ToPoint as _};
 
 use util::{
     ConnectionResult, ResultExt as _, debug_panic, defer, maybe, merge_json_value_into,
@@ -1459,7 +1459,7 @@ impl LocalLspStore {
                     .start_transaction()
                     .context("transaction already open")?;
                 buffer.end_transaction(cx);
-                let transaction_id = buffer.push_empty_transaction(cx.background_executor().now());
+                let transaction_id = buffer.push_empty_transaction();
                 buffer.finalize_last_transaction();
                 anyhow::Ok(transaction_id)
             })?;
@@ -1747,7 +1747,7 @@ impl LocalLspStore {
                         formatting_transaction_id,
                         cx,
                         |buffer, cx| {
-                            buffer.edit(edits, None, cx);
+                            buffer.edit(edits, None, EditType::Other, cx);
                         },
                     )?;
                 }
@@ -1977,7 +1977,7 @@ impl LocalLspStore {
                                         "Applying edits {edits:?}. Content: {:?}",
                                         buffer.text()
                                     );
-                                    buffer.edit(edits, None, cx);
+                                    buffer.edit(edits, None, EditType::Other, cx);
                                     zlog::info!("Applied edits. New Content: {:?}", buffer.text());
                                 },
                             )?;
@@ -2070,7 +2070,7 @@ impl LocalLspStore {
                                     // and pop the combined transaction off the history stack
                                     // later if push_to_history is false
                                     if buffer.get_transaction(transaction.id).is_none() {
-                                        buffer.push_transaction(transaction, Instant::now());
+                                        buffer.push_transaction(transaction);
                                     }
                                     buffer.merge_transactions(
                                         transaction_id_project_transaction,
@@ -2992,7 +2992,7 @@ impl LocalLspStore {
             buffer.finalize_last_transaction();
             buffer.start_transaction();
             for (range, text) in edits {
-                buffer.edit([(range, text)], None, cx);
+                buffer.edit([(range, text)], None, EditType::Other, cx);
             }
 
             if buffer.end_transaction(cx).is_some() {
@@ -3295,7 +3295,7 @@ impl LocalLspStore {
                         buffer.finalize_last_transaction();
                         buffer.start_transaction();
                         for (range, text) in edits {
-                            buffer.edit([(range, text)], None, cx);
+                            buffer.edit([(range, text)], None, EditType::Other, cx);
                         }
 
                         buffer.end_transaction(cx).and_then(|transaction_id| {
@@ -6737,7 +6737,7 @@ impl LspStore {
                         .await?;
                     if push_to_history {
                         buffer_handle.update(cx, |buffer, _| {
-                            buffer.push_transaction(transaction.clone(), Instant::now());
+                            buffer.push_transaction(transaction.clone());
                             buffer.finalize_last_transaction();
                         });
                     }
@@ -6824,7 +6824,7 @@ impl LspStore {
                             //Skip additional edits which overlap with the primary completion edit
                             //https://github.com/zed-industries/zed/pull/1871
                             if !has_overlap {
-                                buffer.edit([(range, text)], None, cx);
+                                buffer.edit([(range, text)], None, EditType::Other, cx);
                             }
                         }
 

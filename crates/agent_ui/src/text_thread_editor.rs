@@ -55,7 +55,7 @@ use std::{
     sync::Arc,
     time::Duration,
 };
-use text::SelectionGoal;
+use text::{EditType, SelectionGoal};
 use ui::{
     ButtonLike, CommonAnimationExt, Disclosure, ElevationIndex, KeyBinding, PopoverMenuHandle,
     TintColor, Tooltip, prelude::*,
@@ -1928,7 +1928,7 @@ impl TextThreadEditor {
                         .all::<MultiBufferOffset>(&editor.display_snapshot(cx))
                         .into_iter()
                         .map(|selection| (selection.start..selection.end, "\n"));
-                    editor.edit(edits, cx);
+                    editor.edit(edits, EditType::Other, cx);
 
                     let snapshot = editor.buffer().read(cx).snapshot(cx);
                     for selection in editor
@@ -3146,7 +3146,7 @@ mod tests {
     use language::{Buffer, LanguageRegistry};
     use pretty_assertions::assert_eq;
     use prompt_store::PromptBuilder;
-    use text::OffsetRangeExt;
+    use text::{EditType, OffsetRangeExt};
     use unindent::Unindent;
     use util::path;
 
@@ -3404,7 +3404,7 @@ mod tests {
             loop {
                 if role == message_1.role {
                     text_thread.buffer().update(cx, |buffer, cx| {
-                        buffer.edit([(message_1.offset_range, text)], None, cx);
+                        buffer.edit([(message_1.offset_range, text)], None, EditType::Other, cx);
                     });
                     break;
                 }
@@ -3420,7 +3420,7 @@ mod tests {
                 let message = text_thread.messages(cx).last().unwrap();
                 last_message_id = message.id;
                 text_thread.buffer().update(cx, |buffer, cx| {
-                    buffer.edit([(message.offset_range, text)], None, cx);
+                    buffer.edit([(message.offset_range, text)], None, EditType::Other, cx);
                 })
             }
 

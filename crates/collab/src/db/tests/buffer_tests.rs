@@ -1,7 +1,7 @@
 use super::*;
 use crate::test_both_dbs;
 use language::proto::{self, serialize_version};
-use text::{Buffer, ReplicaId};
+use text::{Buffer, EditType, ReplicaId};
 
 test_both_dbs!(
     test_channel_buffers,
@@ -76,9 +76,9 @@ async fn test_channel_buffers(db: &Arc<Database>) {
         "".to_string(),
     );
     let operations = vec![
-        buffer_a.edit([(0..0, "hello world")]),
-        buffer_a.edit([(5..5, ", cruel")]),
-        buffer_a.edit([(0..5, "goodbye")]),
+        buffer_a.edit([(0..0, "hello world")], EditType::Other),
+        buffer_a.edit([(5..5, ", cruel")], EditType::Other),
+        buffer_a.edit([(0..5, "goodbye")], EditType::Other),
         buffer_a.undo().unwrap().1,
     ];
     assert_eq!(buffer_a.text(), "hello, cruel world");
@@ -255,9 +255,9 @@ async fn test_channel_buffers_last_operations(db: &Database) {
         user_id,
         db,
         vec![
-            text_buffers[0].edit([(0..0, "a")]),
-            text_buffers[0].edit([(0..0, "b")]),
-            text_buffers[0].edit([(0..0, "c")]),
+            text_buffers[0].edit([(0..0, "a")], EditType::Other),
+            text_buffers[0].edit([(0..0, "b")], EditType::Other),
+            text_buffers[0].edit([(0..0, "c")], EditType::Other),
         ],
     )
     .await;
@@ -267,9 +267,9 @@ async fn test_channel_buffers_last_operations(db: &Database) {
         user_id,
         db,
         vec![
-            text_buffers[1].edit([(0..0, "d")]),
-            text_buffers[1].edit([(1..1, "e")]),
-            text_buffers[1].edit([(2..2, "f")]),
+            text_buffers[1].edit([(0..0, "d")], EditType::Other),
+            text_buffers[1].edit([(1..1, "e")], EditType::Other),
+            text_buffers[1].edit([(2..2, "f")], EditType::Other),
         ],
     )
     .await;
@@ -292,8 +292,8 @@ async fn test_channel_buffers_last_operations(db: &Database) {
         user_id,
         db,
         vec![
-            text_buffers[1].edit([(0..0, "g")]),
-            text_buffers[1].edit([(0..0, "h")]),
+            text_buffers[1].edit([(0..0, "g")], EditType::Other),
+            text_buffers[1].edit([(0..0, "h")], EditType::Other),
         ],
     )
     .await;
@@ -302,7 +302,7 @@ async fn test_channel_buffers_last_operations(db: &Database) {
         buffers[2].channel_id,
         user_id,
         db,
-        vec![text_buffers[2].edit([(0..0, "i")])],
+        vec![text_buffers[2].edit([(0..0, "i")], EditType::Other)],
     )
     .await;
 

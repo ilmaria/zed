@@ -13,6 +13,7 @@ use gpui::{AsyncApp, Entity};
 use language::{Anchor, Buffer, OffsetRangeExt as _, TextBufferSnapshot, text_diff};
 use postage::stream::Stream as _;
 use project::Project;
+use text::EditType;
 use util::{paths::PathStyle, rel_path::RelPath};
 use worktree::Worktree;
 
@@ -141,7 +142,7 @@ pub async fn apply_diff(
 
                 let edits = mem::take(&mut edits);
                 buffer.update(cx, |buffer, cx| {
-                    buffer.edit(edits, None, cx);
+                    buffer.edit(edits, None, EditType::Other, cx);
                 });
             }
         }

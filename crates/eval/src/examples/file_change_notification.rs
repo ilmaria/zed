@@ -1,6 +1,7 @@
 use agent_settings::AgentProfileId;
 use anyhow::Result;
 use async_trait::async_trait;
+use language::EditType;
 
 use crate::example::{Example, ExampleContext, ExampleMetadata, JudgeAssertion};
 
@@ -53,7 +54,7 @@ impl Example for FileChangeNotificationExample {
 
         // Edit the README buffer - the model should get a notification on next turn
         buffer.update(cx, |buffer, cx| {
-            buffer.edit([(0..buffer.len(), "Surprise!")], None, cx);
+            buffer.edit([(0..buffer.len(), "Surprise!")], None, EditType::Other, cx);
         });
 
         // Run for some more turns.

@@ -11,7 +11,7 @@ use std::{
     rc::Rc,
     sync::Arc,
 };
-use text::Bias;
+use text::{Bias, EditType};
 
 #[gpui::test(
     iterations = 100,
@@ -209,6 +209,7 @@ impl RandomizedTest for RandomChannelBufferTest {
                                 (start..end, text)
                             }),
                             None,
+                            EditType::Other,
                             cx,
                         );
                     });

@@ -695,7 +695,7 @@ mod tests {
     use serde_json::json;
     use settings::SettingsStore;
     use std::{cmp, env, ops::Range, path::Path};
-    use text::BufferId;
+    use text::{BufferId, EditType};
     use unindent::Unindent as _;
     use util::{RandomCharIter, path};
 
@@ -993,7 +993,12 @@ mod tests {
 
         // Modify a single line, at the start of the line
         buffer.update(cx, |buffer, cx| {
-            buffer.edit([(Point::new(0, 0)..Point::new(0, 0), "X")], None, cx);
+            buffer.edit(
+                [(Point::new(0, 0)..Point::new(0, 0), "X")],
+                None,
+                EditType::Other,
+                cx,
+            );
         });
         git_blame.update(cx, |blame, cx| {
             assert_blame_rows(
@@ -1006,7 +1011,12 @@ mod tests {
         });
         // Modify a single line, in the middle of the line
         buffer.update(cx, |buffer, cx| {
-            buffer.edit([(Point::new(1, 2)..Point::new(1, 2), "X")], None, cx);
+            buffer.edit(
+                [(Point::new(1, 2)..Point::new(1, 2), "X")],
+                None,
+                EditType::Other,
+                cx,
+            );
         });
         git_blame.update(cx, |blame, cx| {
             assert_blame_rows(
@@ -1034,7 +1044,12 @@ mod tests {
         });
         // Insert a newline at the end
         buffer.update(cx, |buffer, cx| {
-            buffer.edit([(Point::new(3, 6)..Point::new(3, 6), "\n")], None, cx);
+            buffer.edit(
+                [(Point::new(3, 6)..Point::new(3, 6), "\n")],
+                None,
+                EditType::Other,
+                cx,
+            );
         });
         // Only the new line is marked as edited:
         git_blame.update(cx, |blame, cx| {
@@ -1061,7 +1076,12 @@ mod tests {
         // Usage example
         // Insert a newline at the start of the row
         buffer.update(cx, |buffer, cx| {
-            buffer.edit([(Point::new(2, 0)..Point::new(2, 0), "\n")], None, cx);
+            buffer.edit(
+                [(Point::new(2, 0)..Point::new(2, 0), "\n")],
+                None,
+                EditType::Other,
+                cx,
+            );
         });
         // Only the new line is marked as edited:
         git_blame.update(cx, |blame, cx| {

@@ -6,6 +6,7 @@ use agent::{AgentTool, ReadFileTool, ReadFileToolInput, Templates, Thread, ToolC
 use client::{Client, UserStore};
 use clock::FakeSystemClock;
 use collections::{HashMap, HashSet};
+use editor::EditType;
 use language_model::{LanguageModelToolResultContent, fake_provider::FakeLanguageModel};
 use prompt_store::ProjectContext;
 
@@ -106,7 +107,7 @@ async fn test_basic_remote_editing(cx: &mut TestAppContext, server_cx: &mut Test
     buffer.update(cx, |buffer, cx| {
         assert_eq!(buffer.text(), "fn one() -> usize { 1 }");
         let ix = buffer.text().find('1').unwrap();
-        buffer.edit([(ix..ix + 1, "100")], None, cx);
+        buffer.edit([(ix..ix + 1, "100")], None, EditType::Other, cx);
     });
 
     // The user saves the buffer. The new contents are written to the
@@ -830,7 +831,7 @@ async fn test_remote_reload(cx: &mut TestAppContext, server_cx: &mut TestAppCont
 
     buffer.update(cx, |buffer, cx| {
         assert_eq!(buffer.text(), "bangles");
-        buffer.edit([(0..0, "a")], None, cx);
+        buffer.edit([(0..0, "a")], None, EditType::Other, cx);
     });
 
     fs.save(
@@ -1169,7 +1170,7 @@ async fn test_reconnect(cx: &mut TestAppContext, server_cx: &mut TestAppContext)
     buffer.update(cx, |buffer, cx| {
         assert_eq!(buffer.text(), "fn one() -> usize { 1 }");
         let ix = buffer.text().find('1').unwrap();
-        buffer.edit([(ix..ix + 1, "100")], None, cx);
+        buffer.edit([(ix..ix + 1, "100")], None, EditType::Other, cx);
     });
 
     let client = cx.read(|cx| project.read(cx).remote_client().unwrap());

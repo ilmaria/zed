@@ -10,6 +10,7 @@ use gpui::{Context, Window, actions};
 use language::{Point, Selection, SelectionGoal};
 use multi_buffer::MultiBufferRow;
 use search::BufferSearchBar;
+use text::EditType;
 use util::ResultExt;
 use workspace::searchable::Direction;
 
@@ -787,7 +788,7 @@ impl Vim {
                     }
                 }
 
-                editor.edit(edits, cx);
+                editor.edit(edits, EditType::Other, cx);
                 editor.change_selections(SelectionEffects::no_scroll(), window, cx, |s| {
                     s.select_ranges(stable_anchors)
                 });

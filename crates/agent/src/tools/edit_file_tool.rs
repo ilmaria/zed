@@ -640,6 +640,7 @@ mod tests {
     use prompt_store::ProjectContext;
     use serde_json::json;
     use settings::SettingsStore;
+    use text::EditType;
     use util::{path, rel_path::rel_path};
 
     #[gpui::test]
@@ -2212,7 +2213,12 @@ mod tests {
         // Make an in-memory edit to the buffer (making it dirty)
         buffer.update(cx, |buffer, cx| {
             let end_point = buffer.max_point();
-            buffer.edit([(end_point..end_point, " added text")], None, cx);
+            buffer.edit(
+                [(end_point..end_point, " added text")],
+                None,
+                EditType::Other,
+                cx,
+            );
         });
 
         // Verify buffer is dirty

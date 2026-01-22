@@ -1,5 +1,5 @@
 use auto_update::{AutoUpdater, release_notes_url};
-use editor::{Editor, MultiBuffer};
+use editor::{EditType, Editor, MultiBuffer};
 use gpui::{App, Context, DismissEvent, Entity, Window, actions, prelude::*};
 use markdown_preview::markdown_preview_view::{MarkdownPreviewMode, MarkdownPreviewView};
 use release_channel::{AppVersion, ReleaseChannel};
@@ -118,7 +118,7 @@ fn view_release_notes_locally(
                                 project.create_local_buffer("", markdown, false, cx)
                             });
                             buffer.update(cx, |buffer, cx| {
-                                buffer.edit([(0..0, body.release_notes)], None, cx)
+                                buffer.edit([(0..0, body.release_notes)], None, EditType::Other, cx)
                             });
                             let language_registry = project.read(cx).languages().clone();
 
