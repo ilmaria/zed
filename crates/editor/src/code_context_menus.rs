@@ -7,7 +7,7 @@ use gpui::{
 };
 use itertools::Itertools;
 use language::CodeLabel;
-use language::{Buffer, LanguageName, LanguageRegistry};
+use language::{LanguageBuffer, LanguageName, LanguageRegistry};
 use lsp::CompletionItemTag;
 use markdown::{Markdown, MarkdownElement};
 use multi_buffer::{Anchor, ExcerptId};
@@ -230,7 +230,7 @@ pub struct CompletionsMenu {
     pub initial_position: Anchor,
     pub initial_query: Option<Arc<String>>,
     pub is_incomplete: bool,
-    pub buffer: Entity<Buffer>,
+    pub buffer: Entity<LanguageBuffer>,
     pub completions: Rc<RefCell<Box<[Completion]>>>,
     /// String match candidate for each completion, grouped by `match_start`.
     match_candidates: Arc<[(Option<text::Anchor>, Vec<StringMatchCandidate>)]>,
@@ -310,7 +310,7 @@ impl CompletionsMenu {
         initial_position: Anchor,
         initial_query: Option<Arc<String>>,
         is_incomplete: bool,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         completions: Box<[Completion]>,
         scroll_handle: Option<UniformListScrollHandle>,
         display_options: CompletionDisplayOptions,
@@ -363,7 +363,7 @@ impl CompletionsMenu {
         sort_completions: bool,
         choices: &Vec<String>,
         selection: Range<Anchor>,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         scroll_handle: Option<UniformListScrollHandle>,
         snippet_sort_order: SnippetSortOrder,
     ) -> Self {
@@ -1135,7 +1135,7 @@ impl CompletionsMenu {
         &mut self,
         query: Arc<String>,
         query_end: text::Anchor,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         provider: Option<Rc<dyn CompletionProvider>>,
         window: &mut Window,
         cx: &mut Context<Editor>,
@@ -1162,7 +1162,7 @@ impl CompletionsMenu {
         &self,
         query: Arc<String>,
         query_end: text::Anchor,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cx: &Context<Editor>,
     ) -> Task<Vec<StringMatch>> {
         let buffer_snapshot = buffer.read(cx).snapshot();
@@ -1510,7 +1510,7 @@ impl CodeActionsItem {
 
 pub struct CodeActionsMenu {
     pub actions: CodeActionContents,
-    pub buffer: Entity<Buffer>,
+    pub buffer: Entity<LanguageBuffer>,
     pub selected_item: usize,
     pub scroll_handle: UniformListScrollHandle,
     pub deployed_from: Option<CodeActionSource>,

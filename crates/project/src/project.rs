@@ -85,7 +85,7 @@ use gpui::{
     Task, WeakEntity, Window,
 };
 use language::{
-    Buffer, BufferEvent, Capability, CodeLabel, CursorShape, DiskState, Language, LanguageName,
+    LanguageBuffer, BufferEvent, Capability, CodeLabel, CursorShape, DiskState, Language, LanguageName,
     LanguageRegistry, PointUtf16, ToOffset, ToPointUtf16, Toolchain, ToolchainMetadata,
     ToolchainScope, Transaction, Unclipped, language_settings::InlayHintKind,
     proto::split_operations,
@@ -208,7 +208,7 @@ pub struct Project {
     image_store: Entity<ImageStore>,
     lsp_store: Entity<LspStore>,
     _subscriptions: Vec<gpui::Subscription>,
-    buffers_needing_diff: HashSet<WeakEntity<Buffer>>,
+    buffers_needing_diff: HashSet<WeakEntity<LanguageBuffer>>,
     git_diff_debouncer: DebouncedDelay<Self>,
     remotely_created_models: Arc<Mutex<RemotelyCreatedModels>>,
     terminals: Terminals,
@@ -225,14 +225,14 @@ pub struct Project {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AgentLocation {
-    pub buffer: WeakEntity<Buffer>,
+    pub buffer: WeakEntity<LanguageBuffer>,
     pub position: Anchor,
 }
 
 #[derive(Default)]
 struct RemotelyCreatedModels {
     worktrees: Vec<Entity<Worktree>>,
-    buffers: Vec<Entity<Buffer>>,
+    buffers: Vec<Entity<LanguageBuffer>>,
     retain_count: usize,
 }
 
@@ -312,7 +312,7 @@ pub enum Event {
         notification_id: SharedString,
     },
     LanguageServerPrompt(LanguageServerPromptRequest),
-    LanguageNotFound(Entity<Buffer>),
+    LanguageNotFound(Entity<LanguageBuffer>),
     ActiveEntryChanged(Option<ProjectEntryId>),
     ActivateProjectPanel,
     WorktreeAdded(WorktreeId),
@@ -1984,7 +1984,7 @@ impl Project {
     }
 
     #[inline]
-    pub fn buffer_for_id(&self, remote_id: BufferId, cx: &App) -> Option<Entity<Buffer>> {
+    pub fn buffer_for_id(&self, remote_id: BufferId, cx: &App) -> Option<Entity<LanguageBuffer>> {
         self.buffer_store.read(cx).get(remote_id)
     }
 
@@ -2014,7 +2014,7 @@ impl Project {
     }
 
     #[inline]
-    pub fn opened_buffers(&self, cx: &App) -> Vec<Entity<Buffer>> {
+    pub fn opened_buffers(&self, cx: &App) -> Vec<Entity<LanguageBuffer>> {
         self.buffer_store.read(cx).buffers().collect()
     }
 
@@ -2721,7 +2721,7 @@ impl Project {
         &mut self,
         searchable: bool,
         cx: &mut Context<Self>,
-    ) -> Task<Result<Entity<Buffer>>> {
+    ) -> Task<Result<Entity<LanguageBuffer>>> {
         self.buffer_store.update(cx, |buffer_store, cx| {
             buffer_store.create_buffer(searchable, cx)
         })
@@ -2734,7 +2734,7 @@ impl Project {
         language: Option<Arc<Language>>,
         project_searchable: bool,
         cx: &mut Context<Self>,
-    ) -> Entity<Buffer> {
+    ) -> Entity<LanguageBuffer> {
         if self.is_remote() {
             panic!("called create_local_buffer on a remote project")
         }
@@ -2747,7 +2747,7 @@ impl Project {
         &mut self,
         path: ProjectPath,
         cx: &mut Context<Self>,
-    ) -> Task<Result<(Option<ProjectEntryId>, Entity<Buffer>)>> {
+    ) -> Task<Result<(Option<ProjectEntryId>, Entity<LanguageBuffer>)>> {
         let task = self.open_buffer(path, cx);
         cx.spawn(async move |_project, cx| {
             let buffer = task.await?;
@@ -2763,7 +2763,7 @@ impl Project {
         &mut self,
         abs_path: impl AsRef<Path>,
         cx: &mut Context<Self>,
-    ) -> Task<Result<Entity<Buffer>>> {
+    ) -> Task<Result<Entity<LanguageBuffer>>> {
         let worktree_task = self.find_or_create_worktree(abs_path.as_ref(), false, cx);
         cx.spawn(async move |this, cx| {
             let (worktree, relative_path) = worktree_task.await?;
@@ -2779,7 +2779,7 @@ impl Project {
         &mut self,
         abs_path: impl AsRef<Path>,
         cx: &mut Context<Self>,
-    ) -> Task<Result<(Entity<Buffer>, lsp_store::OpenLspBufferHandle)>> {
+    ) -> Task<Result<(Entity<LanguageBuffer>, lsp_store::OpenLspBufferHandle)>> {
         if let Some((worktree, relative_path)) = self.find_worktree(abs_path.as_ref(), cx) {
             self.open_buffer_with_lsp((worktree.read(cx).id(), relative_path), cx)
         } else {
@@ -2791,7 +2791,7 @@ impl Project {
         &mut self,
         path: impl Into<ProjectPath>,
         cx: &mut App,
-    ) -> Task<Result<Entity<Buffer>>> {
+    ) -> Task<Result<Entity<LanguageBuffer>>> {
         if self.is_disconnected(cx) {
             return Task::ready(Err(anyhow!(ErrorCode::Disconnected)));
         }
@@ -2806,7 +2806,7 @@ impl Project {
         &mut self,
         path: impl Into<ProjectPath>,
         cx: &mut Context<Self>,
-    ) -> Task<Result<(Entity<Buffer>, lsp_store::OpenLspBufferHandle)>> {
+    ) -> Task<Result<(Entity<LanguageBuffer>, lsp_store::OpenLspBufferHandle)>> {
         let buffer = self.open_buffer(path, cx);
         cx.spawn(async move |this, cx| {
             let buffer = buffer.await?;
@@ -2819,7 +2819,7 @@ impl Project {
 
     pub fn register_buffer_with_language_servers(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cx: &mut App,
     ) -> OpenLspBufferHandle {
         self.lsp_store.update(cx, |lsp_store, cx| {
@@ -2829,7 +2829,7 @@ impl Project {
 
     pub fn open_unstaged_diff(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) -> Task<Result<Entity<BufferDiff>>> {
         if self.is_disconnected(cx) {
@@ -2841,7 +2841,7 @@ impl Project {
 
     pub fn open_uncommitted_diff(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) -> Task<Result<Entity<BufferDiff>>> {
         if self.is_disconnected(cx) {
@@ -2856,7 +2856,7 @@ impl Project {
         &mut self,
         id: BufferId,
         cx: &mut Context<Self>,
-    ) -> Task<Result<Entity<Buffer>>> {
+    ) -> Task<Result<Entity<LanguageBuffer>>> {
         if let Some(buffer) = self.buffer_for_id(id, cx) {
             Task::ready(Ok(buffer))
         } else if self.is_local() || self.is_via_remote_server() {
@@ -2883,7 +2883,7 @@ impl Project {
 
     pub fn save_buffers(
         &self,
-        buffers: HashSet<Entity<Buffer>>,
+        buffers: HashSet<Entity<LanguageBuffer>>,
         cx: &mut Context<Self>,
     ) -> Task<Result<()>> {
         cx.spawn(async move |this, cx| {
@@ -2896,14 +2896,14 @@ impl Project {
         })
     }
 
-    pub fn save_buffer(&self, buffer: Entity<Buffer>, cx: &mut Context<Self>) -> Task<Result<()>> {
+    pub fn save_buffer(&self, buffer: Entity<LanguageBuffer>, cx: &mut Context<Self>) -> Task<Result<()>> {
         self.buffer_store
             .update(cx, |buffer_store, cx| buffer_store.save_buffer(buffer, cx))
     }
 
     pub fn save_buffer_as(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         path: ProjectPath,
         cx: &mut Context<Self>,
     ) -> Task<Result<()>> {
@@ -2912,11 +2912,11 @@ impl Project {
         })
     }
 
-    pub fn get_open_buffer(&self, path: &ProjectPath, cx: &App) -> Option<Entity<Buffer>> {
+    pub fn get_open_buffer(&self, path: &ProjectPath, cx: &App) -> Option<Entity<LanguageBuffer>> {
         self.buffer_store.read(cx).get_by_path(path)
     }
 
-    fn register_buffer(&mut self, buffer: &Entity<Buffer>, cx: &mut Context<Self>) -> Result<()> {
+    fn register_buffer(&mut self, buffer: &Entity<LanguageBuffer>, cx: &mut Context<Self>) -> Result<()> {
         {
             let mut remotely_created_models = self.remotely_created_models.lock();
             if remotely_created_models.retain_count > 0 {
@@ -3405,7 +3405,7 @@ impl Project {
 
     fn on_buffer_event(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         event: &BufferEvent,
         cx: &mut Context<Self>,
     ) -> Option<()> {
@@ -3471,7 +3471,7 @@ impl Project {
 
     fn request_buffer_diff_recalculation(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) {
         self.buffers_needing_diff.insert(buffer.downgrade());
@@ -3535,7 +3535,7 @@ impl Project {
 
     pub fn set_language_for_buffer(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         new_language: Arc<Language>,
         cx: &mut Context<Self>,
     ) {
@@ -3546,7 +3546,7 @@ impl Project {
 
     pub fn restart_language_servers_for_buffers(
         &mut self,
-        buffers: Vec<Entity<Buffer>>,
+        buffers: Vec<Entity<LanguageBuffer>>,
         only_restart_servers: HashSet<LanguageServerSelector>,
         cx: &mut Context<Self>,
     ) {
@@ -3557,7 +3557,7 @@ impl Project {
 
     pub fn stop_language_servers_for_buffers(
         &mut self,
-        buffers: Vec<Entity<Buffer>>,
+        buffers: Vec<Entity<LanguageBuffer>>,
         also_restart_servers: HashSet<LanguageServerSelector>,
         cx: &mut Context<Self>,
     ) {
@@ -3570,7 +3570,7 @@ impl Project {
 
     pub fn cancel_language_server_work_for_buffers(
         &mut self,
-        buffers: impl IntoIterator<Item = Entity<Buffer>>,
+        buffers: impl IntoIterator<Item = Entity<LanguageBuffer>>,
         cx: &mut Context<Self>,
     ) {
         self.lsp_store.update(cx, |lsp_store, cx| {
@@ -3724,7 +3724,7 @@ impl Project {
 
     pub fn reload_buffers(
         &self,
-        buffers: HashSet<Entity<Buffer>>,
+        buffers: HashSet<Entity<LanguageBuffer>>,
         push_to_history: bool,
         cx: &mut Context<Self>,
     ) -> Task<Result<ProjectTransaction>> {
@@ -3744,7 +3744,7 @@ impl Project {
 
     pub fn format(
         &mut self,
-        buffers: HashSet<Entity<Buffer>>,
+        buffers: HashSet<Entity<LanguageBuffer>>,
         target: LspFormatTarget,
         push_to_history: bool,
         trigger: lsp_store::FormatTrigger,
@@ -3757,7 +3757,7 @@ impl Project {
 
     pub fn definitions<T: ToPointUtf16>(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: T,
         cx: &mut Context<Self>,
     ) -> Task<Result<Option<Vec<LocationLink>>>> {
@@ -3775,7 +3775,7 @@ impl Project {
 
     pub fn declarations<T: ToPointUtf16>(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: T,
         cx: &mut Context<Self>,
     ) -> Task<Result<Option<Vec<LocationLink>>>> {
@@ -3793,7 +3793,7 @@ impl Project {
 
     pub fn type_definitions<T: ToPointUtf16>(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: T,
         cx: &mut Context<Self>,
     ) -> Task<Result<Option<Vec<LocationLink>>>> {
@@ -3811,7 +3811,7 @@ impl Project {
 
     pub fn implementations<T: ToPointUtf16>(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: T,
         cx: &mut Context<Self>,
     ) -> Task<Result<Option<Vec<LocationLink>>>> {
@@ -3829,7 +3829,7 @@ impl Project {
 
     pub fn references<T: ToPointUtf16>(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: T,
         cx: &mut Context<Self>,
     ) -> Task<Result<Option<Vec<Location>>>> {
@@ -3847,7 +3847,7 @@ impl Project {
 
     pub fn document_highlights<T: ToPointUtf16>(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: T,
         cx: &mut Context<Self>,
     ) -> Task<Result<Vec<DocumentHighlight>>> {
@@ -3862,7 +3862,7 @@ impl Project {
 
     pub fn document_symbols(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) -> Task<Result<Vec<DocumentSymbol>>> {
         self.request_lsp(
@@ -3882,13 +3882,13 @@ impl Project {
         &mut self,
         symbol: &Symbol,
         cx: &mut Context<Self>,
-    ) -> Task<Result<Entity<Buffer>>> {
+    ) -> Task<Result<Entity<LanguageBuffer>>> {
         self.lsp_store.update(cx, |lsp_store, cx| {
             lsp_store.open_buffer_for_symbol(symbol, cx)
         })
     }
 
-    pub fn open_server_settings(&mut self, cx: &mut Context<Self>) -> Task<Result<Entity<Buffer>>> {
+    pub fn open_server_settings(&mut self, cx: &mut Context<Self>) -> Task<Result<Entity<LanguageBuffer>>> {
         let guard = self.retain_remotely_created_models(cx);
         let Some(remote) = self.remote_client.as_ref() else {
             return Task::ready(Err(anyhow!("not an ssh project")));
@@ -3924,7 +3924,7 @@ impl Project {
         abs_path: lsp::Uri,
         language_server_id: LanguageServerId,
         cx: &mut Context<Self>,
-    ) -> Task<Result<Entity<Buffer>>> {
+    ) -> Task<Result<Entity<LanguageBuffer>>> {
         self.lsp_store.update(cx, |lsp_store, cx| {
             lsp_store.open_local_buffer_via_lsp(abs_path, language_server_id, cx)
         })
@@ -3932,7 +3932,7 @@ impl Project {
 
     pub fn hover<T: ToPointUtf16>(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: T,
         cx: &mut Context<Self>,
     ) -> Task<Option<Vec<Hover>>> {
@@ -3943,7 +3943,7 @@ impl Project {
 
     pub fn linked_edits(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: Anchor,
         cx: &mut Context<Self>,
     ) -> Task<Result<Vec<Range<Anchor>>>> {
@@ -3954,7 +3954,7 @@ impl Project {
 
     pub fn completions<T: ToOffset + ToPointUtf16>(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: T,
         context: CompletionContext,
         cx: &mut Context<Self>,
@@ -3967,7 +3967,7 @@ impl Project {
 
     pub fn code_actions<T: Clone + ToOffset>(
         &mut self,
-        buffer_handle: &Entity<Buffer>,
+        buffer_handle: &Entity<LanguageBuffer>,
         range: Range<T>,
         kinds: Option<Vec<CodeActionKind>>,
         cx: &mut Context<Self>,
@@ -3981,7 +3981,7 @@ impl Project {
 
     pub fn code_lens_actions<T: Clone + ToOffset>(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         range: Range<T>,
         cx: &mut Context<Self>,
     ) -> Task<Result<Option<Vec<CodeAction>>>> {
@@ -4020,7 +4020,7 @@ impl Project {
 
     pub fn apply_code_action(
         &self,
-        buffer_handle: Entity<Buffer>,
+        buffer_handle: Entity<LanguageBuffer>,
         action: CodeAction,
         push_to_history: bool,
         cx: &mut Context<Self>,
@@ -4032,7 +4032,7 @@ impl Project {
 
     pub fn apply_code_action_kind(
         &self,
-        buffers: HashSet<Entity<Buffer>>,
+        buffers: HashSet<Entity<LanguageBuffer>>,
         kind: CodeActionKind,
         push_to_history: bool,
         cx: &mut Context<Self>,
@@ -4044,7 +4044,7 @@ impl Project {
 
     pub fn prepare_rename<T: ToPointUtf16>(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         position: T,
         cx: &mut Context<Self>,
     ) -> Task<Result<PrepareRenameResponse>> {
@@ -4059,7 +4059,7 @@ impl Project {
 
     pub fn perform_rename<T: ToPointUtf16>(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         position: T,
         new_name: String,
         cx: &mut Context<Self>,
@@ -4080,7 +4080,7 @@ impl Project {
 
     pub fn on_type_format<T: ToPointUtf16>(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         position: T,
         trigger: String,
         push_to_history: bool,
@@ -4095,7 +4095,7 @@ impl Project {
         &mut self,
         session: Entity<Session>,
         active_stack_frame: ActiveStackFrame,
-        buffer_handle: Entity<Buffer>,
+        buffer_handle: Entity<LanguageBuffer>,
         range: Range<text::Anchor>,
         cx: &mut Context<Self>,
     ) -> Task<anyhow::Result<Vec<InlayHint>>> {
@@ -4173,7 +4173,7 @@ impl Project {
 
     pub fn request_lsp<R: LspCommand>(
         &mut self,
-        buffer_handle: Entity<Buffer>,
+        buffer_handle: Entity<LanguageBuffer>,
         server: LanguageServerToQuery,
         request: R,
         cx: &mut Context<Self>,
@@ -4250,7 +4250,7 @@ impl Project {
     pub fn resolve_path_in_buffer(
         &self,
         path: &str,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) -> Task<Option<ResolvedPath>> {
         if util::paths::is_absolute(path, self.path_style(cx)) || path.starts_with("~") {
@@ -4311,7 +4311,7 @@ impl Project {
     fn resolve_path_in_worktrees(
         &self,
         path: &str,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) -> Task<Option<ResolvedPath>> {
         let mut candidates = vec![];
@@ -4615,7 +4615,7 @@ impl Project {
 
     pub fn blame_buffer(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         version: Option<clock::Global>,
         cx: &mut App,
     ) -> Task<Result<Option<Blame>>> {
@@ -4626,7 +4626,7 @@ impl Project {
 
     pub fn get_permalink_to_line(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         selection: Range<u32>,
         cx: &mut App,
     ) -> Task<Result<url::Url>> {
@@ -5171,7 +5171,7 @@ impl Project {
 
     fn respond_to_open_buffer_request(
         this: Entity<Self>,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         peer_id: proto::PeerId,
         cx: &mut AsyncApp,
     ) -> Result<proto::OpenBufferResponse> {
@@ -5190,7 +5190,7 @@ impl Project {
 
     fn create_buffer_for_peer(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         peer_id: proto::PeerId,
         cx: &mut App,
     ) -> BufferId {
@@ -5353,7 +5353,7 @@ impl Project {
         self.lsp_store.read(cx).supplementary_language_servers()
     }
 
-    pub fn any_language_server_supports_inlay_hints(&self, buffer: &Buffer, cx: &mut App) -> bool {
+    pub fn any_language_server_supports_inlay_hints(&self, buffer: &LanguageBuffer, cx: &mut App) -> bool {
         let Some(language) = buffer.language().cloned() else {
             return false;
         };
@@ -5378,7 +5378,7 @@ impl Project {
 
     pub fn language_server_id_for_name(
         &self,
-        buffer: &Buffer,
+        buffer: &LanguageBuffer,
         name: &LanguageServerName,
         cx: &App,
     ) -> Option<LanguageServerId> {
@@ -5404,7 +5404,7 @@ impl Project {
     }
 
     #[cfg(any(test, feature = "test-support"))]
-    pub fn has_language_servers_for(&self, buffer: &Buffer, cx: &mut App) -> bool {
+    pub fn has_language_servers_for(&self, buffer: &LanguageBuffer, cx: &mut App) -> bool {
         self.lsp_store.update(cx, |this, cx| {
             this.running_language_servers_for_local_buffer(buffer, cx)
                 .next()
@@ -5734,7 +5734,7 @@ impl ResolvedPath {
     }
 }
 
-impl ProjectItem for Buffer {
+impl ProjectItem for LanguageBuffer {
     fn try_open(
         project: &Entity<Project>,
         path: &ProjectPath,

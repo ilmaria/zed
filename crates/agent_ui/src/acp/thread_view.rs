@@ -31,7 +31,7 @@ use gpui::{
     Task, TextStyle, TextStyleRefinement, UnderlineStyle, WeakEntity, Window, WindowHandle, div,
     ease_in_out, img, linear_color_stop, linear_gradient, list, point, pulsating_between,
 };
-use language::Buffer;
+use language::LanguageBuffer;
 
 use language_model::LanguageModelRegistry;
 use markdown::{HeadingLevelStyles, Markdown, MarkdownElement, MarkdownStyle};
@@ -239,7 +239,7 @@ impl ThreadFeedbackState {
     fn build_feedback_comments_editor(window: &mut Window, cx: &mut App) -> Entity<Editor> {
         let buffer = cx.new(|cx| {
             let empty_string = String::new();
-            MultiBuffer::singleton(cx.new(|cx| Buffer::local(empty_string, cx)), cx)
+            MultiBuffer::singleton(cx.new(|cx| LanguageBuffer::local(empty_string, cx)), cx)
         });
 
         let editor = cx.new(|cx| {
@@ -273,7 +273,7 @@ struct DiffStats {
 }
 
 impl DiffStats {
-    fn single_file(buffer: &Buffer, diff: &BufferDiff, cx: &App) -> Self {
+    fn single_file(buffer: &LanguageBuffer, diff: &BufferDiff, cx: &App) -> Self {
         let mut stats = DiffStats::default();
         let diff_snapshot = diff.snapshot(cx);
         let buffer_snapshot = buffer.snapshot();
@@ -292,7 +292,7 @@ impl DiffStats {
         stats
     }
 
-    fn all_files(changed_buffers: &BTreeMap<Entity<Buffer>, Entity<BufferDiff>>, cx: &App) -> Self {
+    fn all_files(changed_buffers: &BTreeMap<Entity<LanguageBuffer>, Entity<BufferDiff>>, cx: &App) -> Self {
         let mut total = DiffStats::default();
         for (buffer, diff) in changed_buffers {
             let stats = DiffStats::single_file(buffer.read(cx), diff.read(cx), cx);
@@ -362,7 +362,7 @@ pub struct AcpThreadView {
 
 struct QueuedMessage {
     content: Vec<acp::ContentBlock>,
-    tracked_buffers: Vec<Entity<Buffer>>,
+    tracked_buffers: Vec<Entity<LanguageBuffer>>,
 }
 
 enum ThreadState {
@@ -1454,7 +1454,7 @@ impl AcpThreadView {
 
     fn send_content(
         &mut self,
-        contents_task: Task<anyhow::Result<Option<(Vec<acp::ContentBlock>, Vec<Entity<Buffer>>)>>>,
+        contents_task: Task<anyhow::Result<Option<(Vec<acp::ContentBlock>, Vec<Entity<LanguageBuffer>>)>>>,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
@@ -1740,7 +1740,7 @@ impl AcpThreadView {
 
     fn open_edited_buffer(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
@@ -4649,7 +4649,7 @@ impl AcpThreadView {
 
     fn render_edits_summary(
         &self,
-        changed_buffers: &BTreeMap<Entity<Buffer>, Entity<BufferDiff>>,
+        changed_buffers: &BTreeMap<Entity<LanguageBuffer>, Entity<BufferDiff>>,
         expanded: bool,
         pending_edits: bool,
         use_keep_reject_buttons: bool,
@@ -4816,7 +4816,7 @@ impl AcpThreadView {
         &self,
         action_log: &Entity<ActionLog>,
         telemetry: ActionLogTelemetry,
-        changed_buffers: &BTreeMap<Entity<Buffer>, Entity<BufferDiff>>,
+        changed_buffers: &BTreeMap<Entity<LanguageBuffer>, Entity<BufferDiff>>,
         pending_edits: bool,
         use_keep_reject_buttons: bool,
         cx: &Context<Self>,

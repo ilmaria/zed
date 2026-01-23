@@ -406,7 +406,7 @@ async fn get_cached_server_binary(container_dir: PathBuf) -> Option<LanguageServ
 #[cfg(test)]
 mod tests {
     use gpui::{AppContext as _, BorrowAppContext, TestAppContext};
-    use language::{AutoindentMode, Buffer};
+    use language::{AutoindentMode, LanguageBuffer};
     use settings::SettingsStore;
     use std::num::NonZeroU32;
     use text::EditType;
@@ -426,7 +426,7 @@ mod tests {
         let language = crate::language("c", tree_sitter_c::LANGUAGE.into());
 
         cx.new(|cx| {
-            let mut buffer = Buffer::local("", cx).with_language(language, cx);
+            let mut buffer = LanguageBuffer::local("", cx).with_language(language, cx);
 
             buffer.edit([(0..0, "int main() {}")], None, EditType::Other, cx);
 
@@ -461,7 +461,7 @@ mod tests {
         let language = crate::language("c", tree_sitter_c::LANGUAGE.into());
 
         cx.new(|cx| {
-            let mut buffer = Buffer::local("", cx).with_language(language, cx);
+            let mut buffer = LanguageBuffer::local("", cx).with_language(language, cx);
 
             buffer.edit(
                 [(

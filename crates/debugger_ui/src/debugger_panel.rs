@@ -23,7 +23,7 @@ use gpui::{
 };
 
 use itertools::Itertools as _;
-use language::Buffer;
+use language::LanguageBuffer;
 use project::debugger::session::{Session, SessionQuirks, SessionState, SessionStateEvent};
 use project::{DebugScenarioContext, Fs, ProjectPath, TaskSourceKind, WorktreeId};
 use project::{Project, debugger::session::ThreadStatus};
@@ -178,7 +178,7 @@ impl DebugPanel {
         &mut self,
         scenario: DebugScenario,
         task_context: TaskContext,
-        active_buffer: Option<Entity<Buffer>>,
+        active_buffer: Option<Entity<LanguageBuffer>>,
         worktree_id: Option<WorktreeId>,
         window: &mut Window,
         cx: &mut Context<Self>,
@@ -1959,7 +1959,7 @@ impl workspace::DebuggerProvider for DebuggerProvider {
         &self,
         definition: DebugScenario,
         context: TaskContext,
-        buffer: Option<Entity<Buffer>>,
+        buffer: Option<Entity<LanguageBuffer>>,
         worktree_id: Option<WorktreeId>,
         window: &mut Window,
         cx: &mut App,

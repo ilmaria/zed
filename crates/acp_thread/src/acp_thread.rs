@@ -44,7 +44,7 @@ use futures::{FutureExt, channel::oneshot, future::BoxFuture};
 use gpui::{AppContext, AsyncApp, Context, Entity, EventEmitter, SharedString, Task, WeakEntity};
 use itertools::Itertools;
 use language::{
-    Anchor, Buffer, BufferSnapshot, EditType, LanguageRegistry, Point, ToPoint, text_diff,
+    Anchor, BufferSnapshot, EditType, LanguageBuffer, LanguageRegistry, Point, ToPoint, text_diff,
 };
 use markdown::Markdown;
 use project::{AgentLocation, Project, git_store::GitStoreCheckpoint};
@@ -455,7 +455,7 @@ impl ToolCall {
 // for saving on the thread
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct ResolvedLocation {
-    buffer: Entity<Buffer>,
+    buffer: Entity<LanguageBuffer>,
     position: Anchor,
 }
 
@@ -951,7 +951,7 @@ pub struct AcpThread {
     plan: Plan,
     project: Entity<Project>,
     action_log: Entity<ActionLog>,
-    shared_buffers: HashMap<Entity<Buffer>, BufferSnapshot>,
+    shared_buffers: HashMap<Entity<LanguageBuffer>, BufferSnapshot>,
     send_task: Option<Task<()>>,
     connection: Rc<dyn AgentConnection>,
     session_id: acp::SessionId,

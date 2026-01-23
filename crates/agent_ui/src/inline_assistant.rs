@@ -39,7 +39,7 @@ use gpui::{
     App, Context, Entity, Focusable, Global, HighlightStyle, Subscription, Task, UpdateGlobal,
     WeakEntity, Window, point,
 };
-use language::{Buffer, Point, Selection, TransactionId};
+use language::{LanguageBuffer, Point, Selection, TransactionId};
 use language_model::{ConfigurationError, ConfiguredModel, LanguageModelRegistry};
 use multi_buffer::MultiBufferRow;
 use parking_lot::Mutex;
@@ -483,7 +483,7 @@ impl InlineAssistant {
         let session_id = Uuid::new_v4();
         let prompt_buffer = cx.new(|cx| {
             MultiBuffer::singleton(
-                cx.new(|cx| Buffer::local(initial_prompt.unwrap_or_default(), cx)),
+                cx.new(|cx| LanguageBuffer::local(initial_prompt.unwrap_or_default(), cx)),
                 cx,
             )
         });
@@ -1875,7 +1875,7 @@ impl CodeActionProvider for AssistantCodeActionProvider {
 
     fn code_actions(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         range: Range<text::Anchor>,
         _: &mut Window,
         cx: &mut App,
@@ -1925,7 +1925,7 @@ impl CodeActionProvider for AssistantCodeActionProvider {
 
     fn apply_code_action(
         &self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         action: CodeAction,
         excerpt_id: ExcerptId,
         _push_to_history: bool,
@@ -2037,7 +2037,7 @@ pub mod test {
     use fs::FakeFs;
     use futures::channel::mpsc;
     use gpui::{AppContext, TestAppContext, UpdateGlobal as _};
-    use language::Buffer;
+    use language::LanguageBuffer;
     use project::Project;
     use prompt_store::PromptBuilder;
     use smol::stream::StreamExt as _;
@@ -2115,7 +2115,7 @@ pub mod test {
         setup(cx);
 
         let (_editor, buffer) = cx.update(|window, cx| {
-            let buffer = cx.new(|cx| Buffer::local("", cx));
+            let buffer = cx.new(|cx| LanguageBuffer::local("", cx));
             let multibuffer = cx.new(|cx| MultiBuffer::singleton(buffer.clone(), cx));
             let editor = cx.new(|cx| Editor::for_multibuffer(multibuffer, None, window, cx));
             editor.update(cx, |editor, cx| {

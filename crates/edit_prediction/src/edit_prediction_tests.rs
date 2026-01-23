@@ -1450,7 +1450,7 @@ const BSD_0_TXT: &str = include_str!("../license_examples/0bsd.txt");
 
 #[gpui::test]
 async fn test_edit_prediction_basic_interpolation(cx: &mut TestAppContext) {
-    let buffer = cx.new(|cx| Buffer::local("Lorem ipsum dolor", cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local("Lorem ipsum dolor", cx));
     let edits: Arc<[(Range<Anchor>, Arc<str>)]> = cx.update(|cx| {
         to_completion_edits([(2..5, "REM".into()), (9..11, "".into())], &buffer, cx).into()
     });
@@ -1700,7 +1700,7 @@ async fn test_no_data_collection_for_remote_file(cx: &mut TestAppContext) {
     let project = Project::test(fs.clone(), [], cx).await;
 
     let buffer = cx.new(|_cx| {
-        Buffer::remote(
+        LanguageBuffer::remote(
             language::BufferId::new(1).unwrap(),
             ReplicaId::new(1),
             language::Capability::ReadWrite,
@@ -1760,7 +1760,7 @@ async fn test_no_data_collection_for_untitled_buffer(cx: &mut TestAppContext) {
 
     let fs = project::FakeFs::new(cx.executor());
     let project = Project::test(fs.clone(), [], cx).await;
-    let buffer = cx.new(|cx| Buffer::local("", cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local("", cx));
 
     let (ep_store, captured_request, _) = make_test_ep_store(&project, cx).await;
     ep_store.update(cx, |ep_store, _cx| {
@@ -1966,7 +1966,7 @@ async fn apply_edit_prediction(
 ) -> String {
     let fs = project::FakeFs::new(cx.executor());
     let project = Project::test(fs.clone(), [path!("/project").as_ref()], cx).await;
-    let buffer = cx.new(|cx| Buffer::local(buffer_content, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(buffer_content, cx));
     let (ep_store, _, response) = make_test_ep_store(&project, cx).await;
     *response.lock() = completion_response.to_string();
     let edit_prediction = run_edit_prediction(&buffer, &project, &ep_store, cx).await;
@@ -1982,7 +1982,7 @@ async fn apply_edit_prediction(
 }
 
 async fn run_edit_prediction(
-    buffer: &Entity<Buffer>,
+    buffer: &Entity<LanguageBuffer>,
     project: &Entity<Project>,
     ep_store: &Entity<EditPredictionStore>,
     cx: &mut TestAppContext,
@@ -2091,7 +2091,7 @@ async fn make_test_ep_store(
 
 fn to_completion_edits(
     iterator: impl IntoIterator<Item = (Range<usize>, Arc<str>)>,
-    buffer: &Entity<Buffer>,
+    buffer: &Entity<LanguageBuffer>,
     cx: &App,
 ) -> Vec<(Range<Anchor>, Arc<str>)> {
     let buffer = buffer.read(cx);
@@ -2108,7 +2108,7 @@ fn to_completion_edits(
 
 fn from_completion_edits(
     editor_edits: &[(Range<Anchor>, Arc<str>)],
-    buffer: &Entity<Buffer>,
+    buffer: &Entity<LanguageBuffer>,
     cx: &App,
 ) -> Vec<(Range<usize>, Arc<str>)> {
     let buffer = buffer.read(cx);
@@ -2294,7 +2294,7 @@ async fn test_unauthenticated_with_custom_url_allows_prediction_impl(cx: &mut Te
 #[gpui::test]
 fn test_compute_diff_between_snapshots(cx: &mut TestAppContext) {
     let buffer = cx.new(|cx| {
-        Buffer::local(
+        LanguageBuffer::local(
             indoc! {"
                 zero
                 one

@@ -776,7 +776,7 @@ pub struct CompletionsQuery {
 
 impl CompletionsQuery {
     pub fn new(
-        buffer: &language::Buffer,
+        buffer: &language::LanguageBuffer,
         cursor_position: language::Anchor,
         frame_id: Option<u64>,
     ) -> Self {

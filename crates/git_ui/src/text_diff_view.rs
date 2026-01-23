@@ -8,7 +8,7 @@ use gpui::{
     AnyElement, App, AppContext as _, AsyncApp, Context, Entity, EventEmitter, FocusHandle,
     Focusable, IntoElement, Render, Task, Window,
 };
-use language::{self, Buffer, Point};
+use language::{self, LanguageBuffer, Point};
 use project::Project;
 use std::{
     any::{Any, TypeId},
@@ -133,9 +133,9 @@ impl TextDiffView {
     }
 
     pub fn new(
-        clipboard_buffer: Entity<Buffer>,
+        clipboard_buffer: Entity<LanguageBuffer>,
         source_editor: Entity<Editor>,
-        source_buffer: Entity<Buffer>,
+        source_buffer: Entity<LanguageBuffer>,
         source_range: Range<Point>,
         diff_buffer: Entity<BufferDiff>,
         project: Entity<Project>,
@@ -232,13 +232,13 @@ impl TextDiffView {
 
 fn build_clipboard_buffer(
     text: String,
-    source_buffer: &Entity<Buffer>,
+    source_buffer: &Entity<LanguageBuffer>,
     replacement_range: Range<Point>,
     cx: &mut App,
-) -> Entity<Buffer> {
+) -> Entity<LanguageBuffer> {
     let source_buffer_snapshot = source_buffer.read(cx).snapshot();
     cx.new(|cx| {
-        let mut buffer = language::Buffer::local(source_buffer_snapshot.text(), cx);
+        let mut buffer = language::LanguageBuffer::local(source_buffer_snapshot.text(), cx);
         let language = source_buffer.read(cx).language().cloned();
         buffer.set_language(language, cx);
 
@@ -252,8 +252,8 @@ fn build_clipboard_buffer(
 
 async fn update_diff_buffer(
     diff: &Entity<BufferDiff>,
-    source_buffer: &Entity<Buffer>,
-    clipboard_buffer: &Entity<Buffer>,
+    source_buffer: &Entity<LanguageBuffer>,
+    clipboard_buffer: &Entity<LanguageBuffer>,
     cx: &mut AsyncApp,
 ) -> Result<()> {
     let source_buffer_snapshot = source_buffer.read_with(cx, |buffer, _| buffer.snapshot());

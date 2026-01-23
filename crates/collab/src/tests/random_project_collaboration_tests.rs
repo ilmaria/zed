@@ -1516,7 +1516,7 @@ fn buffer_for_full_path(
     project: &Entity<Project>,
     full_path: &RelPath,
     cx: &TestAppContext,
-) -> Option<Entity<language::Buffer>> {
+) -> Option<Entity<language::LanguageBuffer>> {
     client
         .buffers_for_project(project)
         .iter()

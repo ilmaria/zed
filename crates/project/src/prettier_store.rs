@@ -15,7 +15,7 @@ use futures::{
 };
 use gpui::{AppContext as _, AsyncApp, Context, Entity, EventEmitter, Task, WeakEntity};
 use language::{
-    Buffer, LanguageRegistry, LocalFile,
+    LanguageBuffer, LanguageRegistry, LocalFile,
     language_settings::{Formatter, LanguageSettings},
 };
 use lsp::{LanguageServer, LanguageServerId, LanguageServerName};
@@ -105,7 +105,7 @@ impl PrettierStore {
 
     fn prettier_instance_for_buffer(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) -> Task<Option<(Option<PathBuf>, PrettierTask)>> {
         let buffer = buffer.read(cx);
@@ -218,7 +218,7 @@ impl PrettierStore {
 
     fn prettier_ignore_for_buffer(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) -> Task<Option<PathBuf>> {
         let buffer = buffer.read(cx);
@@ -711,7 +711,7 @@ pub fn prettier_plugins_for_language(
 
 pub(super) async fn format_with_prettier(
     prettier_store: &WeakEntity<PrettierStore>,
-    buffer: &Entity<Buffer>,
+    buffer: &Entity<LanguageBuffer>,
     cx: &mut AsyncApp,
 ) -> Option<Result<language::Diff>> {
     let prettier_instance = prettier_store

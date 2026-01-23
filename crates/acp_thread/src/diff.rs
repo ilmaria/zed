@@ -4,7 +4,7 @@ use editor::{MultiBuffer, PathKey, multibuffer_context_lines};
 use gpui::{App, AppContext, AsyncApp, Context, Entity, Subscription, Task};
 use itertools::Itertools;
 use language::{
-    Anchor, Buffer, Capability, LanguageRegistry, OffsetRangeExt as _, Point, TextBuffer,
+    Anchor, LanguageBuffer, Capability, LanguageRegistry, OffsetRangeExt as _, Point, TextBuffer,
 };
 use std::{cmp::Reverse, ops::Range, path::Path, sync::Arc};
 use util::ResultExt;
@@ -23,7 +23,7 @@ impl Diff {
         cx: &mut Context<Self>,
     ) -> Self {
         let multibuffer = cx.new(|_cx| MultiBuffer::without_headers(Capability::ReadOnly));
-        let new_buffer = cx.new(|cx| Buffer::local(new_text, cx));
+        let new_buffer = cx.new(|cx| LanguageBuffer::local(new_text, cx));
         let base_text = old_text.clone().unwrap_or(String::new()).into();
         let task = cx.spawn({
             let multibuffer = multibuffer.clone();
@@ -82,7 +82,7 @@ impl Diff {
         })
     }
 
-    pub fn new(buffer: Entity<Buffer>, cx: &mut Context<Self>) -> Self {
+    pub fn new(buffer: Entity<LanguageBuffer>, cx: &mut Context<Self>) -> Self {
         let buffer_text_snapshot = buffer.read(cx).text_snapshot();
         let language = buffer.read(cx).language().cloned();
         let language_registry = buffer.read(cx).language_registry();
@@ -191,7 +191,7 @@ impl Diff {
 pub struct PendingDiff {
     multibuffer: Entity<MultiBuffer>,
     base_text: Arc<str>,
-    new_buffer: Entity<Buffer>,
+    new_buffer: Entity<LanguageBuffer>,
     diff: Entity<BufferDiff>,
     revealed_ranges: Vec<Range<Anchor>>,
     _subscription: Subscription,
@@ -262,7 +262,7 @@ impl PendingDiff {
                 self.new_buffer.read(cx).line_ending(),
                 self.new_buffer.read(cx).as_rope().clone(),
             );
-            let mut buffer = Buffer::build(buffer, None, Capability::ReadWrite);
+            let mut buffer = LanguageBuffer::build(buffer, None, Capability::ReadWrite);
             buffer.set_language(language, cx);
             buffer
         });
@@ -361,14 +361,14 @@ impl PendingDiff {
 pub struct FinalizedDiff {
     path: String,
     base_text: Arc<str>,
-    new_buffer: Entity<Buffer>,
+    new_buffer: Entity<LanguageBuffer>,
     multibuffer: Entity<MultiBuffer>,
     _update_diff: Task<Result<()>>,
 }
 
 async fn build_buffer_diff(
     old_text: Arc<str>,
-    buffer: &Entity<Buffer>,
+    buffer: &Entity<LanguageBuffer>,
     language_registry: Option<Arc<LanguageRegistry>>,
     cx: &mut AsyncApp,
 ) -> Result<Entity<BufferDiff>> {
@@ -410,13 +410,13 @@ async fn build_buffer_diff(
 #[cfg(test)]
 mod tests {
     use gpui::{AppContext as _, TestAppContext};
-    use language::Buffer;
+    use language::LanguageBuffer;
 
     use crate::Diff;
 
     #[gpui::test]
     async fn test_pending_diff(cx: &mut TestAppContext) {
-        let buffer = cx.new(|cx| Buffer::local("hello!", cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local("hello!", cx));
         let _diff = cx.new(|cx| Diff::new(buffer.clone(), cx));
         buffer.update(cx, |buffer, cx| {
             buffer.set_text("HELLO!", cx);

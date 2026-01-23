@@ -7,7 +7,7 @@ use futures::future::Shared;
 use futures::{FutureExt as _, StreamExt as _, future};
 use gpui::{App, AppContext as _, AsyncApp, Entity, Task};
 use handlebars::Handlebars;
-use language::{Buffer, DiagnosticSeverity, OffsetRangeExt as _};
+use language::{LanguageBuffer, DiagnosticSeverity, OffsetRangeExt as _};
 use language_model::{
     LanguageModel, LanguageModelCompletionEvent, LanguageModelRegistry, LanguageModelRequest,
     LanguageModelRequestMessage, LanguageModelToolResultContent, MessageContent, Role, TokenUsage,
@@ -225,7 +225,7 @@ impl ExampleInstance {
 
             struct LanguageServerState {
                 _lsp_open_handle: OpenLspBufferHandle,
-                language_file_buffer: Entity<Buffer>,
+                language_file_buffer: Entity<LanguageBuffer>,
             }
 
             let mut diagnostics_before = None;
@@ -891,7 +891,7 @@ impl language_model::LanguageModel for LanguageModelInterceptor {
 
 pub fn wait_for_lang_server(
     project: &Entity<Project>,
-    buffer: &Entity<Buffer>,
+    buffer: &Entity<LanguageBuffer>,
     log_prefix: String,
     cx: &mut AsyncApp,
 ) -> Task<Result<()>> {

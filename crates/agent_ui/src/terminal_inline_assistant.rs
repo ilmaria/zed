@@ -14,7 +14,7 @@ use collections::{HashMap, VecDeque};
 use editor::{MultiBuffer, actions::SelectAll};
 use fs::Fs;
 use gpui::{App, Entity, Focusable, Global, Subscription, Task, UpdateGlobal, WeakEntity};
-use language::Buffer;
+use language::LanguageBuffer;
 use language_model::{
     ConfiguredModel, LanguageModelRegistry, LanguageModelRequest, LanguageModelRequestMessage,
     Role, report_anthropic_event,
@@ -72,7 +72,7 @@ impl TerminalInlineAssistant {
         let session_id = Uuid::new_v4();
         let prompt_buffer = cx.new(|cx| {
             MultiBuffer::singleton(
-                cx.new(|cx| Buffer::local(initial_prompt.unwrap_or_default(), cx)),
+                cx.new(|cx| LanguageBuffer::local(initial_prompt.unwrap_or_default(), cx)),
                 cx,
             )
         });

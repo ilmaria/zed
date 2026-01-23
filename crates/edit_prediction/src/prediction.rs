@@ -7,7 +7,7 @@ use std::{
 use cloud_llm_client::EditPredictionRejectReason;
 use edit_prediction_types::interpolate_edits;
 use gpui::{AsyncApp, Entity, SharedString};
-use language::{Anchor, Buffer, BufferSnapshot, EditPreview, TextBufferSnapshot};
+use language::{Anchor, LanguageBuffer, BufferSnapshot, EditPreview, TextBufferSnapshot};
 use zeta_prompt::ZetaPromptInput;
 
 #[derive(Clone, Default, Debug, PartialEq, Eq, Hash)]
@@ -34,7 +34,7 @@ pub struct EditPredictionResult {
 impl EditPredictionResult {
     pub async fn new(
         id: EditPredictionId,
-        edited_buffer: &Entity<Buffer>,
+        edited_buffer: &Entity<LanguageBuffer>,
         edited_buffer_snapshot: &BufferSnapshot,
         edits: Arc<[(Range<Anchor>, Arc<str>)]>,
         buffer_snapshotted_at: Instant,
@@ -88,7 +88,7 @@ pub struct EditPrediction {
     pub edits: Arc<[(Range<Anchor>, Arc<str>)]>,
     pub snapshot: BufferSnapshot,
     pub edit_preview: EditPreview,
-    pub buffer: Entity<Buffer>,
+    pub buffer: Entity<LanguageBuffer>,
     pub buffer_snapshotted_at: Instant,
     pub response_received_at: Instant,
     pub inputs: zeta_prompt::ZetaPromptInput,
@@ -102,7 +102,7 @@ impl EditPrediction {
         interpolate_edits(&self.snapshot, new_snapshot, &self.edits)
     }
 
-    pub fn targets_buffer(&self, buffer: &Buffer) -> bool {
+    pub fn targets_buffer(&self, buffer: &LanguageBuffer) -> bool {
         self.snapshot.remote_id() == buffer.remote_id()
     }
 
@@ -126,13 +126,13 @@ mod tests {
 
     use super::*;
     use gpui::{App, Entity, TestAppContext, prelude::*};
-    use language::{Buffer, ToOffset as _};
+    use language::{LanguageBuffer, ToOffset as _};
     use text::EditType;
     use zeta_prompt::ZetaPromptInput;
 
     #[gpui::test]
     async fn test_edit_prediction_basic_interpolation(cx: &mut TestAppContext) {
-        let buffer = cx.new(|cx| Buffer::local("Lorem ipsum dolor", cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local("Lorem ipsum dolor", cx));
         let edits: Arc<[(Range<Anchor>, Arc<str>)]> = cx.update(|cx| {
             to_prediction_edits([(2..5, "REM".into()), (9..11, "".into())], &buffer, cx).into()
         });
@@ -260,7 +260,7 @@ mod tests {
 
     fn to_prediction_edits(
         iterator: impl IntoIterator<Item = (Range<usize>, Arc<str>)>,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cx: &App,
     ) -> Vec<(Range<Anchor>, Arc<str>)> {
         let buffer = buffer.read(cx);
@@ -277,7 +277,7 @@ mod tests {
 
     fn from_prediction_edits(
         editor_edits: &[(Range<Anchor>, Arc<str>)],
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cx: &App,
     ) -> Vec<(Range<usize>, Arc<str>)> {
         let buffer = buffer.read(cx);

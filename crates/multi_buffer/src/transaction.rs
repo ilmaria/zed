@@ -1,5 +1,5 @@
 use gpui::{App, Context, Entity};
-use language::{self, Buffer, TransactionId};
+use language::{self, LanguageBuffer, TransactionId};
 use std::{
     collections::HashMap,
     ops::{AddAssign, Range, Sub},
@@ -94,7 +94,7 @@ impl History {
         now: Instant,
         cx: &Context<MultiBuffer>,
     ) where
-        T: IntoIterator<Item = (&'a Entity<Buffer>, &'a language::Transaction)>,
+        T: IntoIterator<Item = (&'a Entity<LanguageBuffer>, &'a language::Transaction)>,
     {
         assert_eq!(self.transaction_depth, 0);
         let transaction = Transaction {
@@ -425,7 +425,7 @@ impl MultiBuffer {
 
     pub fn push_transaction<'a, T>(&mut self, buffer_transactions: T, cx: &Context<Self>)
     where
-        T: IntoIterator<Item = (&'a Entity<Buffer>, &'a language::Transaction)>,
+        T: IntoIterator<Item = (&'a Entity<LanguageBuffer>, &'a language::Transaction)>,
     {
         self.history
             .push_transaction(buffer_transactions, Instant::now(), cx);

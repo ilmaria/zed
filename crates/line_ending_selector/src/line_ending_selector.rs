@@ -2,7 +2,7 @@ mod line_ending_indicator;
 
 use editor::Editor;
 use gpui::{DismissEvent, Entity, EventEmitter, FocusHandle, Focusable, Task, WeakEntity, actions};
-use language::{Buffer, LineEnding};
+use language::{LanguageBuffer, LineEnding};
 pub use line_ending_indicator::LineEndingIndicator;
 use picker::{Picker, PickerDelegate};
 use project::Project;
@@ -57,7 +57,7 @@ impl LineEndingSelector {
     }
 
     fn new(
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         project: Entity<Project>,
         window: &mut Window,
         cx: &mut Context<Self>,
@@ -87,7 +87,7 @@ impl ModalView for LineEndingSelector {}
 
 struct LineEndingSelectorDelegate {
     line_ending_selector: WeakEntity<LineEndingSelector>,
-    buffer: Entity<Buffer>,
+    buffer: Entity<LanguageBuffer>,
     project: Entity<Project>,
     line_ending: LineEnding,
     matches: Vec<LineEnding>,
@@ -97,7 +97,7 @@ struct LineEndingSelectorDelegate {
 impl LineEndingSelectorDelegate {
     fn new(
         line_ending_selector: WeakEntity<LineEndingSelector>,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         project: Entity<Project>,
         line_ending: LineEnding,
     ) -> Self {

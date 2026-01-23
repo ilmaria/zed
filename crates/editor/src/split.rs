@@ -6,7 +6,7 @@ use feature_flags::{FeatureFlag, FeatureFlagAppExt as _};
 use gpui::{
     Action, AppContext as _, Entity, EventEmitter, Focusable, NoAction, Subscription, WeakEntity,
 };
-use language::{Buffer, Capability};
+use language::{LanguageBuffer, Capability};
 use multi_buffer::{Anchor, ExcerptId, ExcerptRange, ExpandExcerptDirection, MultiBuffer, PathKey};
 use project::Project;
 use rope::Point;
@@ -295,7 +295,7 @@ impl SplittableEditor {
     pub fn set_excerpts_for_path(
         &mut self,
         path: PathKey,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         ranges: impl IntoIterator<Item = Range<Point>> + Clone,
         context_line_count: u32,
         diff: Entity<BufferDiff>,
@@ -556,7 +556,7 @@ impl SplittableEditor {
             if excerpt_ids.is_empty() || (rng.random() && excerpt_ids.len() < max_excerpts) {
                 let len = rng.random_range(100..500);
                 let text = RandomCharIter::new(&mut *rng).take(len).collect::<String>();
-                let buffer = cx.new(|cx| Buffer::local(text, cx));
+                let buffer = cx.new(|cx| LanguageBuffer::local(text, cx));
                 log::info!(
                     "Creating new buffer {} with text: {:?}",
                     buffer.read(cx).remote_id(),

@@ -5,7 +5,7 @@ use futures::AsyncReadExt;
 use gpui::{App, Context, Entity, Task};
 use http_client::HttpClient;
 use language::{
-    language_settings::all_language_settings, Anchor, Buffer, BufferSnapshot, EditPreview, ToPoint,
+    language_settings::all_language_settings, Anchor, LanguageBuffer, BufferSnapshot, EditPreview, ToPoint,
 };
 use language_models::MistralLanguageModelProvider;
 use mistral::CODESTRAL_API_URL;
@@ -178,7 +178,7 @@ impl EditPredictionDelegate for CodestralEditPredictionDelegate {
         true
     }
 
-    fn is_enabled(&self, _buffer: &Entity<Buffer>, _cursor_position: Anchor, cx: &App) -> bool {
+    fn is_enabled(&self, _buffer: &Entity<LanguageBuffer>, _cursor_position: Anchor, cx: &App) -> bool {
         Self::api_key(cx).is_some()
     }
 
@@ -188,7 +188,7 @@ impl EditPredictionDelegate for CodestralEditPredictionDelegate {
 
     fn refresh(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         cursor_position: language::Anchor,
         debounce: bool,
         cx: &mut Context<Self>,
@@ -315,7 +315,7 @@ impl EditPredictionDelegate for CodestralEditPredictionDelegate {
     /// Returns the completion suggestion, adjusted or invalidated based on user edits
     fn suggest(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         _cursor_position: Anchor,
         cx: &mut Context<Self>,
     ) -> Option<EditPrediction> {

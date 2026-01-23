@@ -15,7 +15,7 @@ use gpui::{
     ParentElement, PromptLevel, Render, Styled, Task, WeakEntity, Window, actions,
 };
 use language::{
-    Anchor, Buffer, Capability, DiskState, File, LanguageRegistry, LineEnding, OffsetRangeExt as _,
+    Anchor, LanguageBuffer, Capability, DiskState, File, LanguageRegistry, LineEnding, OffsetRangeExt as _,
     Point, ReplicaId, Rope, TextBuffer,
 };
 use multi_buffer::PathKey;
@@ -174,7 +174,7 @@ impl CommitView {
         let multibuffer = cx.new(|_| MultiBuffer::new(Capability::ReadOnly));
 
         let message_buffer = cx.new(|cx| {
-            let mut buffer = Buffer::local(commit.message.clone(), cx);
+            let mut buffer = LanguageBuffer::local(commit.message.clone(), cx);
             buffer.set_capability(Capability::ReadOnly, cx);
             buffer
         });
@@ -836,7 +836,7 @@ async fn build_buffer(
     blob: Arc<dyn File>,
     language_registry: &Arc<language::LanguageRegistry>,
     cx: &mut AsyncApp,
-) -> Result<Entity<Buffer>> {
+) -> Result<Entity<LanguageBuffer>> {
     let line_ending = LineEnding::detect(&text);
     LineEnding::normalize(&mut text);
     let text = Rope::from(text);
@@ -857,7 +857,7 @@ async fn build_buffer(
             line_ending,
             text,
         );
-        let mut buffer = Buffer::build(buffer, Some(blob), Capability::ReadWrite);
+        let mut buffer = LanguageBuffer::build(buffer, Some(blob), Capability::ReadWrite);
         buffer.set_language_async(language, cx);
         buffer
     });
@@ -866,7 +866,7 @@ async fn build_buffer(
 
 async fn build_buffer_diff(
     mut old_text: Option<String>,
-    buffer: &Entity<Buffer>,
+    buffer: &Entity<LanguageBuffer>,
     language_registry: &Arc<LanguageRegistry>,
     cx: &mut AsyncApp,
 ) -> Result<Entity<BufferDiff>> {

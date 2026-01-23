@@ -119,7 +119,7 @@ use indent_guides::ActiveIndentGuidesState;
 use inlays::{InlaySplice, inlay_hints::InlayHintRefreshReason};
 use itertools::{Either, Itertools};
 use language::{
-    AutoindentMode, BlockCommentConfig, BracketMatch, BracketPair, Buffer, BufferRow,
+    AutoindentMode, BlockCommentConfig, BracketMatch, BracketPair, LanguageBuffer, BufferRow,
     BufferSnapshot, Capability, CharClassifier, CharKind, CharScopeContext, CodeLabel, CursorShape,
     DiagnosticEntryRef, DiffOptions, EditPredictionsMode, EditPreview, HighlightedText, IndentKind,
     IndentSize, Language, LanguageName, LanguageRegistry, LanguageScope, OffsetRangeExt,
@@ -1709,7 +1709,7 @@ pub enum GotoDefinitionKind {
 }
 
 pub enum FormatTarget {
-    Buffers(HashSet<Entity<Buffer>>),
+    Buffers(HashSet<Entity<LanguageBuffer>>),
     Ranges(Vec<Range<MultiBufferPoint>>),
 }
 
@@ -1745,13 +1745,13 @@ pub struct RewrapOptions {
 
 impl Editor {
     pub fn single_line(window: &mut Window, cx: &mut Context<Self>) -> Self {
-        let buffer = cx.new(|cx| Buffer::local("", cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local("", cx));
         let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
         Self::new(EditorMode::SingleLine, buffer, None, window, cx)
     }
 
     pub fn multi_line(window: &mut Window, cx: &mut Context<Self>) -> Self {
-        let buffer = cx.new(|cx| Buffer::local("", cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local("", cx));
         let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
         Self::new(EditorMode::full(), buffer, None, window, cx)
     }
@@ -1762,7 +1762,7 @@ impl Editor {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Self {
-        let buffer = cx.new(|cx| Buffer::local("", cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local("", cx));
         let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
         Self::new(
             EditorMode::AutoHeight {
@@ -1783,7 +1783,7 @@ impl Editor {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Self {
-        let buffer = cx.new(|cx| Buffer::local("", cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local("", cx));
         let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
         Self::new(
             EditorMode::AutoHeight {
@@ -1798,7 +1798,7 @@ impl Editor {
     }
 
     pub fn for_buffer(
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         project: Option<Entity<Project>>,
         window: &mut Window,
         cx: &mut Context<Self>,
@@ -2992,7 +2992,7 @@ impl Editor {
     pub fn active_excerpt(
         &self,
         cx: &App,
-    ) -> Option<(ExcerptId, Entity<Buffer>, Range<text::Anchor>)> {
+    ) -> Option<(ExcerptId, Entity<LanguageBuffer>, Range<text::Anchor>)> {
         self.buffer
             .read(cx)
             .excerpt_containing(self.selections.newest_anchor().head(), cx)
@@ -3081,7 +3081,7 @@ impl Editor {
         cx: &mut Context<Self>,
     ) {
         let multibuffer = cx
-            .new(|cx| MultiBuffer::singleton(cx.new(|cx| Buffer::local(placeholder_text, cx)), cx));
+            .new(|cx| MultiBuffer::singleton(cx.new(|cx| LanguageBuffer::local(placeholder_text, cx)), cx));
 
         let style = window.text_style();
 
@@ -3257,7 +3257,7 @@ impl Editor {
 
     fn edit_predictions_disabled_in_scope(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         buffer_position: language::Anchor,
         cx: &App,
     ) -> bool {
@@ -4289,7 +4289,7 @@ impl Editor {
         &self,
         selection: Range<text::Anchor>,
         cx: &App,
-    ) -> Option<HashMap<Entity<Buffer>, Vec<Range<text::Anchor>>>> {
+    ) -> Option<HashMap<Entity<LanguageBuffer>, Vec<Range<text::Anchor>>>> {
         if self.linked_edit_ranges.is_empty() {
             return None;
         }
@@ -5450,7 +5450,7 @@ impl Editor {
         &self,
         lsp_related_only: bool,
         cx: &mut Context<Editor>,
-    ) -> HashMap<ExcerptId, (Entity<Buffer>, clock::Global, Range<usize>)> {
+    ) -> HashMap<ExcerptId, (Entity<LanguageBuffer>, clock::Global, Range<usize>)> {
         let project = self.project().cloned();
         let multi_buffer = self.buffer().read(cx);
         let multi_buffer_snapshot = multi_buffer.snapshot(cx);
@@ -6527,7 +6527,7 @@ impl Editor {
     fn debug_scenarios(
         &mut self,
         resolved_tasks: &Option<ResolvedTasks>,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cx: &mut App,
     ) -> Task<Vec<task::DebugScenario>> {
         maybe!({
@@ -7544,7 +7544,7 @@ impl Editor {
 
     fn edit_prediction_settings_at_position(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         buffer_position: language::Anchor,
         cx: &App,
     ) -> EditPredictionSettings {
@@ -7611,7 +7611,7 @@ impl Editor {
 
     fn edit_predictions_enabled_in_buffer(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         buffer_position: language::Anchor,
         cx: &App,
     ) -> bool {
@@ -8763,7 +8763,7 @@ impl Editor {
 
     fn build_tasks_context(
         project: &Entity<Project>,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         buffer_row: u32,
         tasks: &Arc<RunnableTasks>,
         cx: &mut Context<Self>,
@@ -8838,7 +8838,7 @@ impl Editor {
     fn find_closest_task(
         &mut self,
         cx: &mut Context<Self>,
-    ) -> Option<(Entity<Buffer>, u32, Arc<RunnableTasks>)> {
+    ) -> Option<(Entity<LanguageBuffer>, u32, Arc<RunnableTasks>)> {
         let cursor_row = self
             .selections
             .newest_adjusted(&self.display_snapshot(cx))
@@ -8858,7 +8858,7 @@ impl Editor {
     fn find_enclosing_node_task(
         &mut self,
         cx: &mut Context<Self>,
-    ) -> Option<(Entity<Buffer>, u32, Arc<RunnableTasks>)> {
+    ) -> Option<(Entity<LanguageBuffer>, u32, Arc<RunnableTasks>)> {
         let snapshot = self.buffer.read(cx).snapshot(cx);
         let offset = self
             .selections
@@ -10637,7 +10637,7 @@ impl Editor {
                     selection.start = Point::new(cursor.row, suggested_indent.len);
                     selection.end = selection.start;
                     if row_delta == 0 {
-                        edits.extend(Buffer::edit_for_indent_size_adjustment(
+                        edits.extend(LanguageBuffer::edit_for_indent_size_adjustment(
                             cursor.row,
                             current_indent,
                             suggested_indent,
@@ -18035,7 +18035,7 @@ impl Editor {
     /// Opens a multibuffer with the given project locations in it.
     pub fn open_locations_in_multibuffer(
         workspace: &mut Workspace,
-        locations: std::collections::HashMap<Entity<Buffer>, Vec<Range<Point>>>,
+        locations: std::collections::HashMap<Entity<LanguageBuffer>, Vec<Range<Point>>>,
         title: String,
         split: bool,
         allow_preview: bool,
@@ -19056,7 +19056,7 @@ impl Editor {
             .collect::<Vec<_>>();
 
         let debounce = Duration::from_millis(pull_diagnostics_settings.debounce_ms);
-        let make_spawn = |buffers: Vec<Entity<Buffer>>, delay: Duration| {
+        let make_spawn = |buffers: Vec<Entity<LanguageBuffer>>, delay: Duration| {
             if buffers.is_empty() {
                 return Task::ready(());
             }
@@ -23582,7 +23582,7 @@ fn edit_for_markdown_paste<'a>(
 fn process_completion_for_edit(
     completion: &Completion,
     intent: CompletionIntent,
-    buffer: &Entity<Buffer>,
+    buffer: &Entity<LanguageBuffer>,
     cursor_position: &text::Anchor,
     cx: &mut Context<Editor>,
 ) -> CompletionEdit {
@@ -24187,7 +24187,7 @@ impl NewlineConfig {
 fn update_uncommitted_diff_for_buffer(
     editor: Entity<Editor>,
     project: &Entity<Project>,
-    buffers: impl IntoIterator<Item = Entity<Buffer>>,
+    buffers: impl IntoIterator<Item = Entity<LanguageBuffer>>,
     buffer: Entity<MultiBuffer>,
     cx: &mut App,
 ) -> Task<()> {
@@ -24625,21 +24625,21 @@ impl CollaborationHub for Entity<Project> {
 pub trait SemanticsProvider {
     fn hover(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: text::Anchor,
         cx: &mut App,
     ) -> Option<Task<Option<Vec<project::Hover>>>>;
 
     fn inline_values(
         &self,
-        buffer_handle: Entity<Buffer>,
+        buffer_handle: Entity<LanguageBuffer>,
         range: Range<text::Anchor>,
         cx: &mut App,
     ) -> Option<Task<anyhow::Result<Vec<InlayHint>>>>;
 
     fn applicable_inlay_chunks(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         ranges: &[Range<text::Anchor>],
         cx: &mut App,
     ) -> Vec<Range<BufferRow>>;
@@ -24649,24 +24649,24 @@ pub trait SemanticsProvider {
     fn inlay_hints(
         &self,
         invalidate: InvalidationStrategy,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         ranges: Vec<Range<text::Anchor>>,
         known_chunks: Option<(clock::Global, HashSet<Range<BufferRow>>)>,
         cx: &mut App,
     ) -> Option<HashMap<Range<BufferRow>, Task<Result<CacheInlayHints>>>>;
 
-    fn supports_inlay_hints(&self, buffer: &Entity<Buffer>, cx: &mut App) -> bool;
+    fn supports_inlay_hints(&self, buffer: &Entity<LanguageBuffer>, cx: &mut App) -> bool;
 
     fn document_highlights(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: text::Anchor,
         cx: &mut App,
     ) -> Option<Task<Result<Vec<DocumentHighlight>>>>;
 
     fn definitions(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: text::Anchor,
         kind: GotoDefinitionKind,
         cx: &mut App,
@@ -24674,14 +24674,14 @@ pub trait SemanticsProvider {
 
     fn range_for_rename(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: text::Anchor,
         cx: &mut App,
     ) -> Option<Task<Result<Option<Range<text::Anchor>>>>>;
 
     fn perform_rename(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: text::Anchor,
         new_name: String,
         cx: &mut App,
@@ -24692,7 +24692,7 @@ pub trait CompletionProvider {
     fn completions(
         &self,
         excerpt_id: ExcerptId,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         buffer_position: text::Anchor,
         trigger: CompletionContext,
         window: &mut Window,
@@ -24701,7 +24701,7 @@ pub trait CompletionProvider {
 
     fn resolve_completions(
         &self,
-        _buffer: Entity<Buffer>,
+        _buffer: Entity<LanguageBuffer>,
         _completion_indices: Vec<usize>,
         _completions: Rc<RefCell<Box<[Completion]>>>,
         _cx: &mut Context<Editor>,
@@ -24711,7 +24711,7 @@ pub trait CompletionProvider {
 
     fn apply_additional_edits_for_completion(
         &self,
-        _buffer: Entity<Buffer>,
+        _buffer: Entity<LanguageBuffer>,
         _completions: Rc<RefCell<Box<[Completion]>>>,
         _completion_index: usize,
         _push_to_history: bool,
@@ -24722,7 +24722,7 @@ pub trait CompletionProvider {
 
     fn is_completion_trigger(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: language::Anchor,
         text: &str,
         trigger_in_words: bool,
@@ -24749,7 +24749,7 @@ pub trait CodeActionProvider {
 
     fn code_actions(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         range: Range<text::Anchor>,
         window: &mut Window,
         cx: &mut App,
@@ -24757,7 +24757,7 @@ pub trait CodeActionProvider {
 
     fn apply_code_action(
         &self,
-        buffer_handle: Entity<Buffer>,
+        buffer_handle: Entity<LanguageBuffer>,
         action: CodeAction,
         excerpt_id: ExcerptId,
         push_to_history: bool,
@@ -24773,7 +24773,7 @@ impl CodeActionProvider for Entity<Project> {
 
     fn code_actions(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         range: Range<text::Anchor>,
         _window: &mut Window,
         cx: &mut App,
@@ -24800,7 +24800,7 @@ impl CodeActionProvider for Entity<Project> {
 
     fn apply_code_action(
         &self,
-        buffer_handle: Entity<Buffer>,
+        buffer_handle: Entity<LanguageBuffer>,
         action: CodeAction,
         _excerpt_id: ExcerptId,
         push_to_history: bool,
@@ -24815,7 +24815,7 @@ impl CodeActionProvider for Entity<Project> {
 
 fn snippet_completions(
     project: &Project,
-    buffer: &Entity<Buffer>,
+    buffer: &Entity<LanguageBuffer>,
     buffer_anchor: text::Anchor,
     classifier: CharClassifier,
     cx: &mut App,
@@ -25051,7 +25051,7 @@ impl CompletionProvider for Entity<Project> {
     fn completions(
         &self,
         _excerpt_id: ExcerptId,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         buffer_position: text::Anchor,
         options: CompletionContext,
         _window: &mut Window,
@@ -25065,7 +25065,7 @@ impl CompletionProvider for Entity<Project> {
 
     fn resolve_completions(
         &self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         completion_indices: Vec<usize>,
         completions: Rc<RefCell<Box<[Completion]>>>,
         cx: &mut Context<Editor>,
@@ -25079,7 +25079,7 @@ impl CompletionProvider for Entity<Project> {
 
     fn apply_additional_edits_for_completion(
         &self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         completions: Rc<RefCell<Box<[Completion]>>>,
         completion_index: usize,
         push_to_history: bool,
@@ -25100,7 +25100,7 @@ impl CompletionProvider for Entity<Project> {
 
     fn is_completion_trigger(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: language::Anchor,
         text: &str,
         trigger_in_words: bool,
@@ -25136,7 +25136,7 @@ impl CompletionProvider for Entity<Project> {
 impl SemanticsProvider for Entity<Project> {
     fn hover(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: text::Anchor,
         cx: &mut App,
     ) -> Option<Task<Option<Vec<project::Hover>>>> {
@@ -25145,7 +25145,7 @@ impl SemanticsProvider for Entity<Project> {
 
     fn document_highlights(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: text::Anchor,
         cx: &mut App,
     ) -> Option<Task<Result<Vec<DocumentHighlight>>>> {
@@ -25156,7 +25156,7 @@ impl SemanticsProvider for Entity<Project> {
 
     fn definitions(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: text::Anchor,
         kind: GotoDefinitionKind,
         cx: &mut App,
@@ -25169,7 +25169,7 @@ impl SemanticsProvider for Entity<Project> {
         }))
     }
 
-    fn supports_inlay_hints(&self, buffer: &Entity<Buffer>, cx: &mut App) -> bool {
+    fn supports_inlay_hints(&self, buffer: &Entity<LanguageBuffer>, cx: &mut App) -> bool {
         self.update(cx, |project, cx| {
             if project
                 .active_debug_session(cx)
@@ -25186,7 +25186,7 @@ impl SemanticsProvider for Entity<Project> {
 
     fn inline_values(
         &self,
-        buffer_handle: Entity<Buffer>,
+        buffer_handle: Entity<LanguageBuffer>,
         range: Range<text::Anchor>,
         cx: &mut App,
     ) -> Option<Task<anyhow::Result<Vec<InlayHint>>>> {
@@ -25199,7 +25199,7 @@ impl SemanticsProvider for Entity<Project> {
 
     fn applicable_inlay_chunks(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         ranges: &[Range<text::Anchor>],
         cx: &mut App,
     ) -> Vec<Range<BufferRow>> {
@@ -25217,7 +25217,7 @@ impl SemanticsProvider for Entity<Project> {
     fn inlay_hints(
         &self,
         invalidate: InvalidationStrategy,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         ranges: Vec<Range<text::Anchor>>,
         known_chunks: Option<(clock::Global, HashSet<Range<BufferRow>>)>,
         cx: &mut App,
@@ -25229,7 +25229,7 @@ impl SemanticsProvider for Entity<Project> {
 
     fn range_for_rename(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: text::Anchor,
         cx: &mut App,
     ) -> Option<Task<Result<Option<Range<text::Anchor>>>>> {
@@ -25261,7 +25261,7 @@ impl SemanticsProvider for Entity<Project> {
 
     fn perform_rename(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: text::Anchor,
         new_name: String,
         cx: &mut App,
@@ -25760,7 +25760,7 @@ pub enum EditorEvent {
         text: Arc<str>,
     },
     ExcerptsAdded {
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         predecessor: ExcerptId,
         excerpts: Vec<(ExcerptId, ExcerptRange<language::Anchor>)>,
     },
@@ -26542,7 +26542,7 @@ impl BreakpointPromptEditor {
         .map(|msg| msg.to_string())
         .unwrap_or_default();
 
-        let buffer = cx.new(|cx| Buffer::local(base_text, cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local(base_text, cx));
         let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
 
         let prompt = cx.new(|cx| {

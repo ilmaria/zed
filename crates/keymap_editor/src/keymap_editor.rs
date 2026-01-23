@@ -3171,7 +3171,7 @@ impl ActionArgumentsEditor {
         project: WeakEntity<Project>,
         fs: Arc<dyn Fs>,
         cx: &mut AsyncApp,
-    ) -> anyhow::Result<(Entity<language::Buffer>, Option<tempfile::TempDir>)> {
+    ) -> anyhow::Result<(Entity<language::LanguageBuffer>, Option<tempfile::TempDir>)> {
         let (temp_file_path, temp_dir) = {
             let file_name = file_name.clone();
             async move {
@@ -3265,7 +3265,7 @@ impl CompletionProvider for KeyContextCompletionProvider {
     fn completions(
         &self,
         _excerpt_id: editor::ExcerptId,
-        buffer: &Entity<language::Buffer>,
+        buffer: &Entity<language::LanguageBuffer>,
         buffer_position: language::Anchor,
         _trigger: editor::CompletionContext,
         _window: &mut Window,
@@ -3307,7 +3307,7 @@ impl CompletionProvider for KeyContextCompletionProvider {
 
     fn is_completion_trigger(
         &self,
-        _buffer: &Entity<language::Buffer>,
+        _buffer: &Entity<language::LanguageBuffer>,
         _position: language::Anchor,
         text: &str,
         _trigger_in_words: bool,

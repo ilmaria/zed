@@ -17,7 +17,7 @@ use gpui::{
 };
 use http_client::{AsyncBody, HttpClientWithUrl};
 use itertools::Either;
-use language::Buffer;
+use language::LanguageBuffer;
 use language_model::LanguageModelImage;
 use multi_buffer::MultiBufferRow;
 use postage::stream::Stream as _;
@@ -46,7 +46,7 @@ pub type MentionTask = Shared<Task<Result<Mention, String>>>;
 pub enum Mention {
     Text {
         content: String,
-        tracked_buffers: Vec<Entity<Buffer>>,
+        tracked_buffers: Vec<Entity<LanguageBuffer>>,
     },
     Image(MentionImage),
     Link,
@@ -396,7 +396,7 @@ impl MentionSet {
     pub fn confirm_mention_for_selection(
         &mut self,
         source_range: Range<text::Anchor>,
-        selections: Vec<(Entity<Buffer>, Range<text::Anchor>, Range<usize>)>,
+        selections: Vec<(Entity<LanguageBuffer>, Range<text::Anchor>, Range<usize>)>,
         editor: Entity<Editor>,
         window: &mut Window,
         cx: &mut Context<Self>,

@@ -24,7 +24,7 @@ use alacritty_terminal::{
 };
 use editor::EditType;
 use gpui::{Bounds, ClipboardItem, Entity, FontStyle, TextStyle, WhiteSpace, canvas, size};
-use language::Buffer;
+use language::LanguageBuffer;
 use settings::Settings as _;
 use terminal::terminal_settings::TerminalSettings;
 use terminal_view::terminal_element::TerminalElement;
@@ -48,7 +48,7 @@ use crate::repl_settings::ReplSettings;
 /// supporting ANSI escape sequences for text formatting and colors.
 ///
 pub struct TerminalOutput {
-    full_buffer: Option<Entity<Buffer>>,
+    full_buffer: Option<Entity<LanguageBuffer>>,
     /// ANSI escape sequence processor for parsing input text.
     parser: Processor,
     /// Alacritty terminal instance that manages the terminal state and content.
@@ -339,14 +339,14 @@ impl OutputContent for TerminalOutput {
         true
     }
 
-    fn buffer_content(&mut self, _: &mut Window, cx: &mut App) -> Option<Entity<Buffer>> {
+    fn buffer_content(&mut self, _: &mut Window, cx: &mut App) -> Option<Entity<LanguageBuffer>> {
         if self.full_buffer.as_ref().is_some() {
             return self.full_buffer.clone();
         }
 
         let buffer = cx.new(|cx| {
             let mut buffer =
-                Buffer::local(self.full_text(), cx).with_language(language::PLAIN_TEXT.clone(), cx);
+                LanguageBuffer::local(self.full_text(), cx).with_language(language::PLAIN_TEXT.clone(), cx);
             buffer.set_capability(language::Capability::ReadOnly, cx);
             buffer
         });

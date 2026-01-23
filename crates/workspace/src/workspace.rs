@@ -56,7 +56,7 @@ pub use item::{
     ProjectItem, SerializableItem, SerializableItemHandle, WeakItemHandle,
 };
 use itertools::Itertools;
-use language::{Buffer, LanguageRegistry, Rope, language_settings::all_language_settings};
+use language::{LanguageBuffer, LanguageRegistry, Rope, language_settings::all_language_settings};
 pub use modal_layer::*;
 use node_runtime::NodeRuntime;
 use notifications::{
@@ -179,7 +179,7 @@ pub trait DebuggerProvider {
         &self,
         definition: DebugScenario,
         task_context: TaskContext,
-        active_buffer: Option<Entity<Buffer>>,
+        active_buffer: Option<Entity<LanguageBuffer>>,
         worktree_id: Option<WorktreeId>,
         window: &mut Window,
         cx: &mut App,

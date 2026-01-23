@@ -103,7 +103,7 @@ pub struct ConflictRegion {
 impl ConflictRegion {
     pub fn resolve(
         &self,
-        buffer: Entity<language::Buffer>,
+        buffer: Entity<language::LanguageBuffer>,
         ranges: &[Range<Anchor>],
         cx: &mut App,
     ) {
@@ -289,7 +289,7 @@ mod tests {
     };
     use gpui::{BackgroundExecutor, TestAppContext};
     use serde_json::json;
-    use text::{Buffer, BufferId, Point, ReplicaId, ToOffset as _};
+    use text::{BufferId, Point, ReplicaId, TextBuffer, ToOffset as _};
     use unindent::Unindent as _;
     use util::{path, rel_path::rel_path};
 
@@ -316,7 +316,7 @@ mod tests {
         .unindent();
 
         let buffer_id = BufferId::new(1).unwrap();
-        let buffer = Buffer::new(ReplicaId::LOCAL, buffer_id, test_content);
+        let buffer = TextBuffer::new(ReplicaId::LOCAL, buffer_id, test_content);
         let snapshot = buffer.snapshot();
 
         let conflict_snapshot = ConflictSet::parse(&snapshot);
@@ -395,7 +395,7 @@ mod tests {
         .unindent();
 
         let buffer_id = BufferId::new(1).unwrap();
-        let buffer = Buffer::new(ReplicaId::LOCAL, buffer_id, test_content);
+        let buffer = TextBuffer::new(ReplicaId::LOCAL, buffer_id, test_content);
         let snapshot = buffer.snapshot();
 
         let conflict_snapshot = ConflictSet::parse(&snapshot);
@@ -428,7 +428,7 @@ mod tests {
             >>>>>>> "#
             .unindent();
         let buffer_id = BufferId::new(1).unwrap();
-        let buffer = Buffer::new(ReplicaId::LOCAL, buffer_id, test_content);
+        let buffer = TextBuffer::new(ReplicaId::LOCAL, buffer_id, test_content);
         let snapshot = buffer.snapshot();
 
         let conflict_snapshot = ConflictSet::parse(&snapshot);
@@ -478,7 +478,7 @@ mod tests {
         .unindent();
 
         let buffer_id = BufferId::new(1).unwrap();
-        let buffer = Buffer::new(ReplicaId::LOCAL, buffer_id, test_content.clone());
+        let buffer = TextBuffer::new(ReplicaId::LOCAL, buffer_id, test_content.clone());
         let snapshot = buffer.snapshot();
 
         let conflict_snapshot = ConflictSet::parse(&snapshot);

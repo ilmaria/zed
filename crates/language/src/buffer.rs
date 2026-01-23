@@ -61,9 +61,9 @@ use sum_tree::TreeMap;
 use text::operation_queue::OperationQueue;
 use text::*;
 pub use text::{
-    Anchor, Bias, Buffer as TextBuffer, BufferId, BufferSnapshot as TextBufferSnapshot, Edit,
-    EditType, LineIndent, OffsetRangeExt, OffsetUtf16, Patch, Point, PointUtf16, Rope, Selection,
-    SelectionGoal, Subscription, TextDimension, TextSummary, ToOffset, ToOffsetUtf16, ToPoint,
+    Anchor, Bias, BufferId, BufferSnapshot as TextBufferSnapshot, Edit, EditType, LineIndent,
+    OffsetRangeExt, OffsetUtf16, Patch, Point, PointUtf16, Rope, Selection, SelectionGoal,
+    Subscription, TextBuffer, TextDimension, TextSummary, ToOffset, ToOffsetUtf16, ToPoint,
     ToPointUtf16, Transaction, TransactionId, Unclipped,
 };
 use theme::{ActiveTheme as _, SyntaxTheme};
@@ -102,7 +102,7 @@ pub type BufferRow = u32;
 
 /// An in-memory representation of a source code file, including its text,
 /// syntax trees, git status, and diagnostics.
-pub struct Buffer {
+pub struct LanguageBuffer {
     text: TextBuffer,
     branch_state: Option<BufferBranchState>,
     /// Filesystem state, `None` when there is no path.
@@ -182,7 +182,7 @@ pub enum ParseStatus {
 }
 
 struct BufferBranchState {
-    base_buffer: Entity<Buffer>,
+    base_buffer: Entity<LanguageBuffer>,
     merged_operations: Vec<Lamport>,
 }
 
@@ -909,9 +909,9 @@ impl EditPreview {
         highlighted_text.build()
     }
 
-    pub fn build_result_buffer(&self, cx: &mut App) -> Entity<Buffer> {
+    pub fn build_result_buffer(&self, cx: &mut App) -> Entity<LanguageBuffer> {
         cx.new(|cx| {
-            let mut buffer = Buffer::local_normalized(
+            let mut buffer = LanguageBuffer::local_normalized(
                 self.applied_edits_snapshot.as_rope().clone(),
                 self.applied_edits_snapshot.line_ending(),
                 cx,
@@ -957,7 +957,7 @@ impl<T> BracketMatch<T> {
     }
 }
 
-impl Buffer {
+impl LanguageBuffer {
     /// Create a new buffer with the given base text.
     pub fn local<T: Into<String>>(base_text: T, cx: &Context<Self>) -> Self {
         Self::build(
@@ -1385,7 +1385,7 @@ impl Buffer {
 
     fn on_base_buffer_event(
         &mut self,
-        _: Entity<Buffer>,
+        _: Entity<LanguageBuffer>,
         event: &BufferEvent,
         cx: &mut Context<Self>,
     ) {
@@ -3075,7 +3075,11 @@ impl Buffer {
         undone
     }
 
-    pub fn undo_operations(&mut self, counts: HashMap<Lamport, u32>, cx: &mut Context<Buffer>) {
+    pub fn undo_operations(
+        &mut self,
+        counts: HashMap<Lamport, u32>,
+        cx: &mut Context<LanguageBuffer>,
+    ) {
         let was_dirty = self.is_dirty();
         let operation = self.text.undo_operations(counts);
         let old_version = self.version.clone();
@@ -3171,7 +3175,7 @@ impl Buffer {
 
 #[doc(hidden)]
 #[cfg(any(test, feature = "test-support"))]
-impl Buffer {
+impl LanguageBuffer {
     pub fn edit_via_marked_text(
         &mut self,
         marked_string: &str,
@@ -3224,9 +3228,9 @@ impl Buffer {
     }
 }
 
-impl EventEmitter<BufferEvent> for Buffer {}
+impl EventEmitter<BufferEvent> for LanguageBuffer {}
 
-impl Deref for Buffer {
+impl Deref for LanguageBuffer {
     type Target = TextBuffer;
 
     fn deref(&self) -> &Self::Target {

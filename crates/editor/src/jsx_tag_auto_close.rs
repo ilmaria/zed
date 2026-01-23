@@ -380,7 +380,7 @@ pub(crate) fn handle_from(
     }
 
     struct JsxAutoCloseEditContext {
-        buffer: Entity<language::Buffer>,
+        buffer: Entity<language::LanguageBuffer>,
         config: language::JsxTagAutoCloseConfig,
         edits: Vec<Range<Anchor>>,
     }
@@ -799,7 +799,7 @@ mod jsx_tag_autoclose_tests {
         });
 
         let buffer_a = cx.new(|cx| {
-            let mut buf = language::Buffer::local("<div", cx);
+            let mut buf = language::LanguageBuffer::local("<div", cx);
             buf.set_language(
                 Some(language("tsx", tree_sitter_typescript::LANGUAGE_TSX.into())),
                 cx,
@@ -807,14 +807,14 @@ mod jsx_tag_autoclose_tests {
             buf
         });
         let buffer_b = cx.new(|cx| {
-            let mut buf = language::Buffer::local("<pre", cx);
+            let mut buf = language::LanguageBuffer::local("<pre", cx);
             buf.set_language(
                 Some(language("tsx", tree_sitter_typescript::LANGUAGE_TSX.into())),
                 cx,
             );
             buf
         });
-        let buffer_c = cx.new(|cx| language::Buffer::local("<span", cx));
+        let buffer_c = cx.new(|cx| language::LanguageBuffer::local("<span", cx));
         let buffer = cx.new(|cx| {
             let mut buf = MultiBuffer::new(language::Capability::ReadWrite);
             buf.push_excerpts(

@@ -2,7 +2,7 @@ use crate::{Copilot, CopilotEditPrediction};
 use anyhow::Result;
 use edit_prediction_types::{EditPrediction, EditPredictionDelegate, interpolate_edits};
 use gpui::{App, Context, Entity, Task};
-use language::{Anchor, Buffer, BufferSnapshot, EditPreview, OffsetRangeExt};
+use language::{Anchor, LanguageBuffer, BufferSnapshot, EditPreview, OffsetRangeExt};
 use std::{ops::Range, sync::Arc, time::Duration};
 
 pub const COPILOT_DEBOUNCE_TIMEOUT: Duration = Duration::from_millis(75);
@@ -50,7 +50,7 @@ impl EditPredictionDelegate for CopilotEditPredictionDelegate {
 
     fn is_enabled(
         &self,
-        _buffer: &Entity<Buffer>,
+        _buffer: &Entity<LanguageBuffer>,
         _cursor_position: language::Anchor,
         cx: &App,
     ) -> bool {
@@ -59,7 +59,7 @@ impl EditPredictionDelegate for CopilotEditPredictionDelegate {
 
     fn refresh(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         cursor_position: language::Anchor,
         debounce: bool,
         cx: &mut Context<Self>,
@@ -117,7 +117,7 @@ impl EditPredictionDelegate for CopilotEditPredictionDelegate {
 
     fn suggest(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         _: language::Anchor,
         cx: &mut Context<Self>,
     ) -> Option<EditPrediction> {
@@ -634,8 +634,8 @@ mod tests {
 
         let (copilot, copilot_lsp) = Copilot::fake(cx);
 
-        let buffer_1 = cx.new(|cx| Buffer::local("a = 1\nb = 2\n", cx));
-        let buffer_2 = cx.new(|cx| Buffer::local("c = 3\nd = 4\n", cx));
+        let buffer_1 = cx.new(|cx| LanguageBuffer::local("a = 1\nb = 2\n", cx));
+        let buffer_2 = cx.new(|cx| LanguageBuffer::local("c = 3\nd = 4\n", cx));
         let multibuffer = cx.new(|cx| {
             let mut multibuffer = MultiBuffer::new(language::Capability::ReadWrite);
             multibuffer.push_excerpts(

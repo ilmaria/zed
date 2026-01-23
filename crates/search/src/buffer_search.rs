@@ -1815,7 +1815,7 @@ mod tests {
         display_map::DisplayRow, test::editor_test_context::EditorTestContext,
     };
     use gpui::{Hsla, TestAppContext, UpdateGlobal, VisualTestContext};
-    use language::{Buffer, Point};
+    use language::{LanguageBuffer, Point};
     use settings::{SearchSettingsContent, SettingsStore};
     use smol::stream::StreamExt as _;
     use unindent::Unindent as _;
@@ -1842,7 +1842,7 @@ mod tests {
         init_globals(cx);
 
         let buffer1 = cx.new(|cx| {
-            Buffer::local(
+            LanguageBuffer::local(
                             r#"
                             A regular expression (shortened as regex or regexp;[1] also referred to as
                             rational expression[2][3]) is a sequence of characters that specifies a search
@@ -1855,7 +1855,7 @@ mod tests {
         });
 
         let buffer2 = cx.new(|cx| {
-            Buffer::local(
+            LanguageBuffer::local(
                 r#"
                             Some Additional text with the term regular expression in it.
                             There two lines.
@@ -1914,7 +1914,7 @@ mod tests {
     ) {
         init_globals(cx);
         let buffer = cx.new(|cx| {
-            Buffer::local(
+            LanguageBuffer::local(
                 r#"
                 A regular expression (shortened as regex or regexp;[1] also referred to as
                 rational expression[2][3]) is a sequence of characters that specifies a search
@@ -2331,7 +2331,7 @@ mod tests {
             expected_query_matches_count > 1,
             "Should pick a query with multiple results"
         );
-        let buffer = cx.new(|cx| Buffer::local(buffer_text, cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local(buffer_text, cx));
         let window = cx.add_window(|_, _| gpui::Empty);
 
         let editor = window.build_entity(cx, |window, cx| {
@@ -2547,7 +2547,7 @@ mod tests {
         });
         "#
         .unindent();
-        let buffer = cx.new(|cx| Buffer::local(buffer_text, cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local(buffer_text, cx));
         let cx = cx.add_empty_window();
 
         let editor =
@@ -3054,7 +3054,7 @@ mod tests {
     ) {
         init_globals(cx);
         let buffer = cx.new(|cx| {
-            Buffer::local(
+            LanguageBuffer::local(
                 r#"
                 aaa bbb aaa ccc
                 aaa bbb aaa ccc

@@ -13,7 +13,7 @@ use async_trait::async_trait;
 use collections::HashMap;
 use gpui::{App, AsyncApp, Entity};
 use language::{
-    Buffer, point_to_lsp,
+    LanguageBuffer, point_to_lsp,
     proto::{deserialize_anchor, serialize_anchor},
 };
 use lsp::{AdapterServerCapabilities, LanguageServer, LanguageServerId};
@@ -75,7 +75,7 @@ impl LspCommand for ExpandMacro {
     fn to_lsp(
         &self,
         path: &Path,
-        _: &Buffer,
+        _: &LanguageBuffer,
         _: &Arc<LanguageServer>,
         _: &App,
     ) -> Result<ExpandMacroParams> {
@@ -89,7 +89,7 @@ impl LspCommand for ExpandMacro {
         self,
         message: Option<ExpandedMacro>,
         _: Entity<LspStore>,
-        _: Entity<Buffer>,
+        _: Entity<LanguageBuffer>,
         _: LanguageServerId,
         _: AsyncApp,
     ) -> anyhow::Result<ExpandedMacro> {
@@ -101,7 +101,7 @@ impl LspCommand for ExpandMacro {
             .unwrap_or_default())
     }
 
-    fn to_proto(&self, project_id: u64, buffer: &Buffer) -> proto::LspExtExpandMacro {
+    fn to_proto(&self, project_id: u64, buffer: &LanguageBuffer) -> proto::LspExtExpandMacro {
         proto::LspExtExpandMacro {
             project_id,
             buffer_id: buffer.remote_id().into(),
@@ -114,7 +114,7 @@ impl LspCommand for ExpandMacro {
     async fn from_proto(
         message: Self::ProtoRequest,
         _: Entity<LspStore>,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         cx: AsyncApp,
     ) -> anyhow::Result<Self> {
         let position = message
@@ -143,7 +143,7 @@ impl LspCommand for ExpandMacro {
         self,
         message: proto::LspExtExpandMacroResponse,
         _: Entity<LspStore>,
-        _: Entity<Buffer>,
+        _: Entity<LanguageBuffer>,
         _: AsyncApp,
     ) -> anyhow::Result<ExpandedMacro> {
         Ok(ExpandedMacro {
@@ -207,7 +207,7 @@ impl LspCommand for OpenDocs {
     fn to_lsp(
         &self,
         path: &Path,
-        _: &Buffer,
+        _: &LanguageBuffer,
         _: &Arc<LanguageServer>,
         _: &App,
     ) -> Result<OpenDocsParams> {
@@ -223,7 +223,7 @@ impl LspCommand for OpenDocs {
         self,
         message: Option<DocsUrls>,
         _: Entity<LspStore>,
-        _: Entity<Buffer>,
+        _: Entity<LanguageBuffer>,
         _: LanguageServerId,
         _: AsyncApp,
     ) -> anyhow::Result<DocsUrls> {
@@ -235,7 +235,7 @@ impl LspCommand for OpenDocs {
             .unwrap_or_default())
     }
 
-    fn to_proto(&self, project_id: u64, buffer: &Buffer) -> proto::LspExtOpenDocs {
+    fn to_proto(&self, project_id: u64, buffer: &LanguageBuffer) -> proto::LspExtOpenDocs {
         proto::LspExtOpenDocs {
             project_id,
             buffer_id: buffer.remote_id().into(),
@@ -248,7 +248,7 @@ impl LspCommand for OpenDocs {
     async fn from_proto(
         message: Self::ProtoRequest,
         _: Entity<LspStore>,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         cx: AsyncApp,
     ) -> anyhow::Result<Self> {
         let position = message
@@ -277,7 +277,7 @@ impl LspCommand for OpenDocs {
         self,
         message: proto::LspExtOpenDocsResponse,
         _: Entity<LspStore>,
-        _: Entity<Buffer>,
+        _: Entity<LanguageBuffer>,
         _: AsyncApp,
     ) -> anyhow::Result<DocsUrls> {
         Ok(DocsUrls {
@@ -341,7 +341,7 @@ impl LspCommand for SwitchSourceHeader {
     fn to_lsp(
         &self,
         path: &Path,
-        _: &Buffer,
+        _: &LanguageBuffer,
         _: &Arc<LanguageServer>,
         _: &App,
     ) -> Result<SwitchSourceHeaderParams> {
@@ -354,7 +354,7 @@ impl LspCommand for SwitchSourceHeader {
         self,
         message: Option<SwitchSourceHeaderResult>,
         _: Entity<LspStore>,
-        _: Entity<Buffer>,
+        _: Entity<LanguageBuffer>,
         _: LanguageServerId,
         _: AsyncApp,
     ) -> anyhow::Result<SwitchSourceHeaderResult> {
@@ -363,7 +363,7 @@ impl LspCommand for SwitchSourceHeader {
             .unwrap_or_default())
     }
 
-    fn to_proto(&self, project_id: u64, buffer: &Buffer) -> proto::LspExtSwitchSourceHeader {
+    fn to_proto(&self, project_id: u64, buffer: &LanguageBuffer) -> proto::LspExtSwitchSourceHeader {
         proto::LspExtSwitchSourceHeader {
             project_id,
             buffer_id: buffer.remote_id().into(),
@@ -373,7 +373,7 @@ impl LspCommand for SwitchSourceHeader {
     async fn from_proto(
         _: Self::ProtoRequest,
         _: Entity<LspStore>,
-        _: Entity<Buffer>,
+        _: Entity<LanguageBuffer>,
         _: AsyncApp,
     ) -> anyhow::Result<Self> {
         Ok(Self {})
@@ -395,7 +395,7 @@ impl LspCommand for SwitchSourceHeader {
         self,
         message: proto::LspExtSwitchSourceHeaderResponse,
         _: Entity<LspStore>,
-        _: Entity<Buffer>,
+        _: Entity<LanguageBuffer>,
         _: AsyncApp,
     ) -> anyhow::Result<SwitchSourceHeaderResult> {
         Ok(SwitchSourceHeaderResult(message.target_file))
@@ -423,7 +423,7 @@ impl LspCommand for GoToParentModule {
     fn to_lsp(
         &self,
         path: &Path,
-        _: &Buffer,
+        _: &LanguageBuffer,
         _: &Arc<LanguageServer>,
         _: &App,
     ) -> Result<lsp::TextDocumentPositionParams> {
@@ -434,7 +434,7 @@ impl LspCommand for GoToParentModule {
         self,
         links: Option<Vec<lsp::LocationLink>>,
         lsp_store: Entity<LspStore>,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         server_id: LanguageServerId,
         cx: AsyncApp,
     ) -> anyhow::Result<Vec<LocationLink>> {
@@ -448,7 +448,7 @@ impl LspCommand for GoToParentModule {
         .await
     }
 
-    fn to_proto(&self, project_id: u64, buffer: &Buffer) -> proto::LspExtGoToParentModule {
+    fn to_proto(&self, project_id: u64, buffer: &LanguageBuffer) -> proto::LspExtGoToParentModule {
         proto::LspExtGoToParentModule {
             project_id,
             buffer_id: buffer.remote_id().to_proto(),
@@ -461,7 +461,7 @@ impl LspCommand for GoToParentModule {
     async fn from_proto(
         request: Self::ProtoRequest,
         _: Entity<LspStore>,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         cx: AsyncApp,
     ) -> anyhow::Result<Self> {
         let position = request
@@ -489,7 +489,7 @@ impl LspCommand for GoToParentModule {
         self,
         message: proto::LspExtGoToParentModuleResponse,
         lsp_store: Entity<LspStore>,
-        _: Entity<Buffer>,
+        _: Entity<LanguageBuffer>,
         cx: AsyncApp,
     ) -> anyhow::Result<Vec<LocationLink>> {
         location_links_from_proto(message.links, lsp_store, cx).await
@@ -601,7 +601,7 @@ impl LspCommand for GetLspRunnables {
     fn to_lsp(
         &self,
         path: &Path,
-        buffer: &Buffer,
+        buffer: &LanguageBuffer,
         _: &Arc<LanguageServer>,
         _: &App,
     ) -> Result<RunnablesParams> {
@@ -618,7 +618,7 @@ impl LspCommand for GetLspRunnables {
         self,
         lsp_runnables: Vec<Runnable>,
         lsp_store: Entity<LspStore>,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         server_id: LanguageServerId,
         mut cx: AsyncApp,
     ) -> Result<LspRunnables> {
@@ -702,7 +702,7 @@ impl LspCommand for GetLspRunnables {
         Ok(LspRunnables { runnables })
     }
 
-    fn to_proto(&self, project_id: u64, buffer: &Buffer) -> proto::LspExtRunnables {
+    fn to_proto(&self, project_id: u64, buffer: &LanguageBuffer) -> proto::LspExtRunnables {
         proto::LspExtRunnables {
             project_id,
             buffer_id: buffer.remote_id().to_proto(),
@@ -713,7 +713,7 @@ impl LspCommand for GetLspRunnables {
     async fn from_proto(
         message: proto::LspExtRunnables,
         _: Entity<LspStore>,
-        _: Entity<Buffer>,
+        _: Entity<LanguageBuffer>,
         _: AsyncApp,
     ) -> Result<Self> {
         let buffer_id = Self::buffer_id_from_proto(&message)?;
@@ -748,7 +748,7 @@ impl LspCommand for GetLspRunnables {
         self,
         message: proto::LspExtRunnablesResponse,
         lsp_store: Entity<LspStore>,
-        _: Entity<Buffer>,
+        _: Entity<LanguageBuffer>,
         mut cx: AsyncApp,
     ) -> Result<LspRunnables> {
         let mut runnables = LspRunnables {

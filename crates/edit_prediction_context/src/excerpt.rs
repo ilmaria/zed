@@ -419,11 +419,11 @@ fn node_line_end(node: Node) -> Point {
 mod tests {
     use super::*;
     use gpui::{AppContext, TestAppContext};
-    use language::Buffer;
+    use language::LanguageBuffer;
     use util::test::{generate_marked_text, marked_text_offsets_by};
 
     fn create_buffer(text: &str, cx: &mut TestAppContext) -> BufferSnapshot {
-        let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(language::rust_lang(), cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(language::rust_lang(), cx));
         buffer.read_with(cx, |buffer, _| buffer.snapshot())
     }
 

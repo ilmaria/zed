@@ -9,7 +9,7 @@ use extension_host::headless_host::HeadlessExtensionStore;
 use fs::Fs;
 use gpui::{App, AppContext as _, AsyncApp, Context, Entity, PromptLevel};
 use http_client::HttpClient;
-use language::{Buffer, BufferEvent, LanguageRegistry, proto::serialize_operation};
+use language::{LanguageBuffer, BufferEvent, LanguageRegistry, proto::serialize_operation};
 use node_runtime::NodeRuntime;
 use project::{
     LspStore, LspStoreEvent, ManifestTree, PrettierStore, ProjectEnvironment, ProjectPath,
@@ -334,7 +334,7 @@ impl HeadlessProject {
 
     fn on_buffer_event(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         event: &BufferEvent,
         cx: &mut Context<Self>,
     ) {

@@ -1,5 +1,5 @@
 use super::*;
-use crate::Buffer;
+use crate::LanguageBuffer;
 use clock::ReplicaId;
 use collections::BTreeMap;
 use futures::FutureExt as _;
@@ -47,7 +47,7 @@ fn test_line_endings(cx: &mut gpui::App) {
     init_settings(cx, |_| {});
 
     cx.new(|cx| {
-        let mut buffer = Buffer::local("one\r\ntwo\rthree", cx).with_language(rust_lang(), cx);
+        let mut buffer = LanguageBuffer::local("one\r\ntwo\rthree", cx).with_language(rust_lang(), cx);
         assert_eq!(buffer.text(), "one\ntwo\nthree");
         assert_eq!(buffer.line_ending(), LineEnding::Windows);
 
@@ -69,9 +69,9 @@ fn test_line_endings(cx: &mut gpui::App) {
 
 #[gpui::test]
 fn test_set_line_ending(cx: &mut TestAppContext) {
-    let base = cx.new(|cx| Buffer::local("one\ntwo\nthree\n", cx));
+    let base = cx.new(|cx| LanguageBuffer::local("one\ntwo\nthree\n", cx));
     let base_replica = cx.new(|cx| {
-        Buffer::from_proto(
+        LanguageBuffer::from_proto(
             ReplicaId::new(1),
             Capability::ReadWrite,
             base.read(cx).to_proto(cx),
@@ -400,9 +400,9 @@ fn test_edit_events(cx: &mut gpui::App) {
     let buffer_1_events = Arc::new(Mutex::new(Vec::new()));
     let buffer_2_events = Arc::new(Mutex::new(Vec::new()));
 
-    let buffer1 = cx.new(|cx| Buffer::local("abcdef", cx));
+    let buffer1 = cx.new(|cx| LanguageBuffer::local("abcdef", cx));
     let buffer2 = cx.new(|cx| {
-        Buffer::remote(
+        LanguageBuffer::remote(
             BufferId::from(cx.entity_id().as_non_zero_u64()),
             ReplicaId::new(1),
             Capability::ReadWrite,
@@ -495,7 +495,7 @@ async fn test_apply_diff(cx: &mut TestAppContext) {
     let (text, offsets) = marked_text_offsets(
         "one two three\nfour fiˇve six\nseven eightˇ nine\nten eleven twelve\n",
     );
-    let buffer = cx.new(|cx| Buffer::local(text, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx));
     let anchors = buffer.update(cx, |buffer, _| {
         offsets
             .iter()
@@ -545,7 +545,7 @@ async fn test_normalize_whitespace(cx: &mut gpui::TestAppContext) {
     ]
     .join("\n");
 
-    let buffer = cx.new(|cx| Buffer::local(text, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx));
 
     // Spawn a task to format the buffer's whitespace.
     // Pause so that the formatting task starts running.
@@ -610,7 +610,7 @@ async fn test_normalize_whitespace(cx: &mut gpui::TestAppContext) {
 #[gpui::test]
 async fn test_reparse(cx: &mut gpui::TestAppContext) {
     let text = "fn a() {}";
-    let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(rust_lang(), cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(rust_lang(), cx));
 
     // Wait for the initial text to parse
     cx.executor().run_until_parked();
@@ -735,7 +735,7 @@ async fn test_reparse(cx: &mut gpui::TestAppContext) {
 #[gpui::test]
 async fn test_resetting_language(cx: &mut gpui::TestAppContext) {
     let buffer = cx.new(|cx| {
-        let mut buffer = Buffer::local("{}", cx).with_language(rust_lang(), cx);
+        let mut buffer = LanguageBuffer::local("{}", cx).with_language(rust_lang(), cx);
         buffer.set_sync_parse_timeout(None);
         buffer
     });
@@ -783,7 +783,7 @@ async fn test_outline(cx: &mut gpui::TestAppContext) {
     "#
     .unindent();
 
-    let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(rust_lang(), cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(rust_lang(), cx));
     let snapshot = buffer.update(cx, |buffer, _| buffer.snapshot());
     let outline = snapshot.outline(None);
 
@@ -890,7 +890,7 @@ async fn test_outline_nodes_with_newlines(cx: &mut gpui::TestAppContext) {
     "#
     .unindent();
 
-    let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(rust_lang(), cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(rust_lang(), cx));
     let outline = buffer.update(cx, |buffer, _| buffer.snapshot().outline(None));
 
     assert_eq!(
@@ -924,7 +924,7 @@ async fn test_outline_with_extra_context(cx: &mut gpui::TestAppContext) {
     "#
     .unindent();
 
-    let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(Arc::new(language), cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(Arc::new(language), cx));
     let snapshot = buffer.update(cx, |buffer, _| buffer.snapshot());
 
     // extra context nodes are included in the outline.
@@ -970,7 +970,7 @@ fn test_outline_annotations(cx: &mut App) {
     "#
     .unindent();
 
-    let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(rust_lang(), cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(rust_lang(), cx));
     let outline = buffer.update(cx, |buffer, _| buffer.snapshot().outline(None));
 
     assert_eq!(
@@ -1018,7 +1018,7 @@ async fn test_symbols_containing(cx: &mut gpui::TestAppContext) {
     "#
     .unindent();
 
-    let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(rust_lang(), cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(rust_lang(), cx));
     let snapshot = buffer.update(cx, |buffer, _| buffer.snapshot());
 
     // point is at the start of an item
@@ -1093,7 +1093,7 @@ async fn test_symbols_containing(cx: &mut gpui::TestAppContext) {
     "
         .unindent(),
     );
-    let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(rust_lang(), cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(rust_lang(), cx));
     let snapshot = buffer.update(cx, |buffer, _| buffer.snapshot());
 
     // note, it would be nice to actually return the method test in this
@@ -1112,7 +1112,7 @@ fn test_text_objects(cx: &mut App) {
         false,
     );
 
-    let buffer = cx.new(|cx| Buffer::local(text.clone(), cx).with_language(rust_lang(), cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text.clone(), cx).with_language(rust_lang(), cx));
     let snapshot = buffer.update(cx, |buffer, _| buffer.snapshot());
 
     let matches = snapshot
@@ -1178,7 +1178,7 @@ fn test_text_objects_with_has_parent_predicate(cx: &mut App) {
         false,
     );
 
-    let buffer = cx.new(|cx| Buffer::local(text.clone(), cx).with_language(Arc::new(language), cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text.clone(), cx).with_language(Arc::new(language), cx));
     let snapshot = buffer.update(cx, |buffer, _| buffer.snapshot());
 
     let matches = snapshot
@@ -1227,7 +1227,7 @@ fn test_text_objects_with_not_has_parent_predicate(cx: &mut App) {
         false,
     );
 
-    let buffer = cx.new(|cx| Buffer::local(text.clone(), cx).with_language(Arc::new(language), cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text.clone(), cx).with_language(Arc::new(language), cx));
     let snapshot = buffer.update(cx, |buffer, _| buffer.snapshot());
 
     let matches = snapshot
@@ -1403,7 +1403,7 @@ fn test_enclosing_bracket_ranges_where_brackets_are_not_outermost_children(cx: &
 fn test_range_for_syntax_ancestor(cx: &mut App) {
     cx.new(|cx| {
         let text = "fn a() { b(|c| {}) }";
-        let buffer = Buffer::local(text, cx).with_language(rust_lang(), cx);
+        let buffer = LanguageBuffer::local(text, cx).with_language(rust_lang(), cx);
         let snapshot = buffer.snapshot();
 
         assert_eq!(
@@ -1455,7 +1455,7 @@ fn test_autoindent_with_soft_tabs(cx: &mut App) {
 
     cx.new(|cx| {
         let text = "fn a() {}";
-        let mut buffer = Buffer::local(text, cx).with_language(rust_lang(), cx);
+        let mut buffer = LanguageBuffer::local(text, cx).with_language(rust_lang(), cx);
 
         buffer.edit(
             [(8..8, "\n\n")],
@@ -1505,7 +1505,7 @@ fn test_autoindent_with_hard_tabs(cx: &mut App) {
 
     cx.new(|cx| {
         let text = "fn a() {}";
-        let mut buffer = Buffer::local(text, cx).with_language(rust_lang(), cx);
+        let mut buffer = LanguageBuffer::local(text, cx).with_language(rust_lang(), cx);
 
         buffer.edit(
             [(8..8, "\n\n")],
@@ -1552,7 +1552,7 @@ fn test_autoindent_does_not_adjust_lines_with_unchanged_suggestion(cx: &mut App)
     init_settings(cx, |_| {});
 
     cx.new(|cx| {
-        let mut buffer = Buffer::local(
+        let mut buffer = LanguageBuffer::local(
             "
             fn a() {
             c;
@@ -1693,7 +1693,7 @@ fn test_autoindent_does_not_adjust_lines_with_unchanged_suggestion(cx: &mut App)
     cx.new(|cx| {
         eprintln!("second buffer: {:?}", cx.entity_id());
 
-        let mut buffer = Buffer::local(
+        let mut buffer = LanguageBuffer::local(
             "
             fn a() {
                 b();
@@ -1757,7 +1757,7 @@ fn test_autoindent_does_not_adjust_lines_within_newly_created_errors(cx: &mut Ap
     init_settings(cx, |_| {});
 
     cx.new(|cx| {
-        let mut buffer = Buffer::local(
+        let mut buffer = LanguageBuffer::local(
             "
             fn a() {
                 i
@@ -1818,7 +1818,7 @@ fn test_autoindent_adjusts_lines_when_only_text_changes(cx: &mut App) {
     init_settings(cx, |_| {});
 
     cx.new(|cx| {
-        let mut buffer = Buffer::local(
+        let mut buffer = LanguageBuffer::local(
             "
             fn a() {}
             "
@@ -1875,7 +1875,7 @@ fn test_autoindent_with_edit_at_end_of_buffer(cx: &mut App) {
 
     cx.new(|cx| {
         let text = "a\nb";
-        let mut buffer = Buffer::local(text, cx).with_language(rust_lang(), cx);
+        let mut buffer = LanguageBuffer::local(text, cx).with_language(rust_lang(), cx);
         buffer.edit(
             [(0..1, "\n"), (2..3, "\n")],
             Some(AutoindentMode::EachLine),
@@ -1902,7 +1902,7 @@ fn test_autoindent_multi_line_insertion(cx: &mut App) {
         "
         .unindent();
 
-        let mut buffer = Buffer::local(text, cx).with_language(rust_lang(), cx);
+        let mut buffer = LanguageBuffer::local(text, cx).with_language(rust_lang(), cx);
         buffer.edit(
             [(Point::new(3, 0)..Point::new(3, 0), "e(\n    f()\n);\n")],
             Some(AutoindentMode::EachLine),
@@ -1940,7 +1940,7 @@ fn test_autoindent_block_mode(cx: &mut App) {
             }
         "#
         .unindent();
-        let mut buffer = Buffer::local(text, cx).with_language(rust_lang(), cx);
+        let mut buffer = LanguageBuffer::local(text, cx).with_language(rust_lang(), cx);
 
         // When this text was copied, both of the quotation marks were at the same
         // indent level, but the indentation of the first line was not included in
@@ -2030,7 +2030,7 @@ fn test_autoindent_block_mode_with_newline(cx: &mut App) {
             }
         "#
         .unindent();
-        let mut buffer = Buffer::local(text, cx).with_language(rust_lang(), cx);
+        let mut buffer = LanguageBuffer::local(text, cx).with_language(rust_lang(), cx);
 
         // First line contains just '\n', it's indentation is stored in "original_indent_columns"
         let original_indent_columns = vec![Some(4)];
@@ -2083,7 +2083,7 @@ fn test_autoindent_block_mode_without_original_indent_columns(cx: &mut App) {
             }
         "#
         .unindent();
-        let mut buffer = Buffer::local(text, cx).with_language(rust_lang(), cx);
+        let mut buffer = LanguageBuffer::local(text, cx).with_language(rust_lang(), cx);
 
         // The original indent columns are not known, so this text is
         // auto-indented in a block as if the first line was copied in
@@ -2177,7 +2177,7 @@ fn test_autoindent_block_mode_multiple_adjacent_ranges(cx: &mut App) {
             false,
         );
 
-        let mut buffer = Buffer::local(text, cx).with_language(rust_lang(), cx);
+        let mut buffer = LanguageBuffer::local(text, cx).with_language(rust_lang(), cx);
 
         buffer.edit(
             [
@@ -2229,7 +2229,7 @@ fn test_autoindent_language_without_indents_query(cx: &mut App) {
         "
         .unindent();
 
-        let mut buffer = Buffer::local(text, cx).with_language(
+        let mut buffer = LanguageBuffer::local(text, cx).with_language(
             Arc::new(Language::new(
                 LanguageConfig {
                     name: "Markdown".into(),
@@ -2306,7 +2306,7 @@ fn test_autoindent_with_injected_languages(cx: &mut App) {
             false,
         );
 
-        let mut buffer = Buffer::local(text, cx);
+        let mut buffer = LanguageBuffer::local(text, cx);
         buffer.set_language_registry(language_registry);
         buffer.set_language(Some(html_language), cx);
         buffer.edit(
@@ -2343,7 +2343,7 @@ fn test_autoindent_query_with_outdent_captures(cx: &mut App) {
     });
 
     cx.new(|cx| {
-        let mut buffer = Buffer::local("", cx).with_language(Arc::new(ruby_lang()), cx);
+        let mut buffer = LanguageBuffer::local("", cx).with_language(Arc::new(ruby_lang()), cx);
 
         let text = r#"
             class C
@@ -2393,7 +2393,7 @@ async fn test_async_autoindents_preserve_preview(cx: &mut TestAppContext) {
     // Then we request that a preview tab be preserved for the new version, even though it's edited.
     let buffer = cx.new(|cx| {
         let text = "fn a() {}";
-        let mut buffer = Buffer::local(text, cx).with_language(rust_lang(), cx);
+        let mut buffer = LanguageBuffer::local(text, cx).with_language(rust_lang(), cx);
 
         // This causes autoindent to be async.
         buffer.set_sync_parse_timeout(None);
@@ -2459,7 +2459,7 @@ fn test_insert_empty_line(cx: &mut App) {
 
     // Insert empty line at the beginning, requesting an empty line above
     cx.new(|cx| {
-        let mut buffer = Buffer::local("abc\ndef\nghi", cx);
+        let mut buffer = LanguageBuffer::local("abc\ndef\nghi", cx);
         let point = buffer.insert_empty_line(Point::new(0, 0), true, false, cx);
         assert_eq!(buffer.text(), "\nabc\ndef\nghi");
         assert_eq!(point, Point::new(0, 0));
@@ -2468,7 +2468,7 @@ fn test_insert_empty_line(cx: &mut App) {
 
     // Insert empty line at the beginning, requesting an empty line above and below
     cx.new(|cx| {
-        let mut buffer = Buffer::local("abc\ndef\nghi", cx);
+        let mut buffer = LanguageBuffer::local("abc\ndef\nghi", cx);
         let point = buffer.insert_empty_line(Point::new(0, 0), true, true, cx);
         assert_eq!(buffer.text(), "\n\nabc\ndef\nghi");
         assert_eq!(point, Point::new(0, 0));
@@ -2477,7 +2477,7 @@ fn test_insert_empty_line(cx: &mut App) {
 
     // Insert empty line at the start of a line, requesting empty lines above and below
     cx.new(|cx| {
-        let mut buffer = Buffer::local("abc\ndef\nghi", cx);
+        let mut buffer = LanguageBuffer::local("abc\ndef\nghi", cx);
         let point = buffer.insert_empty_line(Point::new(2, 0), true, true, cx);
         assert_eq!(buffer.text(), "abc\ndef\n\n\n\nghi");
         assert_eq!(point, Point::new(3, 0));
@@ -2486,7 +2486,7 @@ fn test_insert_empty_line(cx: &mut App) {
 
     // Insert empty line in the middle of a line, requesting empty lines above and below
     cx.new(|cx| {
-        let mut buffer = Buffer::local("abc\ndefghi\njkl", cx);
+        let mut buffer = LanguageBuffer::local("abc\ndefghi\njkl", cx);
         let point = buffer.insert_empty_line(Point::new(1, 3), true, true, cx);
         assert_eq!(buffer.text(), "abc\ndef\n\n\n\nghi\njkl");
         assert_eq!(point, Point::new(3, 0));
@@ -2495,7 +2495,7 @@ fn test_insert_empty_line(cx: &mut App) {
 
     // Insert empty line in the middle of a line, requesting empty line above only
     cx.new(|cx| {
-        let mut buffer = Buffer::local("abc\ndefghi\njkl", cx);
+        let mut buffer = LanguageBuffer::local("abc\ndefghi\njkl", cx);
         let point = buffer.insert_empty_line(Point::new(1, 3), true, false, cx);
         assert_eq!(buffer.text(), "abc\ndef\n\n\nghi\njkl");
         assert_eq!(point, Point::new(3, 0));
@@ -2504,7 +2504,7 @@ fn test_insert_empty_line(cx: &mut App) {
 
     // Insert empty line in the middle of a line, requesting empty line below only
     cx.new(|cx| {
-        let mut buffer = Buffer::local("abc\ndefghi\njkl", cx);
+        let mut buffer = LanguageBuffer::local("abc\ndefghi\njkl", cx);
         let point = buffer.insert_empty_line(Point::new(1, 3), false, true, cx);
         assert_eq!(buffer.text(), "abc\ndef\n\n\nghi\njkl");
         assert_eq!(point, Point::new(2, 0));
@@ -2513,7 +2513,7 @@ fn test_insert_empty_line(cx: &mut App) {
 
     // Insert empty line at the end, requesting empty lines above and below
     cx.new(|cx| {
-        let mut buffer = Buffer::local("abc\ndef\nghi", cx);
+        let mut buffer = LanguageBuffer::local("abc\ndef\nghi", cx);
         let point = buffer.insert_empty_line(Point::new(2, 3), true, true, cx);
         assert_eq!(buffer.text(), "abc\ndef\nghi\n\n\n");
         assert_eq!(point, Point::new(4, 0));
@@ -2522,7 +2522,7 @@ fn test_insert_empty_line(cx: &mut App) {
 
     // Insert empty line at the end, requesting empty line above only
     cx.new(|cx| {
-        let mut buffer = Buffer::local("abc\ndef\nghi", cx);
+        let mut buffer = LanguageBuffer::local("abc\ndef\nghi", cx);
         let point = buffer.insert_empty_line(Point::new(2, 3), true, false, cx);
         assert_eq!(buffer.text(), "abc\ndef\nghi\n\n");
         assert_eq!(point, Point::new(4, 0));
@@ -2531,7 +2531,7 @@ fn test_insert_empty_line(cx: &mut App) {
 
     // Insert empty line at the end, requesting empty line below only
     cx.new(|cx| {
-        let mut buffer = Buffer::local("abc\ndef\nghi", cx);
+        let mut buffer = LanguageBuffer::local("abc\ndef\nghi", cx);
         let point = buffer.insert_empty_line(Point::new(2, 3), false, true, cx);
         assert_eq!(buffer.text(), "abc\ndef\nghi\n\n");
         assert_eq!(point, Point::new(3, 0));
@@ -2617,7 +2617,7 @@ fn test_language_scope_at_with_javascript(cx: &mut App) {
         "#
         .unindent();
 
-        let buffer = Buffer::local(&text, cx).with_language(Arc::new(language), cx);
+        let buffer = LanguageBuffer::local(&text, cx).with_language(Arc::new(language), cx);
         let snapshot = buffer.snapshot();
 
         let config = snapshot.language_scope_at(0).unwrap();
@@ -2775,7 +2775,7 @@ fn test_language_scope_at_with_rust(cx: &mut App) {
         "#
         .unindent();
 
-        let buffer = Buffer::local(text.clone(), cx).with_language(Arc::new(language), cx);
+        let buffer = LanguageBuffer::local(text.clone(), cx).with_language(Arc::new(language), cx);
         let snapshot = buffer.snapshot();
 
         // By default, all brackets are enabled
@@ -2819,7 +2819,7 @@ fn test_language_scope_at_with_combined_injections(cx: &mut App) {
         language_registry.add(Arc::new(html_lang()));
         language_registry.add(Arc::new(erb_lang()));
 
-        let mut buffer = Buffer::local(text, cx);
+        let mut buffer = LanguageBuffer::local(text, cx);
         buffer.set_language_registry(language_registry.clone());
         buffer.set_language(
             language_registry
@@ -2865,7 +2865,7 @@ fn test_language_at_with_hidden_languages(cx: &mut App) {
         language_registry.add(markdown_lang());
         language_registry.add(Arc::new(markdown_inline_lang()));
 
-        let mut buffer = Buffer::local(text, cx);
+        let mut buffer = LanguageBuffer::local(text, cx);
         buffer.set_language_registry(language_registry.clone());
         buffer.set_language(
             language_registry
@@ -2908,7 +2908,7 @@ fn test_language_at_for_markdown_code_block(cx: &mut App) {
         language_registry.add(Arc::new(markdown_inline_lang()));
         language_registry.add(rust_lang());
 
-        let mut buffer = Buffer::local(text, cx);
+        let mut buffer = LanguageBuffer::local(text, cx);
         buffer.set_language_registry(language_registry.clone());
         buffer.set_language(
             language_registry
@@ -2961,7 +2961,7 @@ fn test_syntax_layer_at_for_injected_languages(cx: &mut App) {
         language_registry.add(Arc::new(html_lang()));
         language_registry.add(Arc::new(ruby_lang()));
 
-        let mut buffer = Buffer::local(text, cx);
+        let mut buffer = LanguageBuffer::local(text, cx);
         buffer.set_language_registry(language_registry.clone());
         buffer.set_language(
             language_registry
@@ -2990,7 +2990,7 @@ fn test_syntax_layer_at_for_injected_languages(cx: &mut App) {
 #[gpui::test]
 fn test_serialization(cx: &mut gpui::App) {
     let buffer1 = cx.new(|cx| {
-        let mut buffer = Buffer::local("abc", cx);
+        let mut buffer = LanguageBuffer::local("abc", cx);
         buffer.edit([(3..3, "D")], None, EditType::Other, cx);
 
         buffer.start_transaction();
@@ -3013,7 +3013,7 @@ fn test_serialization(cx: &mut gpui::App) {
         .block(buffer1.read(cx).serialize_ops(None, cx));
     let buffer2 = cx.new(|cx| {
         let mut buffer =
-            Buffer::from_proto(ReplicaId::new(1), Capability::ReadWrite, state, None).unwrap();
+            LanguageBuffer::from_proto(ReplicaId::new(1), Capability::ReadWrite, state, None).unwrap();
         buffer.apply_ops(
             ops.into_iter()
                 .map(|op| proto::deserialize_operation(op).unwrap()),
@@ -3028,11 +3028,11 @@ fn test_serialization(cx: &mut gpui::App) {
 fn test_branch_and_merge(cx: &mut TestAppContext) {
     cx.update(|cx| init_settings(cx, |_| {}));
 
-    let base = cx.new(|cx| Buffer::local("one\ntwo\nthree\n", cx));
+    let base = cx.new(|cx| LanguageBuffer::local("one\ntwo\nthree\n", cx));
 
     // Create a remote replica of the base buffer.
     let base_replica = cx.new(|cx| {
-        Buffer::from_proto(
+        LanguageBuffer::from_proto(
             ReplicaId::new(1),
             Capability::ReadWrite,
             base.read(cx).to_proto(cx),
@@ -3132,7 +3132,7 @@ fn test_branch_and_merge(cx: &mut TestAppContext) {
 fn test_merge_into_base(cx: &mut TestAppContext) {
     cx.update(|cx| init_settings(cx, |_| {}));
 
-    let base = cx.new(|cx| Buffer::local("abcdefghijk", cx));
+    let base = cx.new(|cx| LanguageBuffer::local("abcdefghijk", cx));
     let branch = base.update(cx, |buffer, cx| buffer.branch(cx));
 
     // Make 3 edits, merge one into the base.
@@ -3177,7 +3177,7 @@ fn test_merge_into_base(cx: &mut TestAppContext) {
 fn test_undo_after_merge_into_base(cx: &mut TestAppContext) {
     cx.update(|cx| init_settings(cx, |_| {}));
 
-    let base = cx.new(|cx| Buffer::local("abcdefghijk", cx));
+    let base = cx.new(|cx| LanguageBuffer::local("abcdefghijk", cx));
     let branch = base.update(cx, |buffer, cx| buffer.branch(cx));
 
     // Make 2 edits, merge one into the base.
@@ -3316,7 +3316,7 @@ async fn test_preview_edits(cx: &mut TestAppContext) {
         cx: &mut TestAppContext,
         assert_fn: impl Fn(HighlightedText),
     ) {
-        let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(rust_lang(), cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(rust_lang(), cx));
         let edits = buffer.read_with(cx, |buffer, _| {
             edits
                 .into_iter()
@@ -3357,7 +3357,7 @@ fn test_random_collaboration(cx: &mut App, mut rng: StdRng) {
     let mut replica_ids = Vec::new();
     let mut buffers = Vec::new();
     let network = Arc::new(Mutex::new(Network::new(rng.clone())));
-    let base_buffer = cx.new(|cx| Buffer::local(base_text.as_str(), cx));
+    let base_buffer = cx.new(|cx| LanguageBuffer::local(base_text.as_str(), cx));
 
     for i in 0..rng.random_range(min_peers..=max_peers) {
         let buffer = cx.new(|cx| {
@@ -3366,7 +3366,7 @@ fn test_random_collaboration(cx: &mut App, mut rng: StdRng) {
                 .background_executor()
                 .block(base_buffer.read(cx).serialize_ops(None, cx));
             let mut buffer =
-                Buffer::from_proto(ReplicaId::new(i as u16), Capability::ReadWrite, state, None)
+                LanguageBuffer::from_proto(ReplicaId::new(i as u16), Capability::ReadWrite, state, None)
                     .unwrap();
             buffer.apply_ops(
                 ops.into_iter()
@@ -3490,7 +3490,7 @@ fn test_random_collaboration(cx: &mut App, mut rng: StdRng) {
                     replica_id
                 );
                 new_buffer = Some(cx.new(|cx| {
-                    let mut new_buffer = Buffer::from_proto(
+                    let mut new_buffer = LanguageBuffer::from_proto(
                         new_replica_id,
                         Capability::ReadWrite,
                         old_buffer_state,
@@ -3658,7 +3658,7 @@ fn test_contiguous_ranges() {
 
 #[gpui::test]
 fn test_insertion_after_deletion(cx: &mut gpui::App) {
-    let buffer = cx.new(|cx| Buffer::local("struct Foo {\n    \n}", cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local("struct Foo {\n    \n}", cx));
     buffer.update(cx, |buffer, cx| {
         let mut anchor = buffer.anchor_after(17);
         buffer.edit([(12..18, "")], None, EditType::Other, cx);
@@ -3725,7 +3725,7 @@ let word=öäpple.bar你 Öäpple word2-öÄpPlE-Pizza-word ÖÄPPLE word
     "#;
 
     let buffer = cx.new(|cx| {
-        let buffer = Buffer::local(contents, cx).with_language(rust_lang(), cx);
+        let buffer = LanguageBuffer::local(contents, cx).with_language(rust_lang(), cx);
         assert_eq!(buffer.text(), contents);
         buffer.check_invariants();
         buffer
@@ -4000,7 +4000,7 @@ pub fn markdown_inline_lang() -> Language {
     .unwrap()
 }
 
-fn get_tree_sexp(buffer: &Entity<Buffer>, cx: &mut gpui::TestAppContext) -> String {
+fn get_tree_sexp(buffer: &Entity<LanguageBuffer>, cx: &mut gpui::TestAppContext) -> String {
     buffer.update(cx, |buffer, _| {
         let snapshot = buffer.snapshot();
         let layers = snapshot.syntax.layers(buffer.as_text_snapshot());
@@ -4017,7 +4017,7 @@ fn assert_bracket_pairs(
     cx: &mut App,
 ) {
     let (expected_text, selection_ranges) = marked_text_ranges(selection_text, false);
-    let buffer = cx.new(|cx| Buffer::local(expected_text.clone(), cx).with_language(language, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(expected_text.clone(), cx).with_language(language, cx));
     let buffer = buffer.update(cx, |buffer, _cx| buffer.snapshot());
 
     let selection_range = selection_ranges[0].clone();
@@ -4056,7 +4056,7 @@ fn test_random_chunk_bitmaps(cx: &mut App, mut rng: StdRng) {
     let len = rng.random_range(0..10000);
     let text = RandomCharIter::new(&mut rng).take(len).collect::<String>();
 
-    let buffer = cx.new(|cx| Buffer::local(text, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx));
     let snapshot = buffer.read(cx).snapshot();
 
     // Get all chunks and verify their bitmaps

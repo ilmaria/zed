@@ -18,7 +18,7 @@ use gpui::{
     Global, SharedString, Subscription, Task, WeakEntity, Window, prelude::*,
 };
 
-use language::{Buffer, Capability, OffsetRangeExt, Point};
+use language::{LanguageBuffer, Capability, OffsetRangeExt, Point};
 use multi_buffer::PathKey;
 use project::{Project, ProjectItem, ProjectPath};
 use settings::{Settings, SettingsStore};
@@ -1165,7 +1165,7 @@ pub enum EditorState {
 struct WorkspaceThread {
     thread: WeakEntity<AcpThread>,
     _thread_subscriptions: (Subscription, Subscription),
-    singleton_editors: HashMap<WeakEntity<Buffer>, HashMap<WeakEntity<Editor>, Subscription>>,
+    singleton_editors: HashMap<WeakEntity<LanguageBuffer>, HashMap<WeakEntity<Editor>, Subscription>>,
     _settings_subscription: Subscription,
     _workspace_subscription: Option<Subscription>,
 }
@@ -1376,7 +1376,7 @@ impl AgentDiff {
         }
     }
 
-    fn full_editor_buffer(editor: &Editor, cx: &App) -> Option<WeakEntity<Buffer>> {
+    fn full_editor_buffer(editor: &Editor, cx: &App) -> Option<WeakEntity<LanguageBuffer>> {
         if editor.mode().is_full() {
             editor
                 .buffer()
@@ -1391,7 +1391,7 @@ impl AgentDiff {
     fn register_editor(
         &mut self,
         workspace: WeakEntity<Workspace>,
-        buffer: WeakEntity<Buffer>,
+        buffer: WeakEntity<LanguageBuffer>,
         editor: Entity<Editor>,
         window: &mut Window,
         cx: &mut Context<Self>,

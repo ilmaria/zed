@@ -11,7 +11,7 @@ use collections::BTreeMap;
 use futures::{AsyncBufReadExt, StreamExt, channel::mpsc, io::BufReader};
 use gpui::{App, AsyncApp, Context, Entity, EntityId, Global, Task, WeakEntity, actions};
 use language::{
-    Anchor, Buffer, BufferSnapshot, ToOffset, language_settings::all_language_settings,
+    Anchor, LanguageBuffer, BufferSnapshot, ToOffset, language_settings::all_language_settings,
 };
 use messages::*;
 use postage::watch;
@@ -119,7 +119,7 @@ impl Supermaven {
 
     pub fn complete(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cursor_position: Anchor,
         cx: &App,
     ) -> Option<SupermavenCompletion> {
@@ -183,7 +183,7 @@ impl Supermaven {
 
     pub fn completion(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cursor_position: Anchor,
         cx: &App,
     ) -> Option<&str> {
@@ -416,11 +416,11 @@ mod tests {
     use super::*;
     use collections::BTreeMap;
     use gpui::TestAppContext;
-    use language::Buffer;
+    use language::LanguageBuffer;
 
     #[gpui::test]
     async fn test_find_relevant_completion_no_first_letter_skip(cx: &mut TestAppContext) {
-        let buffer = cx.new(|cx| Buffer::local("hello world", cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local("hello world", cx));
         let buffer_snapshot = buffer.read_with(cx, |buffer, _| buffer.snapshot());
 
         let mut states = BTreeMap::new();
@@ -453,7 +453,7 @@ mod tests {
 
     #[gpui::test]
     async fn test_find_relevant_completion_with_multiple_chars(cx: &mut TestAppContext) {
-        let buffer = cx.new(|cx| Buffer::local("hello world", cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local("hello world", cx));
         let buffer_snapshot = buffer.read_with(cx, |buffer, _| buffer.snapshot());
 
         let mut states = BTreeMap::new();

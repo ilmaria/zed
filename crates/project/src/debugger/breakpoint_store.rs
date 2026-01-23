@@ -8,7 +8,7 @@ use collections::{BTreeMap, HashMap};
 use dap::{StackFrameId, client::SessionId};
 use gpui::{App, AppContext, AsyncApp, Context, Entity, EventEmitter, Subscription, Task};
 use itertools::Itertools;
-use language::{Buffer, BufferSnapshot, proto::serialize_anchor as serialize_text_anchor};
+use language::{LanguageBuffer, BufferSnapshot, proto::serialize_anchor as serialize_text_anchor};
 use rpc::{
     AnyProtoClient, TypedEnvelope,
     proto::{self},
@@ -60,14 +60,14 @@ mod breakpoints_in_file {
     }
     #[derive(Clone)]
     pub(super) struct BreakpointsInFile {
-        pub(super) buffer: Entity<Buffer>,
+        pub(super) buffer: Entity<LanguageBuffer>,
         // TODO: This is.. less than ideal, as it's O(n) and does not return entries in order. We'll have to change TreeMap to support passing in the context for comparisons
         pub(super) breakpoints: Vec<StatefulBreakpoint>,
         _subscription: Arc<Subscription>,
     }
 
     impl BreakpointsInFile {
-        pub(super) fn new(buffer: Entity<Buffer>, cx: &mut Context<BreakpointStore>) -> Self {
+        pub(super) fn new(buffer: Entity<LanguageBuffer>, cx: &mut Context<BreakpointStore>) -> Self {
             let subscription = Arc::from(cx.subscribe(
                 &buffer,
                 |breakpoint_store, buffer, event, cx| match event {
@@ -390,7 +390,7 @@ impl BreakpointStore {
         });
     }
 
-    pub fn abs_path_from_buffer(buffer: &Entity<Buffer>, cx: &App) -> Option<Arc<Path>> {
+    pub fn abs_path_from_buffer(buffer: &Entity<LanguageBuffer>, cx: &App) -> Option<Arc<Path>> {
         worktree::File::from_dyn(buffer.read(cx).file())
             .map(|file| file.worktree.read(cx).absolutize(&file.path))
             .map(Arc::<Path>::from)
@@ -398,7 +398,7 @@ impl BreakpointStore {
 
     pub fn toggle_breakpoint(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         mut breakpoint: BreakpointWithPosition,
         edit_action: BreakpointEditAction,
         cx: &mut Context<Self>,
@@ -610,7 +610,7 @@ impl BreakpointStore {
 
     pub fn breakpoints<'a>(
         &'a self,
-        buffer: &'a Entity<Buffer>,
+        buffer: &'a Entity<LanguageBuffer>,
         range: Option<Range<text::Anchor>>,
         buffer_snapshot: &'a BufferSnapshot,
         cx: &App,
@@ -688,7 +688,7 @@ impl BreakpointStore {
         path: &Path,
         row: u32,
         cx: &App,
-    ) -> Option<(Entity<Buffer>, BreakpointWithPosition)> {
+    ) -> Option<(Entity<LanguageBuffer>, BreakpointWithPosition)> {
         self.breakpoints.get(path).and_then(|breakpoints| {
             let snapshot = breakpoints.buffer.read(cx).text_snapshot();
 

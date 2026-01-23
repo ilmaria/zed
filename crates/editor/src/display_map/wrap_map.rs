@@ -1340,7 +1340,7 @@ mod tests {
             // occur at `soft_wrap_every` we check that it pans out for every test case
             let soft_wrapping = Some(font_size * soft_wrap_every * 0.6);
 
-            let buffer = cx.new(|cx| language::Buffer::local(text, cx));
+            let buffer = cx.new(|cx| language::LanguageBuffer::local(text, cx));
             let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
             let buffer_snapshot = buffer.read_with(cx, |buffer, cx| buffer.snapshot(cx));
             let (_inlay_map, inlay_snapshot) = InlayMap::new(buffer_snapshot);

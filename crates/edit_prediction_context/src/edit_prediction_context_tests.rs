@@ -215,7 +215,7 @@ fn test_assemble_excerpts(cx: &mut TestAppContext) {
 
     for (input, expected_output) in table {
         let (input, ranges) = marked_text_ranges(&input, false);
-        let buffer = cx.new(|cx| Buffer::local(input, cx).with_language(rust_lang(), cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local(input, cx).with_language(rust_lang(), cx));
         buffer.read_with(cx, |buffer, _cx| {
             let ranges: Vec<Range<Point>> = ranges
                 .into_iter()
@@ -484,7 +484,7 @@ fn assert_definitions(definitions: &[LocationLink], first_lines: &[&str], cx: &m
     assert_eq!(actual_first_lines, first_lines);
 }
 
-fn format_excerpts(buffer: &Buffer, excerpts: &[RelatedExcerpt]) -> String {
+fn format_excerpts(buffer: &LanguageBuffer, excerpts: &[RelatedExcerpt]) -> String {
     let mut output = String::new();
     let file_line_count = buffer.max_point().row;
     let mut current_row = 0;

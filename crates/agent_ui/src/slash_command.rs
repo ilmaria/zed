@@ -5,7 +5,7 @@ use assistant_slash_command::{AfterCompletion, SlashCommandLine, SlashCommandWor
 use editor::{CompletionProvider, Editor, ExcerptId};
 use fuzzy::{StringMatchCandidate, match_strings};
 use gpui::{App, AppContext as _, Context, Entity, Task, WeakEntity, Window};
-use language::{Anchor, Buffer, ToPoint};
+use language::{Anchor, LanguageBuffer, ToPoint};
 use parking_lot::Mutex;
 use project::{
     CompletionDisplayOptions, CompletionIntent, CompletionSource,
@@ -264,7 +264,7 @@ impl CompletionProvider for SlashCommandCompletionProvider {
     fn completions(
         &self,
         _excerpt_id: ExcerptId,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         buffer_position: Anchor,
         _: editor::CompletionContext,
         window: &mut Window,
@@ -337,7 +337,7 @@ impl CompletionProvider for SlashCommandCompletionProvider {
 
     fn is_completion_trigger(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: language::Anchor,
         _text: &str,
         _trigger_in_words: bool,

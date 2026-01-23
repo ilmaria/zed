@@ -2581,7 +2581,7 @@ impl LspInstaller for RuffLspAdapter {
 #[cfg(test)]
 mod tests {
     use gpui::{AppContext as _, BorrowAppContext, Context, TestAppContext};
-    use language::{AutoindentMode, Buffer};
+    use language::{AutoindentMode, LanguageBuffer};
     use settings::SettingsStore;
     use std::num::NonZeroU32;
     use text::EditType;
@@ -2603,8 +2603,8 @@ mod tests {
         });
 
         cx.new(|cx| {
-            let mut buffer = Buffer::local("", cx).with_language(language, cx);
-            let append = |buffer: &mut Buffer, text: &str, cx: &mut Context<Buffer>| {
+            let mut buffer = LanguageBuffer::local("", cx).with_language(language, cx);
+            let append = |buffer: &mut LanguageBuffer, text: &str, cx: &mut Context<LanguageBuffer>| {
                 let ix = buffer.len();
                 buffer.edit(
                     [(ix..ix, text)],

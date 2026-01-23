@@ -25,7 +25,7 @@ use gpui::{
     SharedString, Styled, Subscription, Task, UpdateGlobal, WeakEntity, Window, actions, div,
 };
 use itertools::Itertools;
-use language::{Buffer, Language};
+use language::{LanguageBuffer, Language};
 use menu::Confirm;
 use project::{
     Project, ProjectPath, SearchResults,
@@ -1213,7 +1213,7 @@ impl ProjectSearchView {
     fn build_search_query(
         &mut self,
         cx: &mut Context<Self>,
-        open_buffers: Option<Vec<Entity<Buffer>>>,
+        open_buffers: Option<Vec<Entity<LanguageBuffer>>>,
     ) -> Option<SearchQuery> {
         // Do not bail early in this function, as we want to fill out `self.panels_with_errors`.
 
@@ -1353,7 +1353,7 @@ impl ProjectSearchView {
         query
     }
 
-    fn open_buffers(&self, cx: &App, workspace: &Workspace) -> Vec<Entity<Buffer>> {
+    fn open_buffers(&self, cx: &App, workspace: &Workspace) -> Vec<Entity<LanguageBuffer>> {
         let mut buffers = Vec::new();
         for editor in workspace.items_of_type::<Editor>(cx) {
             if let Some(buffer) = editor.read(cx).buffer().read(cx).as_singleton() {

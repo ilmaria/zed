@@ -25,7 +25,7 @@ use gpui::{
     AppContext, ClipboardEntry, Context, Entity, EventEmitter, FocusHandle, Focusable, ImageFormat,
     KeyContext, SharedString, Subscription, Task, TextStyle, WeakEntity,
 };
-use language::{Buffer, Language, language_settings::InlayHintKind};
+use language::{LanguageBuffer, Language, language_settings::InlayHintKind};
 use project::{CompletionIntent, InlayHint, InlayHintLabel, InlayId, Project, Worktree};
 use prompt_store::PromptStore;
 use rope::Point;
@@ -121,7 +121,7 @@ impl MessageEditor {
         );
 
         let editor = cx.new(|cx| {
-            let buffer = cx.new(|cx| Buffer::local("", cx).with_language(Arc::new(language), cx));
+            let buffer = cx.new(|cx| LanguageBuffer::local("", cx).with_language(Arc::new(language), cx));
             let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
 
             let mut editor = Editor::new(mode, buffer, None, window, cx);
@@ -385,7 +385,7 @@ impl MessageEditor {
         &self,
         full_mention_content: bool,
         cx: &mut Context<Self>,
-    ) -> Task<Result<(Vec<acp::ContentBlock>, Vec<Entity<Buffer>>)>> {
+    ) -> Task<Result<(Vec<acp::ContentBlock>, Vec<Entity<LanguageBuffer>>)>> {
         // Check for unsupported slash commands before spawning async task
         let text = self.editor.read(cx).text(cx);
         let available_commands = self.available_commands.borrow().clone();

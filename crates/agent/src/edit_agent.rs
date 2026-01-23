@@ -18,7 +18,7 @@ use futures::{
     stream::BoxStream,
 };
 use gpui::{AppContext, AsyncApp, Entity, Task};
-use language::{Anchor, Buffer, BufferSnapshot, LineIndent, Point, TextBufferSnapshot};
+use language::{Anchor, LanguageBuffer, BufferSnapshot, LineIndent, Point, TextBufferSnapshot};
 use language_model::{
     LanguageModel, LanguageModelCompletionError, LanguageModelRequest, LanguageModelRequestMessage,
     LanguageModelToolChoice, MessageContent, Role,
@@ -103,7 +103,7 @@ impl EditAgent {
 
     pub fn overwrite(
         &self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         edit_description: String,
         conversation: &LanguageModelRequest,
         cx: &mut AsyncApp,
@@ -137,7 +137,7 @@ impl EditAgent {
 
     fn overwrite_with_chunks(
         &self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         edit_chunks: impl 'static + Send + Stream<Item = Result<String, LanguageModelCompletionError>>,
         cx: &mut AsyncApp,
     ) -> (
@@ -159,7 +159,7 @@ impl EditAgent {
 
     async fn overwrite_with_chunks_internal(
         &self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         mut parse_rx: UnboundedReceiver<Result<CreateFileParserEvent>>,
         output_events_tx: mpsc::UnboundedSender<EditAgentOutputEvent>,
         cx: &mut AsyncApp,
@@ -219,7 +219,7 @@ impl EditAgent {
 
     pub fn edit(
         &self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         edit_description: String,
         conversation: &LanguageModelRequest,
         cx: &mut AsyncApp,
@@ -258,7 +258,7 @@ impl EditAgent {
 
     async fn apply_edit_chunks(
         &self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         edit_chunks: impl 'static + Send + Stream<Item = Result<String, LanguageModelCompletionError>>,
         output_events: mpsc::UnboundedSender<EditAgentOutputEvent>,
         cx: &mut AsyncApp,
@@ -785,7 +785,7 @@ mod tests {
     async fn test_empty_old_text(cx: &mut TestAppContext, mut rng: StdRng) {
         let agent = init_test(cx).await;
         let buffer = cx.new(|cx| {
-            Buffer::local(
+            LanguageBuffer::local(
                 indoc! {"
                     abc
                     def
@@ -829,7 +829,7 @@ mod tests {
     async fn test_indentation(cx: &mut TestAppContext, mut rng: StdRng) {
         let agent = init_test(cx).await;
         let buffer = cx.new(|cx| {
-            Buffer::local(
+            LanguageBuffer::local(
                 indoc! {"
                     lorem
                             ipsum
@@ -882,7 +882,7 @@ mod tests {
     #[gpui::test(iterations = 100)]
     async fn test_dependent_edits(cx: &mut TestAppContext, mut rng: StdRng) {
         let agent = init_test(cx).await;
-        let buffer = cx.new(|cx| Buffer::local("abc\ndef\nghi", cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local("abc\ndef\nghi", cx));
         let (apply, _events) = agent.edit(
             buffer.clone(),
             String::new(),
@@ -922,7 +922,7 @@ mod tests {
     #[gpui::test(iterations = 100)]
     async fn test_old_text_hallucination(cx: &mut TestAppContext, mut rng: StdRng) {
         let agent = init_test(cx).await;
-        let buffer = cx.new(|cx| Buffer::local("abc\ndef\nghi", cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local("abc\ndef\nghi", cx));
         let (apply, _events) = agent.edit(
             buffer.clone(),
             String::new(),
@@ -966,7 +966,7 @@ mod tests {
         let project = agent
             .action_log
             .read_with(cx, |log, _| log.project().clone());
-        let buffer = cx.new(|cx| Buffer::local("abc\ndef\nghi\njkl", cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local("abc\ndef\nghi\njkl", cx));
 
         let mut async_cx = cx.to_async();
         let (apply, mut events) = agent.edit(
@@ -1183,7 +1183,7 @@ mod tests {
         let project = agent
             .action_log
             .read_with(cx, |log, _| log.project().clone());
-        let buffer = cx.new(|cx| Buffer::local("abc\ndef\nghi", cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local("abc\ndef\nghi", cx));
         let (chunks_tx, chunks_rx) = mpsc::unbounded();
         let (apply, mut events) = agent.overwrite_with_chunks(
             buffer.clone(),
@@ -1438,7 +1438,7 @@ mod tests {
                     return 42;
                 }
             "};
-        let buffer = cx.new(|cx| Buffer::local(original_text, cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local(original_text, cx));
         let (apply, mut events) = agent.edit(
             buffer.clone(),
             String::new(),

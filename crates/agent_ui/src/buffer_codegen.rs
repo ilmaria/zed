@@ -15,7 +15,7 @@ use futures::{
     stream::BoxStream,
 };
 use gpui::{App, AppContext as _, AsyncApp, Context, Entity, EventEmitter, Subscription, Task};
-use language::{Buffer, IndentKind, LanguageName, Point, TransactionId, line_diff};
+use language::{LanguageBuffer, IndentKind, LanguageName, Point, TransactionId, line_diff};
 use language_model::{
     LanguageModel, LanguageModelCompletionError, LanguageModelCompletionEvent,
     LanguageModelRegistry, LanguageModelRequest, LanguageModelRequestMessage,
@@ -233,7 +233,7 @@ impl BufferCodegen {
         self.active_alternative().read(cx).buffer.clone()
     }
 
-    pub fn old_buffer(&self, cx: &App) -> Entity<Buffer> {
+    pub fn old_buffer(&self, cx: &App) -> Entity<LanguageBuffer> {
         self.active_alternative().read(cx).old_buffer.clone()
     }
 
@@ -266,7 +266,7 @@ impl EventEmitter<CodegenEvent> for BufferCodegen {}
 
 pub struct CodegenAlternative {
     buffer: Entity<MultiBuffer>,
-    old_buffer: Entity<Buffer>,
+    old_buffer: Entity<LanguageBuffer>,
     snapshot: MultiBufferSnapshot,
     edit_position: Option<Anchor>,
     range: Range<Anchor>,
@@ -317,7 +317,7 @@ impl CodegenAlternative {
                 .read(cx)
                 .language_registry();
 
-            let mut buffer = Buffer::local_normalized(text, line_ending, cx);
+            let mut buffer = LanguageBuffer::local_normalized(text, line_ending, cx);
             buffer.set_language(language, cx);
             if let Some(language_registry) = language_registry {
                 buffer.set_language_registry(language_registry);
@@ -1493,7 +1493,7 @@ mod tests {
     };
     use gpui::TestAppContext;
     use indoc::indoc;
-    use language::{Buffer, Point};
+    use language::{LanguageBuffer, Point};
     use language_model::fake_provider::FakeLanguageModel;
     use language_model::{
         LanguageModelCompletionError, LanguageModelCompletionEvent, LanguageModelRegistry,
@@ -1516,7 +1516,7 @@ mod tests {
                 }
             }
         "};
-        let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(rust_lang(), cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(rust_lang(), cx));
         let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
         let range = buffer.read_with(cx, |buffer, cx| {
             let snapshot = buffer.snapshot(cx);
@@ -1578,7 +1578,7 @@ mod tests {
                 le
             }
         "};
-        let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(rust_lang(), cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(rust_lang(), cx));
         let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
         let range = buffer.read_with(cx, |buffer, cx| {
             let snapshot = buffer.snapshot(cx);
@@ -1642,7 +1642,7 @@ mod tests {
             "  \n",
             "}\n" //
         );
-        let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(rust_lang(), cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(rust_lang(), cx));
         let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
         let range = buffer.read_with(cx, |buffer, cx| {
             let snapshot = buffer.snapshot(cx);
@@ -1706,7 +1706,7 @@ mod tests {
             \t}
             }
         "};
-        let buffer = cx.new(|cx| Buffer::local(text, cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local(text, cx));
         let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
         let range = buffer.read_with(cx, |buffer, cx| {
             let snapshot = buffer.snapshot(cx);
@@ -1758,7 +1758,7 @@ mod tests {
                 let x = 0;
             }
         "};
-        let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(rust_lang(), cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(rust_lang(), cx));
         let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
         let range = buffer.read_with(cx, |buffer, cx| {
             let snapshot = buffer.snapshot(cx);
@@ -1817,7 +1817,7 @@ mod tests {
     async fn test_allows_model_to_output_backticks(cx: &mut TestAppContext) {
         init_test(cx);
         let text = "- Improved; `cmd+click` behavior. Now requires `cmd` to be pressed before the click starts or it doesn't run. ([#44579](https://github.com/zed-industries/zed/pull/44579); thanks [Zachiah](https://github.com/Zachiah))";
-        let buffer = cx.new(|cx| Buffer::local("", cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local("", cx));
         let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
         let range = buffer.read_with(cx, |buffer, cx| {
             let snapshot = buffer.snapshot(cx);

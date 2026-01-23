@@ -25,7 +25,7 @@ pub struct ChannelBuffer {
     collaborators: HashMap<PeerId, Collaborator>,
     user_store: Entity<UserStore>,
     channel_store: Entity<ChannelStore>,
-    buffer: Entity<language::Buffer>,
+    buffer: Entity<language::LanguageBuffer>,
     buffer_epoch: u64,
     client: Arc<Client>,
     subscription: Option<client::Subscription>,
@@ -65,7 +65,7 @@ impl ChannelBuffer {
 
         let buffer = cx.new(|cx| {
             let capability = channel_store.read(cx).channel_capability(channel.id);
-            language::Buffer::remote(
+            language::LanguageBuffer::remote(
                 buffer_id,
                 ReplicaId::new(response.replica_id as u16),
                 capability,
@@ -188,7 +188,7 @@ impl ChannelBuffer {
 
     fn on_buffer_update(
         &mut self,
-        _: Entity<language::Buffer>,
+        _: Entity<language::LanguageBuffer>,
         event: &language::BufferEvent,
         cx: &mut Context<Self>,
     ) {
@@ -244,7 +244,7 @@ impl ChannelBuffer {
         self.buffer_epoch
     }
 
-    pub fn buffer(&self) -> Entity<language::Buffer> {
+    pub fn buffer(&self) -> Entity<language::LanguageBuffer> {
         self.buffer.clone()
     }
 

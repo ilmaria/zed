@@ -4,7 +4,7 @@ use anyhow::Result;
 use collections::FxHashSet;
 use futures::FutureExt as _;
 use gpui::{App, Entity, SharedString, Task};
-use language::Buffer;
+use language::LanguageBuffer;
 use project::Project;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -120,7 +120,7 @@ impl AgentTool for SaveFileTool {
                 authorize.await?;
             }
 
-            let mut buffers_to_save: FxHashSet<Entity<Buffer>> = FxHashSet::default();
+            let mut buffers_to_save: FxHashSet<Entity<LanguageBuffer>> = FxHashSet::default();
 
             let mut saved_paths: Vec<PathBuf> = Vec::new();
             let mut clean_paths: Vec<PathBuf> = Vec::new();

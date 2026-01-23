@@ -10,7 +10,7 @@ use gpui::{
     App, DismissEvent, Entity, EventEmitter, FocusHandle, Focusable, Render, SharedString, Styled,
     Subscription, div, prelude::*,
 };
-use language::Buffer;
+use language::LanguageBuffer;
 use text::{Bias, Point};
 use theme::ActiveTheme;
 use ui::prelude::*;
@@ -75,7 +75,7 @@ impl GoToLine {
 
     pub fn new(
         active_editor: Entity<Editor>,
-        active_buffer: Entity<Buffer>,
+        active_buffer: Entity<LanguageBuffer>,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Self {

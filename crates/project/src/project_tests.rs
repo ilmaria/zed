@@ -3331,7 +3331,7 @@ async fn test_invalid_edits_from_lsp2(cx: &mut gpui::TestAppContext) {
 }
 
 fn chunks_with_diagnostics<T: ToOffset + ToPoint>(
-    buffer: &Buffer,
+    buffer: &LanguageBuffer,
     range: Range<T>,
 ) -> Vec<(String, Option<DiagnosticSeverity>)> {
     let mut chunks: Vec<(String, Option<DiagnosticSeverity>)> = Vec::new();

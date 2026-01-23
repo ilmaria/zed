@@ -18,7 +18,7 @@ use collections::{BTreeMap, Bound, HashMap, HashSet};
 use gpui::{App, Context, Entity, EntityId, EventEmitter, WeakEntity};
 use itertools::Itertools;
 use language::{
-    AutoindentMode, BracketMatch, Buffer, BufferChunks, BufferRow, BufferSnapshot, Capability,
+    AutoindentMode, BracketMatch, LanguageBuffer, BufferChunks, BufferRow, BufferSnapshot, Capability,
     CharClassifier, CharKind, CharScopeContext, Chunk, CursorShape, DiagnosticEntryRef, File,
     IndentGuideSettings, IndentSize, Language, LanguageScope, OffsetRangeExt, OffsetUtf16, Outline,
     OutlineItem, Point, PointUtf16, Selection, TextDimension, TextObject, ToOffset as _,
@@ -93,7 +93,7 @@ pub struct MultiBuffer {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Event {
     ExcerptsAdded {
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         predecessor: ExcerptId,
         excerpts: Vec<(ExcerptId, ExcerptRange<language::Anchor>)>,
     },
@@ -110,7 +110,7 @@ pub enum Event {
     },
     DiffHunksToggled,
     Edited {
-        edited_buffer: Option<Entity<Buffer>>,
+        edited_buffer: Option<Entity<LanguageBuffer>>,
     },
     TransactionUndone {
         transaction_id: TransactionId,
@@ -490,7 +490,7 @@ pub trait ToPoint: 'static + fmt::Debug {
 }
 
 struct BufferState {
-    buffer: Entity<Buffer>,
+    buffer: Entity<LanguageBuffer>,
     last_version: RefCell<clock::Global>,
     last_non_text_state_update_count: Cell<usize>,
     excerpts: Vec<Locator>,
@@ -502,7 +502,7 @@ struct DiffState {
     /// If set, this diff is "inverted" (i.e. showing additions as deletions).
     /// This is used in the side-by-side diff view. The main_buffer is the
     /// editable buffer, while the excerpt shows the base text.
-    main_buffer: Option<WeakEntity<Buffer>>,
+    main_buffer: Option<WeakEntity<LanguageBuffer>>,
     _subscription: gpui::Subscription,
 }
 
@@ -556,7 +556,7 @@ impl DiffState {
 
     fn new_inverted(
         diff: Entity<BufferDiff>,
-        main_buffer: Entity<Buffer>,
+        main_buffer: Entity<LanguageBuffer>,
         cx: &mut Context<MultiBuffer>,
     ) -> Self {
         let main_buffer = main_buffer.downgrade();
@@ -1105,7 +1105,7 @@ impl MultiBuffer {
         )
     }
 
-    pub fn singleton(buffer: Entity<Buffer>, cx: &mut Context<Self>) -> Self {
+    pub fn singleton(buffer: Entity<LanguageBuffer>, cx: &mut Context<Self>) -> Self {
         let mut this = Self::new_(
             buffer.read(cx).capability(),
             MultiBufferSnapshot {
@@ -1214,7 +1214,7 @@ impl MultiBuffer {
         self.snapshot.borrow()
     }
 
-    pub fn as_singleton(&self) -> Option<Entity<Buffer>> {
+    pub fn as_singleton(&self) -> Option<Entity<LanguageBuffer>> {
         if self.singleton {
             Some(self.buffers.values().next().unwrap().buffer.clone())
         } else {
@@ -1717,7 +1717,7 @@ impl MultiBuffer {
 
     pub fn push_excerpts<O>(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         ranges: impl IntoIterator<Item = ExcerptRange<O>>,
         cx: &mut Context<Self>,
     ) -> Vec<ExcerptId>
@@ -1756,7 +1756,7 @@ impl MultiBuffer {
     pub fn insert_excerpts_after<O>(
         &mut self,
         prev_excerpt_id: ExcerptId,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         ranges: impl IntoIterator<Item = ExcerptRange<O>>,
         cx: &mut Context<Self>,
     ) -> Vec<ExcerptId>
@@ -1786,7 +1786,7 @@ impl MultiBuffer {
     pub fn insert_excerpts_with_ids_after<O>(
         &mut self,
         prev_excerpt_id: ExcerptId,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         ranges: impl IntoIterator<Item = (ExcerptId, ExcerptRange<O>)>,
         cx: &mut Context<Self>,
     ) where
@@ -2046,7 +2046,7 @@ impl MultiBuffer {
         &self,
         position: impl ToOffset,
         cx: &App,
-    ) -> Option<(ExcerptId, Entity<Buffer>, Range<text::Anchor>)> {
+    ) -> Option<(ExcerptId, Entity<LanguageBuffer>, Range<text::Anchor>)> {
         let snapshot = self.read(cx);
         let offset = position.to_offset(&snapshot);
 
@@ -2064,7 +2064,7 @@ impl MultiBuffer {
             })
     }
 
-    pub fn buffer_for_anchor(&self, anchor: Anchor, cx: &App) -> Option<Entity<Buffer>> {
+    pub fn buffer_for_anchor(&self, anchor: Anchor, cx: &App) -> Option<Entity<LanguageBuffer>> {
         if let Some(buffer_id) = anchor.text_anchor.buffer_id {
             self.buffer(buffer_id)
         } else {
@@ -2078,7 +2078,7 @@ impl MultiBuffer {
         &self,
         point: T,
         cx: &App,
-    ) -> Option<(Entity<Buffer>, BufferOffset)> {
+    ) -> Option<(Entity<LanguageBuffer>, BufferOffset)> {
         let snapshot = self.read(cx);
         let (buffer, offset) = snapshot.point_to_buffer_offset(point)?;
         Some((
@@ -2092,7 +2092,7 @@ impl MultiBuffer {
         &self,
         point: T,
         cx: &App,
-    ) -> Option<(Entity<Buffer>, Point, ExcerptId)> {
+    ) -> Option<(Entity<LanguageBuffer>, Point, ExcerptId)> {
         let snapshot = self.read(cx);
         let (buffer, point, is_main_buffer) =
             snapshot.point_to_buffer_point(point.to_point(&snapshot))?;
@@ -2105,7 +2105,7 @@ impl MultiBuffer {
 
     pub fn buffer_point_to_anchor(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         point: Point,
         cx: &App,
     ) -> Option<Anchor> {
@@ -2134,7 +2134,7 @@ impl MultiBuffer {
 
     pub fn buffer_anchor_to_anchor(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         anchor: text::Anchor,
         cx: &App,
     ) -> Option<Anchor> {
@@ -2301,7 +2301,7 @@ impl MultiBuffer {
         &self,
         position: T,
         cx: &App,
-    ) -> Option<(Entity<Buffer>, language::Anchor)> {
+    ) -> Option<(Entity<LanguageBuffer>, language::Anchor)> {
         let snapshot = self.read(cx);
         let anchor = snapshot.anchor_before(position);
         let buffer = self
@@ -2314,7 +2314,7 @@ impl MultiBuffer {
 
     fn on_buffer_event(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         event: &language::BufferEvent,
         cx: &mut Context<Self>,
     ) {
@@ -2354,7 +2354,7 @@ impl MultiBuffer {
     fn inverted_buffer_diff_language_changed(
         &mut self,
         diff: Entity<BufferDiff>,
-        main_buffer: WeakEntity<Buffer>,
+        main_buffer: WeakEntity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) {
         let base_text_buffer_id = diff.read(cx).base_text(cx).remote_id();
@@ -2420,7 +2420,7 @@ impl MultiBuffer {
         &mut self,
         diff: Entity<BufferDiff>,
         diff_change_range: Range<usize>,
-        main_buffer: WeakEntity<Buffer>,
+        main_buffer: WeakEntity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) {
         self.sync_mut(cx);
@@ -2460,11 +2460,11 @@ impl MultiBuffer {
         });
     }
 
-    pub fn all_buffers_iter(&self) -> impl Iterator<Item = Entity<Buffer>> {
+    pub fn all_buffers_iter(&self) -> impl Iterator<Item = Entity<LanguageBuffer>> {
         self.buffers.values().map(|state| state.buffer.clone())
     }
 
-    pub fn all_buffers(&self) -> HashSet<Entity<Buffer>> {
+    pub fn all_buffers(&self) -> HashSet<Entity<LanguageBuffer>> {
         self.all_buffers_iter().collect()
     }
 
@@ -2476,7 +2476,7 @@ impl MultiBuffer {
         self.all_buffer_ids_iter().collect()
     }
 
-    pub fn buffer(&self, buffer_id: BufferId) -> Option<Entity<Buffer>> {
+    pub fn buffer(&self, buffer_id: BufferId) -> Option<Entity<LanguageBuffer>> {
         self.buffers
             .get(&buffer_id)
             .map(|state| state.buffer.clone())
@@ -2518,7 +2518,7 @@ impl MultiBuffer {
         language_settings(language.map(|l| l.name()), file, cx)
     }
 
-    pub fn for_each_buffer(&self, mut f: impl FnMut(&Entity<Buffer>)) {
+    pub fn for_each_buffer(&self, mut f: impl FnMut(&Entity<LanguageBuffer>)) {
         self.buffers.values().for_each(|state| f(&state.buffer))
     }
 
@@ -2546,7 +2546,7 @@ impl MultiBuffer {
         "untitled".into()
     }
 
-    fn buffer_content_title(&self, buffer: &Buffer) -> Option<Cow<'_, str>> {
+    fn buffer_content_title(&self, buffer: &LanguageBuffer) -> Option<Cow<'_, str>> {
         let mut is_leading_whitespace = true;
         let mut count = 0;
         let mut prev_was_space = false;
@@ -2624,7 +2624,7 @@ impl MultiBuffer {
     pub fn add_inverted_diff(
         &mut self,
         diff: Entity<BufferDiff>,
-        main_buffer: Entity<Buffer>,
+        main_buffer: Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) {
         let base_text_buffer_id = diff.read(cx).base_text(cx).remote_id();
@@ -3692,7 +3692,7 @@ fn build_excerpt_ranges(
 #[cfg(any(test, feature = "test-support"))]
 impl MultiBuffer {
     pub fn build_simple(text: &str, cx: &mut gpui::App) -> Entity<Self> {
-        let buffer = cx.new(|cx| Buffer::local(text, cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local(text, cx));
         cx.new(|cx| Self::singleton(buffer, cx))
     }
 
@@ -3702,7 +3702,7 @@ impl MultiBuffer {
     ) -> Entity<Self> {
         let multi = cx.new(|_| Self::new(Capability::ReadWrite));
         for (text, ranges) in excerpts {
-            let buffer = cx.new(|cx| Buffer::local(text, cx));
+            let buffer = cx.new(|cx| LanguageBuffer::local(text, cx));
             let excerpt_ranges = ranges.into_iter().map(ExcerptRange::new);
             multi.update(cx, |multi, cx| {
                 multi.push_excerpts(buffer, excerpt_ranges, cx)
@@ -3712,7 +3712,7 @@ impl MultiBuffer {
         multi
     }
 
-    pub fn build_from_buffer(buffer: Entity<Buffer>, cx: &mut gpui::App) -> Entity<Self> {
+    pub fn build_from_buffer(buffer: Entity<LanguageBuffer>, cx: &mut gpui::App) -> Entity<Self> {
         cx.new(|cx| Self::singleton(buffer, cx))
     }
 
@@ -3807,7 +3807,7 @@ impl MultiBuffer {
             if excerpt_ids.is_empty() || (rng.random() && excerpt_ids.len() < max_excerpts) {
                 let buffer_handle = if rng.random() || self.buffers.is_empty() {
                     let text = RandomCharIter::new(&mut *rng).take(10).collect::<String>();
-                    buffers.push(cx.new(|cx| Buffer::local(text, cx)));
+                    buffers.push(cx.new(|cx| LanguageBuffer::local(text, cx)));
                     let buffer = buffers.last().unwrap().read(cx);
                     log::info!(
                         "Creating new buffer {} with text: {:?}",

@@ -6,7 +6,7 @@ use gpui::App;
 use pretty_assertions::assert_eq;
 use rand::rngs::StdRng;
 use std::{env, ops::Range, sync::Arc};
-use text::{Buffer, BufferId, EditType, ReplicaId};
+use text::{BufferId, EditType, ReplicaId, TextBuffer};
 use tree_sitter::Node;
 use unindent::Unindent as _;
 use util::test::marked_text_ranges;
@@ -87,7 +87,7 @@ fn test_syntax_map_layers_for_range(cx: &mut App) {
     let language = rust_lang();
     registry.add(language.clone());
 
-    let mut buffer = Buffer::new(
+    let mut buffer = TextBuffer::new(
         ReplicaId::LOCAL,
         BufferId::new(1).unwrap(),
         r#"
@@ -188,7 +188,7 @@ fn test_dynamic_language_injection(cx: &mut App) {
     registry.add(rust_lang());
     registry.add(Arc::new(ruby_lang()));
 
-    let mut buffer = Buffer::new(
+    let mut buffer = TextBuffer::new(
         ReplicaId::LOCAL,
         BufferId::new(1).unwrap(),
         r#"
@@ -811,7 +811,7 @@ fn test_syntax_map_languages_loading_with_erb(cx: &mut App) {
     .unindent();
 
     let registry = Arc::new(LanguageRegistry::test(cx.background_executor().clone()));
-    let mut buffer = Buffer::new(ReplicaId::LOCAL, BufferId::new(1).unwrap(), text);
+    let mut buffer = TextBuffer::new(ReplicaId::LOCAL, BufferId::new(1).unwrap(), text);
 
     let mut syntax_map = SyntaxMap::new(&buffer);
     syntax_map.set_language_registry(registry.clone());
@@ -978,7 +978,7 @@ fn test_random_edits(
         .map(|i| i.parse().expect("invalid `OPERATIONS` variable"))
         .unwrap_or(10);
 
-    let mut buffer = Buffer::new(ReplicaId::LOCAL, BufferId::new(1).unwrap(), text);
+    let mut buffer = TextBuffer::new(ReplicaId::LOCAL, BufferId::new(1).unwrap(), text);
 
     let mut syntax_map = SyntaxMap::new(&buffer);
     syntax_map.set_language_registry(registry.clone());
@@ -1143,7 +1143,11 @@ fn check_interpolation(
     }
 }
 
-fn test_edit_sequence(language_name: &str, steps: &[&str], cx: &mut App) -> (Buffer, SyntaxMap) {
+fn test_edit_sequence(
+    language_name: &str,
+    steps: &[&str],
+    cx: &mut App,
+) -> (TextBuffer, SyntaxMap) {
     let registry = Arc::new(LanguageRegistry::test(cx.background_executor().clone()));
     registry.add(Arc::new(elixir_lang()));
     registry.add(Arc::new(heex_lang()));
@@ -1159,7 +1163,7 @@ fn test_edit_sequence(language_name: &str, steps: &[&str], cx: &mut App) -> (Buf
         .now_or_never()
         .unwrap()
         .unwrap();
-    let mut buffer = Buffer::new(ReplicaId::LOCAL, BufferId::new(1).unwrap(), "");
+    let mut buffer = TextBuffer::new(ReplicaId::LOCAL, BufferId::new(1).unwrap(), "");
 
     let mut mutated_syntax_map = SyntaxMap::new(&buffer);
     mutated_syntax_map.set_language_registry(registry.clone());
@@ -1339,7 +1343,7 @@ fn heex_lang() -> Language {
     .unwrap()
 }
 
-fn range_for_text(buffer: &Buffer, text: &str) -> Range<usize> {
+fn range_for_text(buffer: &TextBuffer, text: &str) -> Range<usize> {
     let start = buffer.as_rope().to_string().find(text).unwrap();
     start..start + text.len()
 }

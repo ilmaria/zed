@@ -3143,7 +3143,7 @@ mod tests {
     use fs::FakeFs;
     use gpui::{App, TestAppContext, VisualTestContext};
     use indoc::indoc;
-    use language::{Buffer, LanguageRegistry};
+    use language::{LanguageBuffer, LanguageRegistry};
     use pretty_assertions::assert_eq;
     use prompt_store::PromptBuilder;
     use text::{EditType, OffsetRangeExt};
@@ -3258,7 +3258,7 @@ mod tests {
                 line 19
             "#
             .unindent();
-            let mut buffer = Buffer::local(text, cx);
+            let mut buffer = LanguageBuffer::local(text, cx);
             buffer.set_language(Some(markdown.clone()), cx);
             buffer
         });

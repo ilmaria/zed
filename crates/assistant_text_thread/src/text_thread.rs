@@ -17,7 +17,7 @@ use gpui::{
     Task, WeakEntity,
 };
 use itertools::Itertools as _;
-use language::{AnchorRangeExt, Bias, Buffer, LanguageRegistry, OffsetRangeExt, Point, ToOffset};
+use language::{AnchorRangeExt, Bias, LanguageBuffer, LanguageRegistry, OffsetRangeExt, Point, ToOffset};
 use language_model::{
     AnthropicCompletionType, AnthropicEventData, AnthropicEventType, LanguageModel,
     LanguageModelCacheConfiguration, LanguageModelCompletionEvent, LanguageModelImage,
@@ -667,7 +667,7 @@ pub struct TextThread {
     version: clock::Global,
     pub(crate) pending_ops: Vec<TextThreadOperation>,
     operations: Vec<TextThreadOperation>,
-    buffer: Entity<Buffer>,
+    buffer: Entity<LanguageBuffer>,
     pub(crate) parsed_slash_commands: Vec<ParsedSlashCommand>,
     invoked_slash_commands: HashMap<InvokedSlashCommandId, InvokedSlashCommand>,
     edits_since_last_parse: language::Subscription<usize>,
@@ -744,7 +744,7 @@ impl TextThread {
         cx: &mut Context<Self>,
     ) -> Self {
         let buffer = cx.new(|_cx| {
-            let buffer = Buffer::remote(
+            let buffer = LanguageBuffer::remote(
                 language::BufferId::new(1).unwrap(),
                 replica_id,
                 capability,
@@ -1153,7 +1153,7 @@ impl TextThread {
         cx.emit(TextThreadEvent::Operation(op));
     }
 
-    pub fn buffer(&self) -> &Entity<Buffer> {
+    pub fn buffer(&self) -> &Entity<LanguageBuffer> {
         &self.buffer
     }
 
@@ -1222,7 +1222,7 @@ impl TextThread {
 
     fn handle_buffer_event(
         &mut self,
-        _: Entity<Buffer>,
+        _: Entity<LanguageBuffer>,
         event: &language::BufferEvent,
         cx: &mut Context<Self>,
     ) {
@@ -2284,7 +2284,7 @@ impl TextThread {
 
         let mut contents = self.contents(cx).peekable();
 
-        fn collect_text_content(buffer: &Buffer, range: Range<usize>) -> Option<String> {
+        fn collect_text_content(buffer: &LanguageBuffer, range: Range<usize>) -> Option<String> {
             let text: String = buffer.text_for_range(range).collect();
             if text.trim().is_empty() {
                 None
@@ -2838,7 +2838,7 @@ impl TextThread {
     }
 
     pub fn messages_from_iters<'a>(
-        buffer: &'a Buffer,
+        buffer: &'a LanguageBuffer,
         metadata: &'a HashMap<MessageId, MessageMetadata>,
         messages: impl Iterator<Item = (usize, &'a MessageAnchor)> + 'a,
     ) -> impl 'a + Iterator<Item = Message> {
@@ -3120,7 +3120,7 @@ impl SavedTextThread {
 
     fn into_ops(
         self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cx: &mut Context<TextThread>,
     ) -> Vec<TextThreadOperation> {
         let mut operations = Vec::new();

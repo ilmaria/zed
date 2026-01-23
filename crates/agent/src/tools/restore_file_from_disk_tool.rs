@@ -3,7 +3,7 @@ use anyhow::Result;
 use collections::FxHashSet;
 use futures::FutureExt as _;
 use gpui::{App, Entity, SharedString, Task};
-use language::Buffer;
+use language::LanguageBuffer;
 use project::Project;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -69,7 +69,7 @@ impl AgentTool for RestoreFileFromDiskTool {
         let input_paths = input.paths;
 
         cx.spawn(async move |cx| {
-            let mut buffers_to_reload: FxHashSet<Entity<Buffer>> = FxHashSet::default();
+            let mut buffers_to_reload: FxHashSet<Entity<LanguageBuffer>> = FxHashSet::default();
 
             let mut restored_paths: Vec<PathBuf> = Vec::new();
             let mut clean_paths: Vec<PathBuf> = Vec::new();

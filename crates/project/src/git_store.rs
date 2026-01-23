@@ -44,7 +44,7 @@ use gpui::{
     WeakEntity,
 };
 use language::{
-    Buffer, BufferEvent, Language, LanguageRegistry,
+    LanguageBuffer, BufferEvent, Language, LanguageRegistry,
     proto::{deserialize_version, serialize_version},
 };
 use parking_lot::Mutex;
@@ -278,7 +278,7 @@ pub struct JobInfo {
 pub struct Repository {
     this: WeakEntity<Self>,
     snapshot: RepositorySnapshot,
-    commit_message_buffer: Option<Entity<Buffer>>,
+    commit_message_buffer: Option<Entity<LanguageBuffer>>,
     git_store: WeakEntity<GitStore>,
     // For a local repository, holds paths that have had worktree events since the last status scan completed,
     // and that should be examined during the next status scan.
@@ -635,7 +635,7 @@ impl GitStore {
 
     pub fn open_unstaged_diff(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) -> Task<Result<Entity<BufferDiff>>> {
         let buffer_id = buffer.read(cx).remote_id();
@@ -691,7 +691,7 @@ impl GitStore {
     pub fn open_diff_since(
         &mut self,
         oid: Option<git::Oid>,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         repo: Entity<Repository>,
         cx: &mut Context<Self>,
     ) -> Task<Result<Entity<BufferDiff>>> {
@@ -740,7 +740,7 @@ impl GitStore {
 
     pub fn open_uncommitted_diff(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) -> Task<Result<Entity<BufferDiff>>> {
         let buffer_id = buffer.read(cx).remote_id();
@@ -794,7 +794,7 @@ impl GitStore {
         this: WeakEntity<Self>,
         kind: DiffKind,
         texts: Result<DiffBasesChange>,
-        buffer_entity: Entity<Buffer>,
+        buffer_entity: Entity<LanguageBuffer>,
         cx: &mut AsyncApp,
     ) -> Result<Entity<BufferDiff>> {
         let diff_bases_change = match texts {
@@ -877,7 +877,7 @@ impl GitStore {
 
     pub fn open_conflict_set(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) -> Entity<ConflictSet> {
         log::debug!("open conflict set");
@@ -1022,7 +1022,7 @@ impl GitStore {
     /// Blames a buffer.
     pub fn blame_buffer(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         version: Option<clock::Global>,
         cx: &mut Context<Self>,
     ) -> Task<Result<Option<Blame>>> {
@@ -1092,7 +1092,7 @@ impl GitStore {
 
     pub fn get_permalink_to_line(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         selection: Range<u32>,
         cx: &mut App,
     ) -> Task<Result<url::Url>> {
@@ -1523,7 +1523,7 @@ impl GitStore {
 
     pub fn recalculate_buffer_diffs(
         &mut self,
-        buffers: Vec<Entity<Buffer>>,
+        buffers: Vec<Entity<LanguageBuffer>>,
         cx: &mut Context<Self>,
     ) -> impl Future<Output = ()> + use<> {
         let mut futures = Vec::new();
@@ -2924,7 +2924,7 @@ impl BufferGitState {
         }
     }
 
-    fn buffer_language_changed(&mut self, buffer: Entity<Buffer>, cx: &mut Context<Self>) {
+    fn buffer_language_changed(&mut self, buffer: Entity<LanguageBuffer>, cx: &mut Context<Self>) {
         self.language = buffer.read(cx).language().cloned();
         self.language_changed = true;
         let _ = self.recalculate_diffs(buffer.read(cx).text_snapshot(), cx);
@@ -3912,7 +3912,7 @@ impl Repository {
         languages: Option<Arc<LanguageRegistry>>,
         buffer_store: Entity<BufferStore>,
         cx: &mut Context<Self>,
-    ) -> Task<Result<Entity<Buffer>>> {
+    ) -> Task<Result<Entity<LanguageBuffer>>> {
         let id = self.id;
         if let Some(buffer) = self.commit_message_buffer.clone() {
             return Task::ready(Ok(buffer));
@@ -3964,7 +3964,7 @@ impl Repository {
         language_registry: Option<Arc<LanguageRegistry>>,
         buffer_store: Entity<BufferStore>,
         cx: &mut Context<Self>,
-    ) -> Task<Result<Entity<Buffer>>> {
+    ) -> Task<Result<Entity<LanguageBuffer>>> {
         cx.spawn(async move |repository, cx| {
             let buffer = buffer_store
                 .update(cx, |buffer_store, cx| buffer_store.create_buffer(false, cx))

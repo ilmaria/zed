@@ -6,7 +6,7 @@ use gpui::{
     ParentElement, Render, ScrollStrategy, SharedString, Styled, Task, UniformListScrollHandle,
     WeakEntity, Window, actions, div, rems, uniform_list,
 };
-use language::{Buffer, OwnedSyntaxLayer};
+use language::{LanguageBuffer, OwnedSyntaxLayer};
 use std::{any::TypeId, mem, ops::Range};
 use theme::ActiveTheme;
 use tree_sitter::{Node, TreeCursor};
@@ -121,7 +121,7 @@ impl EditorState {
 
 #[derive(Clone)]
 struct BufferState {
-    buffer: Entity<Buffer>,
+    buffer: Entity<LanguageBuffer>,
     excerpt_id: ExcerptId,
     active_layer: Option<OwnedSyntaxLayer>,
 }

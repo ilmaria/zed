@@ -17,7 +17,7 @@ use gpui::{
     Action, App, AppContext, BorrowAppContext, ClipboardEntry, ClipboardItem, DismissEvent, Entity,
     EntityId, Global, HighlightStyle, StyledText, Subscription, Task, TextStyle, WeakEntity,
 };
-use language::{Buffer, BufferEvent, BufferId, Chunk, Point};
+use language::{LanguageBuffer, BufferEvent, BufferId, Chunk, Point};
 use multi_buffer::MultiBufferRow;
 use picker::{Picker, PickerDelegate};
 use project::{Project, ProjectItem, ProjectPath};
@@ -365,7 +365,7 @@ impl MarksState {
         }
     }
 
-    pub fn on_buffer_loaded(&mut self, buffer_handle: &Entity<Buffer>, cx: &mut Context<Self>) {
+    pub fn on_buffer_loaded(&mut self, buffer_handle: &Entity<LanguageBuffer>, cx: &mut Context<Self>) {
         let Some(project) = self.project(cx) else {
             return;
         };
@@ -399,7 +399,7 @@ impl MarksState {
     fn serialize_buffer_marks(
         &mut self,
         path: Arc<Path>,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) {
         let new_points: HashMap<String, Vec<Point>> =
@@ -467,7 +467,7 @@ impl MarksState {
         &mut self,
         old_path: MarkLocation,
         new_path: Arc<Path>,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) {
         if let MarkLocation::Buffer(entity_id) = old_path
@@ -484,7 +484,7 @@ impl MarksState {
         self.serialize_buffer_marks(new_path, buffer, cx);
     }
 
-    fn path_for_buffer(&self, buffer: &Entity<Buffer>, cx: &App) -> Option<Arc<Path>> {
+    fn path_for_buffer(&self, buffer: &Entity<LanguageBuffer>, cx: &App) -> Option<Arc<Path>> {
         let project_path = buffer.read(cx).project_path(cx)?;
         let project = self.project(cx)?;
         let abs_path = project.read(cx).absolute_path(&project_path, cx)?;
@@ -511,7 +511,7 @@ impl MarksState {
     pub fn watch_buffer(
         &mut self,
         mark_location: MarkLocation,
-        buffer_handle: &Entity<Buffer>,
+        buffer_handle: &Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) {
         let on_change = cx.subscribe(buffer_handle, move |this, buffer, event, cx| match event {

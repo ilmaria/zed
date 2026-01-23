@@ -11,7 +11,7 @@ use gpui::{
     WeakEntity, Window,
 };
 
-use language::Buffer;
+use language::LanguageBuffer;
 use text::BufferId;
 use util::ResultExt;
 use ztracing::instrument;
@@ -326,7 +326,7 @@ impl BranchDiff {
         project_path: crate::ProjectPath,
         repo: Entity<Repository>,
         cx: &Context<'_, Project>,
-    ) -> Task<Result<(Entity<Buffer>, Entity<BufferDiff>)>> {
+    ) -> Task<Result<(Entity<LanguageBuffer>, Entity<BufferDiff>)>> {
         let task = cx.spawn(async move |project, cx| {
             let buffer = project
                 .update(cx, |project, cx| project.open_buffer(project_path, cx))?
@@ -380,5 +380,5 @@ fn diff_status_to_file_status(branch_diff: &git::status::TreeDiffStatus) -> File
 pub struct DiffBuffer {
     pub repo_path: RepoPath,
     pub file_status: FileStatus,
-    pub load: Task<Result<(Entity<Buffer>, Entity<BufferDiff>)>>,
+    pub load: Task<Result<(Entity<LanguageBuffer>, Entity<BufferDiff>)>>,
 }

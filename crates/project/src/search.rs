@@ -4,7 +4,7 @@ use client::proto;
 use fancy_regex::{Captures, Regex, RegexBuilder};
 use gpui::Entity;
 use itertools::Itertools as _;
-use language::{Buffer, BufferSnapshot, CharKind};
+use language::{LanguageBuffer, BufferSnapshot, CharKind};
 use smol::future::yield_now;
 use std::{
     borrow::Cow,
@@ -21,7 +21,7 @@ use util::{
 #[derive(Debug)]
 pub enum SearchResult {
     Buffer {
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         ranges: Vec<Range<Anchor>>,
     },
     LimitReached,
@@ -40,7 +40,7 @@ pub struct SearchInputs {
     files_to_include: PathMatcher,
     files_to_exclude: PathMatcher,
     match_full_paths: bool,
-    buffers: Option<Vec<Entity<Buffer>>>,
+    buffers: Option<Vec<Entity<LanguageBuffer>>>,
 }
 
 impl SearchInputs {
@@ -53,7 +53,7 @@ impl SearchInputs {
     pub fn files_to_exclude(&self) -> &PathMatcher {
         &self.files_to_exclude
     }
-    pub fn buffers(&self) -> &Option<Vec<Entity<Buffer>>> {
+    pub fn buffers(&self) -> &Option<Vec<Entity<LanguageBuffer>>> {
         &self.buffers
     }
 }
@@ -98,7 +98,7 @@ impl SearchQuery {
         files_to_include: PathMatcher,
         files_to_exclude: PathMatcher,
         match_full_paths: bool,
-        buffers: Option<Vec<Entity<Buffer>>>,
+        buffers: Option<Vec<Entity<LanguageBuffer>>>,
     ) -> Result<Self> {
         let query = query.to_string();
         if !case_sensitive && !query.is_ascii() {
@@ -151,7 +151,7 @@ impl SearchQuery {
         files_to_include: PathMatcher,
         files_to_exclude: PathMatcher,
         match_full_paths: bool,
-        buffers: Option<Vec<Entity<Buffer>>>,
+        buffers: Option<Vec<Entity<LanguageBuffer>>>,
     ) -> Result<Self> {
         let mut query = query.to_string();
         let initial_query = Arc::from(query.as_str());
@@ -575,7 +575,7 @@ impl SearchQuery {
         self.as_inner().files_to_exclude()
     }
 
-    pub fn buffers(&self) -> Option<&Vec<Entity<Buffer>>> {
+    pub fn buffers(&self) -> Option<&Vec<Entity<LanguageBuffer>>> {
         self.as_inner().buffers.as_ref()
     }
 
@@ -775,10 +775,10 @@ mod tests {
         )
         .expect("Should be able to create a regex SearchQuery");
 
-        use language::Buffer;
+        use language::LanguageBuffer;
         let text = crate::Rope::from("hello\nworld\nhello\nworld");
         let snapshot = cx
-            .update(|app| Buffer::build_snapshot(text, None, None, app))
+            .update(|app| LanguageBuffer::build_snapshot(text, None, None, app))
             .await;
 
         let results = search_query.search(&snapshot, None).await;

@@ -10,7 +10,7 @@ use std::{
 use anyhow::{Context as _, Result, anyhow};
 use collections::{HashMap, hash_map::Entry};
 use gpui::{AsyncApp, Entity};
-use language::{Anchor, Buffer, OffsetRangeExt as _, TextBufferSnapshot, text_diff};
+use language::{Anchor, LanguageBuffer, OffsetRangeExt as _, TextBufferSnapshot, text_diff};
 use postage::stream::Stream as _;
 use project::Project;
 use text::EditType;
@@ -18,10 +18,10 @@ use util::{paths::PathStyle, rel_path::RelPath};
 use worktree::Worktree;
 
 #[derive(Clone, Debug)]
-pub struct OpenedBuffers(HashMap<String, Entity<Buffer>>);
+pub struct OpenedBuffers(HashMap<String, Entity<LanguageBuffer>>);
 
 impl OpenedBuffers {
-    pub fn get(&self, path: &str) -> Option<&Entity<Buffer>> {
+    pub fn get(&self, path: &str) -> Option<&Entity<LanguageBuffer>> {
         self.0.get(path)
     }
 }
@@ -49,7 +49,7 @@ pub async fn apply_diff(
         .collect();
     refresh_worktree_entries(&worktree, paths.iter().map(|p| p.as_path()), cx).await?;
 
-    let mut included_files: HashMap<String, Entity<Buffer>> = HashMap::default();
+    let mut included_files: HashMap<String, Entity<LanguageBuffer>> = HashMap::default();
 
     let ranges = [Anchor::MIN..Anchor::MAX];
     let mut diff = DiffParser::new(diff_str);
@@ -80,7 +80,7 @@ pub async fn apply_diff(
                         let buffer = match included_files.entry(path.to_string()) {
                             Entry::Occupied(entry) => entry.get().clone(),
                             Entry::Vacant(entry) => {
-                                let buffer: Entity<Buffer> = if status == FileStatus::Created {
+                                let buffer: Entity<LanguageBuffer> = if status == FileStatus::Created {
                                     project
                                         .update(cx, |project, cx| project.create_buffer(true, cx))
                                         .await?

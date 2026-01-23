@@ -11,7 +11,7 @@ use gpui::{
     App, AppContext as _, Entity, Global, SharedString, Task,
     http_client::{self, AsyncBody, Method},
 };
-use language::{Anchor, Buffer, BufferSnapshot, Point, ToOffset as _};
+use language::{Anchor, LanguageBuffer, BufferSnapshot, Point, ToOffset as _};
 use language_model::{ApiKeyState, EnvVar, env_var};
 use lsp::DiagnosticSeverity;
 use serde::{Deserialize, Serialize};
@@ -301,7 +301,7 @@ impl SweepAi {
 
 fn send_started_event(
     debug_tx: &Option<mpsc::UnboundedSender<DebugEvent>>,
-    buffer: &Entity<Buffer>,
+    buffer: &Entity<LanguageBuffer>,
     position: Anchor,
     prompt: String,
 ) {
@@ -318,7 +318,7 @@ fn send_started_event(
 
 fn send_finished_event(
     debug_tx: &Option<mpsc::UnboundedSender<DebugEvent>>,
-    buffer: &Entity<Buffer>,
+    buffer: &Entity<LanguageBuffer>,
     position: Anchor,
     model_output: String,
 ) {

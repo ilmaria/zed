@@ -525,7 +525,7 @@ mod tests {
     use super::*;
     use gpui::App;
     use indoc::indoc;
-    use language::{Buffer, Language, LanguageConfig, LanguageRegistry};
+    use language::{LanguageBuffer, Language, LanguageConfig, LanguageRegistry};
 
     #[gpui::test]
     fn test_snippet_ranges(cx: &mut App) {
@@ -540,7 +540,7 @@ mod tests {
         ));
 
         let buffer = cx.new(|cx| {
-            Buffer::local(
+            LanguageBuffer::local(
                 indoc! { r#"
                     print(1 + 1)
                     print(2 + 2)
@@ -606,7 +606,7 @@ mod tests {
         ));
 
         let buffer = cx.new(|cx| {
-            Buffer::local(
+            LanguageBuffer::local(
                 indoc! { r#"
                     # Hello!
                     # %% [markdown]
@@ -729,7 +729,7 @@ mod tests {
 
         // Two code blocks intersecting with selection
         let buffer = cx.new(|cx| {
-            let mut buffer = Buffer::local(
+            let mut buffer = LanguageBuffer::local(
                 indoc! { r#"
                     Hey this is Markdown!
 
@@ -771,7 +771,7 @@ mod tests {
 
         // Three code blocks intersecting with selection
         let buffer = cx.new(|cx| {
-            let mut buffer = Buffer::local(
+            let mut buffer = LanguageBuffer::local(
                 indoc! { r#"
                     Hey this is Markdown!
 
@@ -817,7 +817,7 @@ mod tests {
 
         // Python code block
         let buffer = cx.new(|cx| {
-            let mut buffer = Buffer::local(
+            let mut buffer = LanguageBuffer::local(
                 indoc! { r#"
                     Hey this is Markdown!
 
@@ -864,7 +864,7 @@ mod tests {
         ));
 
         let buffer = cx.new(|cx| {
-            Buffer::local(
+            LanguageBuffer::local(
                 indoc! { r#"
                     print(1 + 1)
 
@@ -886,7 +886,7 @@ mod tests {
 
         // Multiple blank lines should also skip forward
         let buffer = cx.new(|cx| {
-            Buffer::local(
+            LanguageBuffer::local(
                 indoc! { r#"
                     print(1 + 1)
 
@@ -909,7 +909,7 @@ mod tests {
 
         // Blank lines at end of file should return nothing
         let buffer = cx.new(|cx| {
-            Buffer::local(
+            LanguageBuffer::local(
                 indoc! { r#"
                     print(1 + 1)
 

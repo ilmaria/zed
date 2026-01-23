@@ -465,7 +465,7 @@ impl EditPredictionDelegate for FakeEditPredictionDelegate {
 
     fn is_enabled(
         &self,
-        _buffer: &gpui::Entity<language::Buffer>,
+        _buffer: &gpui::Entity<language::LanguageBuffer>,
         _cursor_position: language::Anchor,
         _cx: &gpui::App,
     ) -> bool {
@@ -478,7 +478,7 @@ impl EditPredictionDelegate for FakeEditPredictionDelegate {
 
     fn refresh(
         &mut self,
-        _buffer: gpui::Entity<language::Buffer>,
+        _buffer: gpui::Entity<language::LanguageBuffer>,
         _cursor_position: language::Anchor,
         _debounce: bool,
         _cx: &mut gpui::Context<Self>,
@@ -491,7 +491,7 @@ impl EditPredictionDelegate for FakeEditPredictionDelegate {
 
     fn suggest<'a>(
         &mut self,
-        _buffer: &gpui::Entity<language::Buffer>,
+        _buffer: &gpui::Entity<language::LanguageBuffer>,
         _cursor_position: language::Anchor,
         _cx: &mut gpui::Context<Self>,
     ) -> Option<edit_prediction_types::EditPrediction> {
@@ -532,7 +532,7 @@ impl EditPredictionDelegate for FakeNonZedEditPredictionDelegate {
 
     fn is_enabled(
         &self,
-        _buffer: &gpui::Entity<language::Buffer>,
+        _buffer: &gpui::Entity<language::LanguageBuffer>,
         _cursor_position: language::Anchor,
         _cx: &gpui::App,
     ) -> bool {
@@ -545,7 +545,7 @@ impl EditPredictionDelegate for FakeNonZedEditPredictionDelegate {
 
     fn refresh(
         &mut self,
-        _buffer: gpui::Entity<language::Buffer>,
+        _buffer: gpui::Entity<language::LanguageBuffer>,
         _cursor_position: language::Anchor,
         _debounce: bool,
         _cx: &mut gpui::Context<Self>,
@@ -558,7 +558,7 @@ impl EditPredictionDelegate for FakeNonZedEditPredictionDelegate {
 
     fn suggest<'a>(
         &mut self,
-        _buffer: &gpui::Entity<language::Buffer>,
+        _buffer: &gpui::Entity<language::LanguageBuffer>,
         _cursor_position: language::Anchor,
         _cx: &mut gpui::Context<Self>,
     ) -> Option<edit_prediction_types::EditPrediction> {

@@ -3,7 +3,7 @@ use anyhow::Result;
 use collections::HashMap;
 use futures::{FutureExt, StreamExt as _, channel::mpsc, future};
 use gpui::{App, AppContext, AsyncApp, Context, Entity, EventEmitter, Task, WeakEntity};
-use language::{Anchor, Buffer, BufferSnapshot, OffsetRangeExt as _, Point, ToOffset as _};
+use language::{Anchor, BufferSnapshot, LanguageBuffer, OffsetRangeExt as _, Point, ToOffset as _};
 use project::{LocationLink, Project, ProjectPath};
 use smallvec::SmallVec;
 use std::{
@@ -31,9 +31,9 @@ const IDENTIFIER_LINE_COUNT: u32 = 3;
 pub struct RelatedExcerptStore {
     project: WeakEntity<Project>,
     related_files: Arc<[RelatedFile]>,
-    related_file_buffers: Vec<Entity<Buffer>>,
+    related_file_buffers: Vec<Entity<LanguageBuffer>>,
     cache: HashMap<Identifier, Arc<CacheEntry>>,
-    update_tx: mpsc::UnboundedSender<(Entity<Buffer>, Anchor)>,
+    update_tx: mpsc::UnboundedSender<(Entity<LanguageBuffer>, Anchor)>,
     identifier_line_count: u32,
 }
 
@@ -66,7 +66,7 @@ struct CacheEntry {
 #[derive(Clone, Debug)]
 struct CachedDefinition {
     path: ProjectPath,
-    buffer: Entity<Buffer>,
+    buffer: Entity<LanguageBuffer>,
     anchor_range: Range<Anchor>,
 }
 
@@ -76,7 +76,7 @@ impl EventEmitter<RelatedExcerptStoreEvent> for RelatedExcerptStore {}
 
 impl RelatedExcerptStore {
     pub fn new(project: &Entity<Project>, cx: &mut Context<Self>) -> Self {
-        let (update_tx, mut update_rx) = mpsc::unbounded::<(Entity<Buffer>, Anchor)>();
+        let (update_tx, mut update_rx) = mpsc::unbounded::<(Entity<LanguageBuffer>, Anchor)>();
         cx.spawn(async move |this, cx| {
             let executor = cx.background_executor().clone();
             while let Some((mut buffer, mut position)) = update_rx.next().await {
@@ -116,7 +116,12 @@ impl RelatedExcerptStore {
         self.identifier_line_count = count;
     }
 
-    pub fn refresh(&mut self, buffer: Entity<Buffer>, position: Anchor, _: &mut Context<Self>) {
+    pub fn refresh(
+        &mut self,
+        buffer: Entity<LanguageBuffer>,
+        position: Anchor,
+        _: &mut Context<Self>,
+    ) {
         self.update_tx.unbounded_send((buffer, position)).ok();
     }
 
@@ -126,7 +131,7 @@ impl RelatedExcerptStore {
 
     pub fn related_files_with_buffers(
         &self,
-    ) -> impl Iterator<Item = (RelatedFile, Entity<Buffer>)> {
+    ) -> impl Iterator<Item = (RelatedFile, Entity<LanguageBuffer>)> {
         self.related_files
             .iter()
             .cloned()
@@ -139,7 +144,7 @@ impl RelatedExcerptStore {
 
     async fn fetch_excerpts(
         this: WeakEntity<Self>,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         position: Anchor,
         cx: &mut AsyncApp,
     ) -> Result<()> {
@@ -270,7 +275,7 @@ async fn rebuild_related_files(
 ) -> Result<(
     HashMap<Identifier, Arc<CacheEntry>>,
     Vec<RelatedFile>,
-    Vec<Entity<Buffer>>,
+    Vec<Entity<LanguageBuffer>>,
 )> {
     let mut snapshots = HashMap::default();
     let mut worktree_root_names = HashMap::default();

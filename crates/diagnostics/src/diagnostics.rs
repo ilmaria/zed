@@ -23,7 +23,7 @@ use gpui::{
 };
 use itertools::Itertools as _;
 use language::{
-    Bias, Buffer, BufferRow, BufferSnapshot, DiagnosticEntry, DiagnosticEntryRef, Point,
+    Bias, LanguageBuffer, BufferRow, BufferSnapshot, DiagnosticEntry, DiagnosticEntryRef, Point,
     ToTreeSitterPoint,
 };
 use project::{
@@ -485,7 +485,7 @@ impl ProjectDiagnosticsEditor {
 
     fn update_excerpts(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         retain_excerpts: RetainExcerpts,
         window: &mut Window,
         cx: &mut Context<Self>,

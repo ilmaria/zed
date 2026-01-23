@@ -8,7 +8,7 @@ use gpui::{
     AnyElement, App, AppContext as _, AsyncApp, Context, Entity, EventEmitter, FocusHandle,
     Focusable, IntoElement, Render, Task, Window,
 };
-use language::{Buffer, LanguageRegistry};
+use language::{LanguageBuffer, LanguageRegistry};
 use project::Project;
 use std::{
     any::{Any, TypeId},
@@ -27,8 +27,8 @@ use workspace::{
 
 pub struct FileDiffView {
     editor: Entity<Editor>,
-    old_buffer: Entity<Buffer>,
-    new_buffer: Entity<Buffer>,
+    old_buffer: Entity<LanguageBuffer>,
+    new_buffer: Entity<LanguageBuffer>,
     buffer_changes_tx: watch::Sender<()>,
     _recalculate_diff_task: Task<Result<()>>,
 }
@@ -79,8 +79,8 @@ impl FileDiffView {
     }
 
     pub fn new(
-        old_buffer: Entity<Buffer>,
-        new_buffer: Entity<Buffer>,
+        old_buffer: Entity<LanguageBuffer>,
+        new_buffer: Entity<LanguageBuffer>,
         diff: Entity<BufferDiff>,
         project: Entity<Project>,
         window: &mut Window,
@@ -163,8 +163,8 @@ impl FileDiffView {
 }
 
 async fn build_buffer_diff(
-    old_buffer: &Entity<Buffer>,
-    new_buffer: &Entity<Buffer>,
+    old_buffer: &Entity<LanguageBuffer>,
+    new_buffer: &Entity<LanguageBuffer>,
     language_registry: Arc<LanguageRegistry>,
     cx: &mut AsyncApp,
 ) -> Result<Entity<BufferDiff>> {
@@ -224,7 +224,7 @@ impl Item for FileDiffView {
     }
 
     fn tab_content_text(&self, _detail: usize, cx: &App) -> SharedString {
-        let title_text = |buffer: &Entity<Buffer>| {
+        let title_text = |buffer: &Entity<LanguageBuffer>| {
             buffer
                 .read(cx)
                 .file()
@@ -245,7 +245,7 @@ impl Item for FileDiffView {
     }
 
     fn tab_tooltip_text(&self, cx: &App) -> Option<ui::SharedString> {
-        let path = |buffer: &Entity<Buffer>| {
+        let path = |buffer: &Entity<LanguageBuffer>| {
             buffer
                 .read(cx)
                 .file()

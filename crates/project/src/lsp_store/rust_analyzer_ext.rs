@@ -1,7 +1,7 @@
 use ::serde::{Deserialize, Serialize};
 use anyhow::Context as _;
 use gpui::{App, AsyncApp, Entity, Task, WeakEntity};
-use language::{Buffer, ServerHealth};
+use language::{LanguageBuffer, ServerHealth};
 use lsp::{LanguageServer, LanguageServerId, LanguageServerName};
 use rpc::proto;
 
@@ -238,7 +238,7 @@ pub fn clear_flycheck(
 
 fn find_rust_analyzer_server(
     project: &Entity<Project>,
-    buffer: Option<&Entity<Buffer>>,
+    buffer: Option<&Entity<LanguageBuffer>>,
     cx: &mut AsyncApp,
 ) -> Option<LanguageServerId> {
     project.read_with(cx, |project, cx| {

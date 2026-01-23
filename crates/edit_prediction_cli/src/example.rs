@@ -6,7 +6,7 @@ use edit_prediction::example_spec::ExampleSpec;
 use edit_prediction::udiff::OpenedBuffers;
 use gpui::Entity;
 use http_client::Url;
-use language::{Anchor, Buffer};
+use language::{Anchor, LanguageBuffer};
 use project::Project;
 use serde::{Deserialize, Serialize};
 use std::ops::Range;
@@ -54,7 +54,7 @@ pub struct Example {
 #[derive(Clone, Debug)]
 pub struct ExampleState {
     pub project: Entity<Project>,
-    pub buffer: Entity<Buffer>,
+    pub buffer: Entity<LanguageBuffer>,
     pub cursor_position: Anchor,
     pub _open_buffers: OpenedBuffers,
 }

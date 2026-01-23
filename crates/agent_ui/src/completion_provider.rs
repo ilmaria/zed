@@ -14,7 +14,7 @@ use editor::{
 };
 use fuzzy::{PathMatch, StringMatch, StringMatchCandidate};
 use gpui::{App, BackgroundExecutor, Entity, SharedString, Task, WeakEntity};
-use language::{Buffer, CodeLabel, CodeLabelBuilder, HighlightId};
+use language::{LanguageBuffer, CodeLabel, CodeLabelBuilder, HighlightId};
 use lsp::CompletionContext;
 use ordered_float::OrderedFloat;
 use project::lsp_store::{CompletionDocumentation, SymbolLocation};
@@ -934,7 +934,7 @@ impl<T: PromptCompletionProviderDelegate> CompletionProvider for PromptCompletio
     fn completions(
         &self,
         _excerpt_id: ExcerptId,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         buffer_position: Anchor,
         _trigger: CompletionContext,
         window: &mut Window,
@@ -1184,7 +1184,7 @@ impl<T: PromptCompletionProviderDelegate> CompletionProvider for PromptCompletio
 
     fn is_completion_trigger(
         &self,
-        buffer: &Entity<language::Buffer>,
+        buffer: &Entity<language::LanguageBuffer>,
         position: language::Anchor,
         _text: &str,
         _trigger_in_words: bool,
@@ -1774,7 +1774,7 @@ fn build_code_label_for_path(
 fn selection_ranges(
     workspace: &Entity<Workspace>,
     cx: &mut App,
-) -> Vec<(Entity<Buffer>, Range<text::Anchor>)> {
+) -> Vec<(Entity<LanguageBuffer>, Range<text::Anchor>)> {
     let Some(editor) = workspace
         .read(cx)
         .active_item(cx)

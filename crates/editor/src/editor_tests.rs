@@ -84,7 +84,7 @@ fn test_edit_events(cx: &mut TestAppContext) {
     init_test(cx, |_| {});
 
     let buffer = cx.new(|cx| {
-        let buffer = language::Buffer::local("123456", cx);
+        let buffer = language::LanguageBuffer::local("123456", cx);
         buffer
     });
 
@@ -214,7 +214,7 @@ fn test_undo_redo_with_selection_restoration(cx: &mut TestAppContext) {
     let mut now = Instant::now();
     let group_interval = Duration::from_millis(1);
     let buffer = cx.new(|cx| {
-        let buf = language::Buffer::local("123456", cx);
+        let buf = language::LanguageBuffer::local("123456", cx);
         buf
     });
     let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
@@ -323,7 +323,7 @@ fn test_ime_composition(cx: &mut TestAppContext) {
     init_test(cx, |_| {});
 
     let buffer = cx.new(|cx| {
-        let buffer = language::Buffer::local("abcde", cx);
+        let buffer = language::LanguageBuffer::local("abcde", cx);
         buffer
     });
 
@@ -4413,9 +4413,9 @@ fn test_indent_outdent_with_excerpts(cx: &mut TestAppContext) {
     ));
 
     let toml_buffer =
-        cx.new(|cx| Buffer::local("a = 1\nb = 2\n", cx).with_language(toml_language, cx));
+        cx.new(|cx| LanguageBuffer::local("a = 1\nb = 2\n", cx).with_language(toml_language, cx));
     let rust_buffer =
-        cx.new(|cx| Buffer::local("const c: usize = 3;\n", cx).with_language(rust_language, cx));
+        cx.new(|cx| LanguageBuffer::local("const c: usize = 3;\n", cx).with_language(rust_language, cx));
     let multibuffer = cx.new(|cx| {
         let mut multibuffer = MultiBuffer::new(ReadWrite);
         multibuffer.push_excerpts(
@@ -9190,7 +9190,7 @@ async fn test_select_larger_smaller_syntax_node(cx: &mut TestAppContext) {
     "#
     .unindent();
 
-    let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(language, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(language, cx));
     let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
     let (editor, cx) = cx.add_window_view(|window, cx| build_editor(buffer, window, cx));
 
@@ -9375,7 +9375,7 @@ async fn test_select_larger_syntax_node_for_cursor_at_end(cx: &mut TestAppContex
 
     let text = "let a = 2;";
 
-    let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(language, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(language, cx));
     let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
     let (editor, cx) = cx.add_window_view(|window, cx| build_editor(buffer, window, cx));
 
@@ -9445,7 +9445,7 @@ async fn test_select_larger_syntax_node_for_cursor_at_symbol(cx: &mut TestAppCon
     "#
     .unindent();
 
-    let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(language, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(language, cx));
     let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
     let (editor, cx) = cx.add_window_view(|window, cx| build_editor(buffer, window, cx));
 
@@ -9622,7 +9622,7 @@ async fn test_select_larger_smaller_syntax_node_for_string(cx: &mut TestAppConte
     "#
     .unindent();
 
-    let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(language, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(language, cx));
     let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
     let (editor, cx) = cx.add_window_view(|window, cx| build_editor(buffer, window, cx));
 
@@ -10009,7 +10009,7 @@ async fn test_autoindent(cx: &mut TestAppContext) {
 
     let text = "fn a() {}";
 
-    let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(language, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(language, cx));
     let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
     let (editor, cx) = cx.add_window_view(|window, cx| build_editor(buffer, window, cx));
     editor
@@ -10078,7 +10078,7 @@ async fn test_autoindent_disabled(cx: &mut TestAppContext) {
 
     let text = "fn a() {}";
 
-    let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(language, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(language, cx));
     let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
     let (editor, cx) = cx.add_window_view(|window, cx| build_editor(buffer, window, cx));
     editor
@@ -11123,7 +11123,7 @@ async fn test_surround_with_pair(cx: &mut TestAppContext) {
     "#
     .unindent();
 
-    let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(language, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(language, cx));
     let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
     let (editor, cx) = cx.add_window_view(|window, cx| build_editor(buffer, window, cx));
     editor
@@ -11273,7 +11273,7 @@ async fn test_delete_autoclose_pair(cx: &mut TestAppContext) {
     "#
     .unindent();
 
-    let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(language, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(language, cx));
     let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
     let (editor, cx) = cx.add_window_view(|window, cx| build_editor(buffer, window, cx));
     editor
@@ -11469,7 +11469,7 @@ async fn test_auto_replace_emoji_shortcode(cx: &mut TestAppContext) {
         Some(tree_sitter_rust::LANGUAGE.into()),
     ));
 
-    let buffer = cx.new(|cx| Buffer::local("", cx).with_language(language, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local("", cx).with_language(language, cx));
     let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
     let (editor, cx) = cx.add_window_view(|window, cx| build_editor(buffer, window, cx));
     editor
@@ -16911,7 +16911,7 @@ async fn test_toggle_block_comment(cx: &mut TestAppContext) {
 fn test_editing_disjoint_excerpts(cx: &mut TestAppContext) {
     init_test(cx, |_| {});
 
-    let buffer = cx.new(|cx| Buffer::local(sample_text(3, 4, 'a'), cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(sample_text(3, 4, 'a'), cx));
     let multibuffer = cx.new(|cx| {
         let mut multibuffer = MultiBuffer::new(ReadWrite);
         multibuffer.push_excerpts(
@@ -16986,7 +16986,7 @@ fn test_editing_overlapping_excerpts(cx: &mut TestAppContext) {
         let context = excerpt_ranges.remove(&marker).unwrap()[0].clone();
         ExcerptRange::new(context)
     });
-    let buffer = cx.new(|cx| Buffer::local(initial_text, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(initial_text, cx));
     let multibuffer = cx.new(|cx| {
         let mut multibuffer = MultiBuffer::new(ReadWrite);
         multibuffer.push_excerpts(buffer, excerpt_ranges, cx);
@@ -17062,7 +17062,7 @@ fn test_editing_overlapping_excerpts(cx: &mut TestAppContext) {
 fn test_refresh_selections(cx: &mut TestAppContext) {
     init_test(cx, |_| {});
 
-    let buffer = cx.new(|cx| Buffer::local(sample_text(3, 4, 'a'), cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(sample_text(3, 4, 'a'), cx));
     let mut excerpt1_id = None;
     let multibuffer = cx.new(|cx| {
         let mut multibuffer = MultiBuffer::new(ReadWrite);
@@ -17147,7 +17147,7 @@ fn test_refresh_selections(cx: &mut TestAppContext) {
 fn test_refresh_selections_while_selecting_with_mouse(cx: &mut TestAppContext) {
     init_test(cx, |_| {});
 
-    let buffer = cx.new(|cx| Buffer::local(sample_text(3, 4, 'a'), cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(sample_text(3, 4, 'a'), cx));
     let mut excerpt1_id = None;
     let multibuffer = cx.new(|cx| {
         let mut multibuffer = MultiBuffer::new(ReadWrite);
@@ -17244,7 +17244,7 @@ async fn test_extra_newline_insertion(cx: &mut TestAppContext) {
         "{{} }\n",     //
     );
 
-    let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(language, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(language, cx));
     let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
     let (editor, cx) = cx.add_window_view(|window, cx| build_editor(buffer, window, cx));
     editor
@@ -18127,7 +18127,7 @@ async fn test_move_to_enclosing_bracket_in_markdown_code_block(cx: &mut TestAppC
     language_registry.add(markdown_lang());
     language_registry.add(rust_lang());
     let buffer = cx.new(|cx| {
-        let mut buffer = language::Buffer::local(
+        let mut buffer = language::LanguageBuffer::local(
             indoc! {"
             ```rs
             impl Worktree {
@@ -19941,9 +19941,9 @@ async fn test_multibuffer_reverts(cx: &mut TestAppContext) {
     let text_2 = edit_first_char_of_every_line(base_text_2);
     let text_3 = edit_first_char_of_every_line(base_text_3);
 
-    let buffer_1 = cx.new(|cx| Buffer::local(text_1.clone(), cx));
-    let buffer_2 = cx.new(|cx| Buffer::local(text_2.clone(), cx));
-    let buffer_3 = cx.new(|cx| Buffer::local(text_3.clone(), cx));
+    let buffer_1 = cx.new(|cx| LanguageBuffer::local(text_1.clone(), cx));
+    let buffer_2 = cx.new(|cx| LanguageBuffer::local(text_2.clone(), cx));
+    let buffer_3 = cx.new(|cx| LanguageBuffer::local(text_3.clone(), cx));
 
     let multibuffer = cx.new(|cx| {
         let mut multibuffer = MultiBuffer::new(ReadWrite);
@@ -20083,9 +20083,9 @@ async fn test_multibuffer_in_navigation_history(cx: &mut TestAppContext) {
         "vvvv\nwwww\nxxxx\nyyyy\nzzzz\n{{{{\n||||\n}}}}\n~~~~\n\u{7f}\u{7f}\u{7f}\u{7f}"
     );
 
-    let buffer_1 = cx.new(|cx| Buffer::local(sample_text_1.clone(), cx));
-    let buffer_2 = cx.new(|cx| Buffer::local(sample_text_2.clone(), cx));
-    let buffer_3 = cx.new(|cx| Buffer::local(sample_text_3.clone(), cx));
+    let buffer_1 = cx.new(|cx| LanguageBuffer::local(sample_text_1.clone(), cx));
+    let buffer_2 = cx.new(|cx| LanguageBuffer::local(sample_text_2.clone(), cx));
+    let buffer_3 = cx.new(|cx| LanguageBuffer::local(sample_text_3.clone(), cx));
 
     let multi_buffer = cx.new(|cx| {
         let mut multibuffer = MultiBuffer::new(ReadWrite);
@@ -20569,9 +20569,9 @@ async fn test_toggle_diff_expand_in_multi_buffer(cx: &mut TestAppContext) {
     let file_3_old = "111\n222\n333\n444\n555\n777\n888\n999\n000\n!!!";
     let file_3_new = "111\n222\n333\n444\n555\n666\n777\n888\n999\n000\n!!!";
 
-    let buffer_1 = cx.new(|cx| Buffer::local(file_1_new.to_string(), cx));
-    let buffer_2 = cx.new(|cx| Buffer::local(file_2_new.to_string(), cx));
-    let buffer_3 = cx.new(|cx| Buffer::local(file_3_new.to_string(), cx));
+    let buffer_1 = cx.new(|cx| LanguageBuffer::local(file_1_new.to_string(), cx));
+    let buffer_2 = cx.new(|cx| LanguageBuffer::local(file_2_new.to_string(), cx));
+    let buffer_3 = cx.new(|cx| LanguageBuffer::local(file_3_new.to_string(), cx));
 
     let multi_buffer = cx.new(|cx| {
         let mut multibuffer = MultiBuffer::new(ReadWrite);
@@ -20703,7 +20703,7 @@ async fn test_expand_diff_hunk_at_excerpt_boundary(cx: &mut TestAppContext) {
     let base = "aaa\nbbb\nccc\nddd\neee\nfff\nggg\n";
     let text = "aaa\nBBB\nBB2\nccc\nDDD\nEEE\nfff\nggg\nhhh\niii\n";
 
-    let buffer = cx.new(|cx| Buffer::local(text.to_string(), cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text.to_string(), cx));
     let multi_buffer = cx.new(|cx| {
         let mut multibuffer = MultiBuffer::new(ReadWrite);
         multibuffer.push_excerpts(
@@ -23186,7 +23186,7 @@ async fn test_find_enclosing_node_with_task(cx: &mut TestAppContext) {
     let project = Project::test(fs, ["/a".as_ref()], cx).await;
     let workspace = cx.add_window(|window, cx| Workspace::test_new(project.clone(), window, cx));
     let cx = &mut VisualTestContext::from_window(*workspace.deref(), cx);
-    let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(language, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(language, cx));
     let multi_buffer = cx.new(|cx| MultiBuffer::singleton(buffer.clone(), cx));
 
     let editor = cx.new_window_entity(|window, cx| {
@@ -27933,7 +27933,7 @@ async fn test_select_next_prev_syntax_node(cx: &mut TestAppContext) {
         }
     "#;
 
-    let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(language, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(language, cx));
     let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
     let (editor, cx) = cx.add_window_view(|window, cx| build_editor(buffer, window, cx));
 
@@ -28789,9 +28789,9 @@ async fn test_sticky_scroll(cx: &mut TestAppContext) {
 fn test_relative_line_numbers(cx: &mut TestAppContext) {
     init_test(cx, |_| {});
 
-    let buffer_1 = cx.new(|cx| Buffer::local("aaaaaaaaaa\nbbb\n", cx));
-    let buffer_2 = cx.new(|cx| Buffer::local("cccccccccc\nddd\n", cx));
-    let buffer_3 = cx.new(|cx| Buffer::local("eee\nffffffffff\n", cx));
+    let buffer_1 = cx.new(|cx| LanguageBuffer::local("aaaaaaaaaa\nbbb\n", cx));
+    let buffer_2 = cx.new(|cx| LanguageBuffer::local("cccccccccc\nddd\n", cx));
+    let buffer_3 = cx.new(|cx| LanguageBuffer::local("eee\nffffffffff\n", cx));
 
     let multibuffer = cx.new(|cx| {
         let mut multibuffer = MultiBuffer::new(ReadWrite);

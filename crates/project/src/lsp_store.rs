@@ -61,7 +61,7 @@ use gpui::{
 use http_client::HttpClient;
 use itertools::Itertools as _;
 use language::{
-    Bias, BinaryStatus, Buffer, BufferRow, BufferSnapshot, CachedLspAdapter, Capability, CodeLabel,
+    Bias, BinaryStatus, LanguageBuffer, BufferRow, BufferSnapshot, CachedLspAdapter, Capability, CodeLabel,
     Diagnostic, DiagnosticEntry, DiagnosticSet, DiagnosticSourceKind, Diff, File as _, Language,
     LanguageName, LanguageRegistry, LocalFile, LspAdapter, LspAdapterDelegate, LspInstaller,
     ManifestDelegate, ManifestName, Patch, PointUtf16, TextBufferSnapshot, ToOffset, ToPointUtf16,
@@ -207,7 +207,7 @@ pub enum LspFormatTarget {
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct OpenLspBufferHandle(Entity<OpenLspBuffer>);
 
-struct OpenLspBuffer(Entity<Buffer>);
+struct OpenLspBuffer(Entity<LanguageBuffer>);
 
 impl FormatTrigger {
     fn from_proto(value: i32) -> FormatTrigger {
@@ -1307,7 +1307,7 @@ impl LocalLspStore {
 
     fn language_server_ids_for_buffer(
         &self,
-        buffer: &Buffer,
+        buffer: &LanguageBuffer,
         cx: &mut App,
     ) -> Vec<LanguageServerId> {
         if let Some((file, language)) = File::from_dyn(buffer.file()).zip(buffer.language()) {
@@ -1327,7 +1327,7 @@ impl LocalLspStore {
 
     fn language_servers_for_buffer<'a>(
         &'a self,
-        buffer: &'a Buffer,
+        buffer: &'a LanguageBuffer,
         cx: &'a mut App,
     ) -> impl Iterator<Item = (&'a Arc<CachedLspAdapter>, &'a Arc<LanguageServer>)> {
         self.language_server_ids_for_buffer(buffer, cx)
@@ -1342,7 +1342,7 @@ impl LocalLspStore {
 
     async fn execute_code_action_kind_locally(
         lsp_store: WeakEntity<LspStore>,
-        mut buffers: Vec<Entity<Buffer>>,
+        mut buffers: Vec<Entity<LanguageBuffer>>,
         kind: CodeActionKind,
         push_to_history: bool,
         cx: &mut AsyncApp,
@@ -1530,7 +1530,7 @@ impl LocalLspStore {
             buffer: &FormattableBuffer,
             formatting_transaction_id: text::TransactionId,
             cx: &mut AsyncApp,
-            operation: impl FnOnce(&mut Buffer, &mut Context<Buffer>),
+            operation: impl FnOnce(&mut LanguageBuffer, &mut Context<LanguageBuffer>),
         ) -> anyhow::Result<()> {
             buffer.handle.update(cx, |buffer, cx| {
                 let last_transaction_id = buffer.peek_undo_stack().map(|t| t.transaction_id());
@@ -2112,7 +2112,7 @@ impl LocalLspStore {
 
     pub async fn format_ranges_via_lsp(
         this: &WeakEntity<LspStore>,
-        buffer_handle: &Entity<Buffer>,
+        buffer_handle: &Entity<LanguageBuffer>,
         ranges: &[Range<Anchor>],
         abs_path: &Path,
         language_server: &Arc<LanguageServer>,
@@ -2183,7 +2183,7 @@ impl LocalLspStore {
 
     async fn format_via_lsp(
         this: &WeakEntity<LspStore>,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         abs_path: &Path,
         language_server: &Arc<LanguageServer>,
         settings: &LanguageSettings,
@@ -2343,7 +2343,7 @@ impl LocalLspStore {
         anyhow::Ok(())
     }
 
-    fn initialize_buffer(&mut self, buffer_handle: &Entity<Buffer>, cx: &mut Context<LspStore>) {
+    fn initialize_buffer(&mut self, buffer_handle: &Entity<LanguageBuffer>, cx: &mut Context<LspStore>) {
         let buffer = buffer_handle.read(cx);
 
         let file = buffer.file().cloned();
@@ -2427,7 +2427,7 @@ impl LocalLspStore {
         }
     }
 
-    pub(crate) fn reset_buffer(&mut self, buffer: &Entity<Buffer>, old_file: &File, cx: &mut App) {
+    pub(crate) fn reset_buffer(&mut self, buffer: &Entity<LanguageBuffer>, old_file: &File, cx: &mut App) {
         buffer.update(cx, |buffer, cx| {
             let Some(language) = buffer.language() else {
                 return;
@@ -2445,7 +2445,7 @@ impl LocalLspStore {
 
     fn update_buffer_diagnostics(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         server_id: LanguageServerId,
         registration_id: Option<Option<SharedString>>,
         result_id: Option<SharedString>,
@@ -2565,7 +2565,7 @@ impl LocalLspStore {
 
     fn register_buffer_with_language_servers(
         &mut self,
-        buffer_handle: &Entity<Buffer>,
+        buffer_handle: &Entity<LanguageBuffer>,
         only_register_servers: HashSet<LanguageServerSelector>,
         cx: &mut Context<LspStore>,
     ) {
@@ -2796,7 +2796,7 @@ impl LocalLspStore {
 
     pub(crate) fn unregister_old_buffer_from_language_servers(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         old_file: &File,
         cx: &mut App,
     ) {
@@ -2814,7 +2814,7 @@ impl LocalLspStore {
 
     pub(crate) fn unregister_buffer_from_language_servers(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         file_url: &lsp::Uri,
         cx: &mut App,
     ) {
@@ -2834,7 +2834,7 @@ impl LocalLspStore {
 
     fn buffer_snapshot_for_lsp_version(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         server_id: LanguageServerId,
         version: Option<i32>,
         cx: &App,
@@ -2875,7 +2875,7 @@ impl LocalLspStore {
         lsp_store: &WeakEntity<LspStore>,
         language_server_id: LanguageServerId,
         code_action_kinds: Vec<lsp::CodeActionKind>,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cx: &mut AsyncApp,
     ) -> Result<Vec<CodeAction>> {
         let actions = lsp_store
@@ -2969,7 +2969,7 @@ impl LocalLspStore {
 
     pub async fn deserialize_text_edits(
         this: Entity<LspStore>,
-        buffer_to_edit: Entity<Buffer>,
+        buffer_to_edit: Entity<LanguageBuffer>,
         edits: Vec<lsp::TextEdit>,
         push_to_history: bool,
         _: Arc<CachedLspAdapter>,
@@ -3012,7 +3012,7 @@ impl LocalLspStore {
     #[allow(clippy::type_complexity)]
     pub(crate) fn edits_from_lsp(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         lsp_edits: impl 'static + Send + IntoIterator<Item = lsp::TextEdit>,
         server_id: LanguageServerId,
         version: Option<i32>,
@@ -3733,7 +3733,7 @@ fn notify_server_capabilities_updated(server: &LanguageServer, cx: &mut Context<
 
 #[derive(Debug)]
 pub struct FormattableBuffer {
-    handle: Entity<Buffer>,
+    handle: Entity<LanguageBuffer>,
     abs_path: Option<PathBuf>,
     env: Option<HashMap<String, String>>,
     ranges: Option<Vec<Range<Anchor>>>,
@@ -3791,7 +3791,7 @@ struct LspKey {
 }
 
 impl BufferLspData {
-    fn new(buffer: &Entity<Buffer>, cx: &mut App) -> Self {
+    fn new(buffer: &Entity<LanguageBuffer>, cx: &mut App) -> Self {
         Self {
             buffer_version: buffer.read(cx).version(),
             document_colors: None,
@@ -3855,7 +3855,7 @@ pub enum LspStoreEvent {
     LanguageServerLog(LanguageServerId, LanguageServerLogType, String),
     LanguageServerPrompt(LanguageServerPromptRequest),
     LanguageDetected {
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         new_language: Option<Arc<Language>>,
     },
     Notification(String),
@@ -4100,7 +4100,7 @@ impl LspStore {
 
     fn send_lsp_proto_request<R: LspCommand>(
         &self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         client: AnyProtoClient,
         upstream_project_id: u64,
         request: R,
@@ -4271,7 +4271,7 @@ impl LspStore {
 
     fn on_buffer_event(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         event: &language::BufferEvent,
         cx: &mut Context<Self>,
     ) {
@@ -4288,7 +4288,7 @@ impl LspStore {
         }
     }
 
-    fn on_buffer_added(&mut self, buffer: &Entity<Buffer>, cx: &mut Context<Self>) -> Result<()> {
+    fn on_buffer_added(&mut self, buffer: &Entity<LanguageBuffer>, cx: &mut Context<Self>) -> Result<()> {
         buffer
             .read(cx)
             .set_language_registry(self.languages.clone());
@@ -4308,7 +4308,7 @@ impl LspStore {
 
     pub(crate) fn register_buffer_with_language_servers(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         only_register_servers: HashSet<LanguageServerSelector>,
         ignore_refcounts: bool,
         cx: &mut Context<Self>,
@@ -4530,7 +4530,7 @@ impl LspStore {
 
     fn detect_language_for_buffer(
         &mut self,
-        buffer_handle: &Entity<Buffer>,
+        buffer_handle: &Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) -> Option<language::AvailableLanguage> {
         // If the buffer has a language, set it and start the language server if we haven't already.
@@ -4559,7 +4559,7 @@ impl LspStore {
 
     pub(crate) fn set_language_for_buffer(
         &mut self,
-        buffer_entity: &Entity<Buffer>,
+        buffer_entity: &Entity<LanguageBuffer>,
         new_language: Arc<Language>,
         cx: &mut Context<Self>,
     ) {
@@ -4653,7 +4653,7 @@ impl LspStore {
 
     fn is_capable_for_proto_request<R>(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         request: &R,
         cx: &App,
     ) -> bool
@@ -4674,7 +4674,7 @@ impl LspStore {
 
     fn check_if_capable_for_proto_request<F>(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         check: F,
         cx: &App,
     ) -> bool
@@ -4707,7 +4707,7 @@ impl LspStore {
 
     fn all_capable_for_proto_request<F>(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         mut check: F,
         cx: &App,
     ) -> Vec<lsp::LanguageServerId>
@@ -4746,7 +4746,7 @@ impl LspStore {
 
     pub fn request_lsp<R>(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         server: LanguageServerToQuery,
         request: R,
         cx: &mut Context<Self>,
@@ -5063,7 +5063,7 @@ impl LspStore {
 
     pub fn apply_code_action(
         &self,
-        buffer_handle: Entity<Buffer>,
+        buffer_handle: Entity<LanguageBuffer>,
         mut action: CodeAction,
         push_to_history: bool,
         cx: &mut Context<Self>,
@@ -5157,7 +5157,7 @@ impl LspStore {
 
     pub fn apply_code_action_kind(
         &mut self,
-        buffers: HashSet<Entity<Buffer>>,
+        buffers: HashSet<Entity<LanguageBuffer>>,
         kind: CodeActionKind,
         push_to_history: bool,
         cx: &mut Context<Self>,
@@ -5275,7 +5275,7 @@ impl LspStore {
     fn resolve_inlay_hint(
         &self,
         mut hint: InlayHint,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         server_id: LanguageServerId,
         cx: &mut Context<Self>,
     ) -> Task<anyhow::Result<InlayHint>> {
@@ -5338,7 +5338,7 @@ impl LspStore {
     pub fn resolve_color_presentation(
         &mut self,
         mut color: DocumentColor,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         server_id: LanguageServerId,
         cx: &mut Context<Self>,
     ) -> Task<Result<DocumentColor>> {
@@ -5436,7 +5436,7 @@ impl LspStore {
 
     pub(crate) fn linked_edits(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: Anchor,
         cx: &mut Context<Self>,
     ) -> Task<Result<Vec<Range<Anchor>>>> {
@@ -5489,7 +5489,7 @@ impl LspStore {
 
     fn apply_on_type_formatting(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         position: Anchor,
         trigger: String,
         cx: &mut Context<Self>,
@@ -5554,7 +5554,7 @@ impl LspStore {
 
     pub fn on_type_format<T: ToPointUtf16>(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         position: T,
         trigger: String,
         push_to_history: bool,
@@ -5566,7 +5566,7 @@ impl LspStore {
 
     fn on_type_format_impl(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         position: PointUtf16,
         trigger: String,
         push_to_history: bool,
@@ -5610,7 +5610,7 @@ impl LspStore {
 
     pub fn definitions(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: PointUtf16,
         cx: &mut Context<Self>,
     ) -> Task<Result<Option<Vec<LocationLink>>>> {
@@ -5676,7 +5676,7 @@ impl LspStore {
 
     pub fn declarations(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: PointUtf16,
         cx: &mut Context<Self>,
     ) -> Task<Result<Option<Vec<LocationLink>>>> {
@@ -5742,7 +5742,7 @@ impl LspStore {
 
     pub fn type_definitions(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: PointUtf16,
         cx: &mut Context<Self>,
     ) -> Task<Result<Option<Vec<LocationLink>>>> {
@@ -5808,7 +5808,7 @@ impl LspStore {
 
     pub fn implementations(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: PointUtf16,
         cx: &mut Context<Self>,
     ) -> Task<Result<Option<Vec<LocationLink>>>> {
@@ -5874,7 +5874,7 @@ impl LspStore {
 
     pub fn references(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: PointUtf16,
         cx: &mut Context<Self>,
     ) -> Task<Result<Option<Vec<Location>>>> {
@@ -5939,7 +5939,7 @@ impl LspStore {
 
     pub fn code_actions(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         range: Range<Anchor>,
         kinds: Option<Vec<CodeActionKind>>,
         cx: &mut Context<Self>,
@@ -6011,7 +6011,7 @@ impl LspStore {
 
     pub fn code_lens_actions(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) -> CodeLensTask {
         let version_queried_for = buffer.read(cx).version();
@@ -6106,7 +6106,7 @@ impl LspStore {
 
     fn fetch_code_lens(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) -> Task<Result<Option<HashMap<LanguageServerId, Vec<CodeAction>>>>> {
         if let Some((upstream_client, project_id)) = self.upstream_client() {
@@ -6175,7 +6175,7 @@ impl LspStore {
     #[inline(never)]
     pub fn completions(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: PointUtf16,
         context: CompletionContext,
         cx: &mut Context<Self>,
@@ -6368,7 +6368,7 @@ impl LspStore {
 
     pub fn resolve_completions(
         &self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         completion_indices: Vec<usize>,
         completions: Rc<RefCell<Box<[Completion]>>>,
         cx: &mut Context<Self>,
@@ -6705,7 +6705,7 @@ impl LspStore {
 
     pub fn apply_additional_edits_for_completion(
         &self,
-        buffer_handle: Entity<Buffer>,
+        buffer_handle: Entity<LanguageBuffer>,
         completions: Rc<RefCell<Box<[Completion]>>>,
         completion_index: usize,
         push_to_history: bool,
@@ -6848,7 +6848,7 @@ impl LspStore {
 
     pub fn pull_diagnostics(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) -> Task<Result<Option<Vec<LspPullDiagnostics>>>> {
         let buffer_id = buffer.read(cx).remote_id();
@@ -6956,7 +6956,7 @@ impl LspStore {
 
     pub fn applicable_inlay_chunks(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         ranges: &[Range<text::Anchor>],
         cx: &mut Context<Self>,
     ) -> Vec<Range<BufferRow>> {
@@ -6987,7 +6987,7 @@ impl LspStore {
     pub fn inlay_hints(
         &mut self,
         invalidate: InvalidationStrategy,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         ranges: Vec<Range<text::Anchor>>,
         known_chunks: Option<(clock::Global, HashSet<Range<BufferRow>>)>,
         cx: &mut Context<Self>,
@@ -7175,7 +7175,7 @@ impl LspStore {
     fn fetch_inlay_hints(
         &mut self,
         for_server: Option<LanguageServerId>,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         range: Range<Anchor>,
         cx: &mut Context<Self>,
     ) -> Task<Result<HashMap<LanguageServerId, Vec<InlayHint>>>> {
@@ -7309,7 +7309,7 @@ impl LspStore {
 
     pub fn pull_diagnostics_for_buffer(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) -> Task<anyhow::Result<()>> {
         let diagnostics = self.pull_diagnostics(buffer, cx);
@@ -7411,7 +7411,7 @@ impl LspStore {
     pub fn document_colors(
         &mut self,
         known_cache_version: Option<usize>,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) -> Option<DocumentColorTask> {
         let version_queried_for = buffer.read(cx).version();
@@ -7540,7 +7540,7 @@ impl LspStore {
 
     fn fetch_document_colors_for_buffer(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) -> Task<anyhow::Result<Option<HashMap<LanguageServerId, HashSet<DocumentColor>>>>> {
         if let Some((client, project_id)) = self.upstream_client() {
@@ -7617,7 +7617,7 @@ impl LspStore {
 
     pub fn signature_help<T: ToPointUtf16>(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: T,
         cx: &mut Context<Self>,
     ) -> Task<Option<Vec<SignatureHelp>>> {
@@ -7683,7 +7683,7 @@ impl LspStore {
 
     pub fn hover(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: PointUtf16,
         cx: &mut Context<Self>,
     ) -> Task<Option<Vec<Hover>>> {
@@ -8015,7 +8015,7 @@ impl LspStore {
 
     pub fn on_buffer_edited(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) -> Option<()> {
         let language_servers: Vec<_> = buffer.update(cx, |buffer, cx| {
@@ -8124,7 +8124,7 @@ impl LspStore {
 
     pub fn on_buffer_saved(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) -> Option<()> {
         let file = File::from_dyn(buffer.read(cx).file())?;
@@ -8279,7 +8279,7 @@ impl LspStore {
 
     pub fn running_language_servers_for_local_buffer<'a>(
         &'a self,
-        buffer: &Buffer,
+        buffer: &LanguageBuffer,
         cx: &mut App,
     ) -> impl Iterator<Item = (&'a Arc<CachedLspAdapter>, &'a Arc<LanguageServer>)> {
         let local = self.as_local();
@@ -8301,7 +8301,7 @@ impl LspStore {
 
     pub fn language_servers_for_local_buffer(
         &self,
-        buffer: &Buffer,
+        buffer: &LanguageBuffer,
         cx: &mut App,
     ) -> Vec<LanguageServerId> {
         let local = self.as_local();
@@ -8312,7 +8312,7 @@ impl LspStore {
 
     pub fn language_server_for_local_buffer<'a>(
         &'a self,
-        buffer: &'a Buffer,
+        buffer: &'a LanguageBuffer,
         server_id: LanguageServerId,
         cx: &'a mut App,
     ) -> Option<(&'a Arc<CachedLspAdapter>, &'a Arc<LanguageServer>)> {
@@ -8664,7 +8664,7 @@ impl LspStore {
         &mut self,
         symbol: &Symbol,
         cx: &mut Context<Self>,
-    ) -> Task<Result<Entity<Buffer>>> {
+    ) -> Task<Result<Entity<LanguageBuffer>>> {
         if let Some((client, project_id)) = self.upstream_client() {
             let request = client.request(proto::OpenBufferForSymbol {
                 project_id,
@@ -8720,7 +8720,7 @@ impl LspStore {
         abs_path: lsp::Uri,
         language_server_id: LanguageServerId,
         cx: &mut Context<Self>,
-    ) -> Task<Result<Entity<Buffer>>> {
+    ) -> Task<Result<Entity<LanguageBuffer>>> {
         cx.spawn(async move |lsp_store, cx| {
             // Escape percent-encoded string.
             let current_scheme = abs_path.scheme().to_owned();
@@ -8831,7 +8831,7 @@ impl LspStore {
 
     fn request_multiple_lsp_locally<P, R>(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: Option<P>,
         request: R,
         cx: &mut Context<Self>,
@@ -10600,7 +10600,7 @@ impl LspStore {
         &mut self,
         buffer_ids: impl Iterator<Item = u64>,
         cx: &mut Context<Self>,
-    ) -> Vec<Entity<Buffer>> {
+    ) -> Vec<Entity<LanguageBuffer>> {
         buffer_ids
             .into_iter()
             .flat_map(|buffer_id| {
@@ -10664,7 +10664,7 @@ impl LspStore {
 
     pub fn environment_for_buffer(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) -> Shared<Task<Option<HashMap<String, String>>>> {
         if let Some(environment) = &self.as_local().map(|local| local.environment.clone()) {
@@ -10678,7 +10678,7 @@ impl LspStore {
 
     pub fn format(
         &mut self,
-        buffers: HashSet<Entity<Buffer>>,
+        buffers: HashSet<Entity<LanguageBuffer>>,
         target: LspFormatTarget,
         push_to_history: bool,
         trigger: FormatTrigger,
@@ -11044,7 +11044,7 @@ impl LspStore {
 
     pub fn restart_language_servers_for_buffers(
         &mut self,
-        buffers: Vec<Entity<Buffer>>,
+        buffers: Vec<Entity<LanguageBuffer>>,
         only_restart_servers: HashSet<LanguageServerSelector>,
         cx: &mut Context<Self>,
     ) {
@@ -11103,7 +11103,7 @@ impl LspStore {
 
     pub fn stop_language_servers_for_buffers(
         &mut self,
-        buffers: Vec<Entity<Buffer>>,
+        buffers: Vec<Entity<LanguageBuffer>>,
         also_stop_servers: HashSet<LanguageServerSelector>,
         cx: &mut Context<Self>,
     ) -> Task<Result<()>> {
@@ -11152,7 +11152,7 @@ impl LspStore {
 
     fn stop_local_language_servers_for_buffers(
         &mut self,
-        buffers: &[Entity<Buffer>],
+        buffers: &[Entity<LanguageBuffer>],
         also_stop_servers: HashSet<LanguageServerSelector>,
         cx: &mut Context<Self>,
     ) -> Task<()> {
@@ -11208,7 +11208,7 @@ impl LspStore {
         cx.background_spawn(futures::future::join_all(tasks).map(|_| ()))
     }
 
-    fn get_buffer<'a>(&self, abs_path: &Path, cx: &'a App) -> Option<&'a Buffer> {
+    fn get_buffer<'a>(&self, abs_path: &Path, cx: &'a App) -> Option<&'a LanguageBuffer> {
         let (worktree, relative_path) =
             self.worktree_store.read(cx).find_worktree(&abs_path, cx)?;
 
@@ -11677,7 +11677,7 @@ impl LspStore {
 
     pub(crate) fn cancel_language_server_work_for_buffers(
         &mut self,
-        buffers: impl IntoIterator<Item = Entity<Buffer>>,
+        buffers: impl IntoIterator<Item = Entity<LanguageBuffer>>,
         cx: &mut Context<Self>,
     ) {
         if let Some((client, project_id)) = self.upstream_client() {
@@ -11878,7 +11878,7 @@ impl LspStore {
         &mut self,
         id: BufferId,
         cx: &mut Context<Self>,
-    ) -> Task<Result<Entity<Buffer>>> {
+    ) -> Task<Result<Entity<LanguageBuffer>>> {
         self.buffer_store.update(cx, |buffer_store, cx| {
             buffer_store.wait_for_remote_buffer(id, cx)
         })
@@ -13198,7 +13198,7 @@ impl LspStore {
 
     /// Gets the most recent LSP data for the given buffer: if the data is absent or out of date,
     /// new [`BufferLspData`] will be created to replace the previous state.
-    pub fn latest_lsp_data(&mut self, buffer: &Entity<Buffer>, cx: &mut App) -> &mut BufferLspData {
+    pub fn latest_lsp_data(&mut self, buffer: &Entity<LanguageBuffer>, cx: &mut App) -> &mut BufferLspData {
         let (buffer_id, buffer_version) =
             buffer.read_with(cx, |buffer, _| (buffer.remote_id(), buffer.version()));
         let lsp_data = self

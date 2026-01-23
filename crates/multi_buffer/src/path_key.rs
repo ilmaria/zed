@@ -3,7 +3,7 @@ use std::{mem, ops::Range, sync::Arc};
 use collections::HashSet;
 use gpui::{App, AppContext, Context, Entity};
 use itertools::Itertools;
-use language::{Buffer, BufferSnapshot};
+use language::{LanguageBuffer, BufferSnapshot};
 use rope::Point;
 use text::{Bias, BufferId, OffsetRangeExt, locator::Locator};
 use util::{post_inc, rel_path::RelPath};
@@ -28,7 +28,7 @@ impl PathKey {
         }
     }
 
-    pub fn for_buffer(buffer: &Entity<Buffer>, cx: &App) -> Self {
+    pub fn for_buffer(buffer: &Entity<LanguageBuffer>, cx: &App) -> Self {
         if let Some(file) = buffer.read(cx).file() {
             Self::with_sort_prefix(file.worktree_id(cx).to_proto(), file.path().clone())
         } else {
@@ -66,7 +66,7 @@ impl MultiBuffer {
         }
     }
 
-    pub fn buffer_for_path(&self, path: &PathKey, cx: &App) -> Option<Entity<Buffer>> {
+    pub fn buffer_for_path(&self, path: &PathKey, cx: &App) -> Option<Entity<LanguageBuffer>> {
         let excerpt_id = self.excerpts_by_path.get(path)?.first()?;
         let snapshot = self.read(cx);
         let excerpt = snapshot.excerpt(*excerpt_id)?;
@@ -85,7 +85,7 @@ impl MultiBuffer {
     pub fn set_excerpts_for_path(
         &mut self,
         path: PathKey,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         ranges: impl IntoIterator<Item = Range<Point>>,
         context_line_count: u32,
         cx: &mut Context<Self>,
@@ -108,7 +108,7 @@ impl MultiBuffer {
     pub fn set_excerpt_ranges_for_path(
         &mut self,
         path: PathKey,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         buffer_snapshot: &BufferSnapshot,
         excerpt_ranges: Vec<ExcerptRange<Point>>,
         cx: &mut Context<Self>,
@@ -128,7 +128,7 @@ impl MultiBuffer {
     pub fn set_anchored_excerpts_for_path(
         &self,
         path_key: PathKey,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         ranges: Vec<Range<text::Anchor>>,
         context_line_count: u32,
         cx: &Context<Self>,
@@ -261,7 +261,7 @@ impl MultiBuffer {
     fn set_merged_excerpt_ranges_for_path(
         &mut self,
         path: PathKey,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         ranges: Vec<ExcerptRange<Point>>,
         buffer_snapshot: &BufferSnapshot,
         new: Vec<ExcerptRange<Point>>,
@@ -289,7 +289,7 @@ impl MultiBuffer {
     pub fn update_path_excerpts(
         &mut self,
         path: PathKey,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         buffer_snapshot: &BufferSnapshot,
         new: Vec<ExcerptRange<Point>>,
         cx: &mut Context<Self>,

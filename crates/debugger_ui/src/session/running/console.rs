@@ -15,7 +15,7 @@ use gpui::{
     Action as _, AppContext, Context, Corner, Entity, FocusHandle, Focusable, HighlightStyle, Hsla,
     Render, Subscription, Task, TextStyle, WeakEntity, actions,
 };
-use language::{Anchor, Buffer, CharScopeContext, CodeLabel, TextBufferSnapshot, ToOffset};
+use language::{Anchor, LanguageBuffer, CharScopeContext, CodeLabel, TextBufferSnapshot, ToOffset};
 use menu::{Confirm, SelectNext, SelectPrevious};
 use project::{
     CompletionDisplayOptions, CompletionResponse,
@@ -529,7 +529,7 @@ impl CompletionProvider for ConsoleQueryBarCompletionProvider {
     fn completions(
         &self,
         _excerpt_id: ExcerptId,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         buffer_position: language::Anchor,
         _trigger: editor::CompletionContext,
         _window: &mut Window,
@@ -556,7 +556,7 @@ impl CompletionProvider for ConsoleQueryBarCompletionProvider {
 
     fn is_completion_trigger(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: language::Anchor,
         text: &str,
         trigger_in_words: bool,
@@ -598,7 +598,7 @@ impl ConsoleQueryBarCompletionProvider {
     fn variable_list_completions(
         &self,
         console: &Entity<Console>,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         buffer_position: language::Anchor,
         cx: &mut Context<Editor>,
     ) -> Task<Result<Vec<CompletionResponse>>> {
@@ -738,7 +738,7 @@ impl ConsoleQueryBarCompletionProvider {
     fn client_completions(
         &self,
         console: &Entity<Console>,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         buffer_position: language::Anchor,
         cx: &mut Context<Editor>,
     ) -> Task<Result<Vec<CompletionResponse>>> {

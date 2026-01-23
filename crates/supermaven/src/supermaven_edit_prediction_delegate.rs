@@ -3,7 +3,7 @@ use anyhow::Result;
 use edit_prediction_types::{EditPrediction, EditPredictionDelegate};
 use futures::StreamExt as _;
 use gpui::{App, Context, Entity, EntityId, Task};
-use language::{Anchor, Buffer, BufferSnapshot};
+use language::{Anchor, LanguageBuffer, BufferSnapshot};
 use std::{
     ops::{AddAssign, Range},
     path::Path,
@@ -125,7 +125,7 @@ impl EditPredictionDelegate for SupermavenEditPredictionDelegate {
         false
     }
 
-    fn is_enabled(&self, _buffer: &Entity<Buffer>, _cursor_position: Anchor, cx: &App) -> bool {
+    fn is_enabled(&self, _buffer: &Entity<LanguageBuffer>, _cursor_position: Anchor, cx: &App) -> bool {
         self.supermaven.read(cx).is_enabled()
     }
 
@@ -135,7 +135,7 @@ impl EditPredictionDelegate for SupermavenEditPredictionDelegate {
 
     fn refresh(
         &mut self,
-        buffer_handle: Entity<Buffer>,
+        buffer_handle: Entity<LanguageBuffer>,
         cursor_position: Anchor,
         debounce: bool,
         cx: &mut Context<Self>,
@@ -199,7 +199,7 @@ impl EditPredictionDelegate for SupermavenEditPredictionDelegate {
 
     fn suggest(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cursor_position: Anchor,
         cx: &mut Context<Self>,
     ) -> Option<EditPrediction> {

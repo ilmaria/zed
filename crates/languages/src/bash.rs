@@ -19,7 +19,7 @@ pub(super) fn bash_task_context() -> ContextProviderWithTasks {
 #[cfg(test)]
 mod tests {
     use gpui::{AppContext as _, BorrowAppContext, Context, TestAppContext};
-    use language::{AutoindentMode, Buffer};
+    use language::{AutoindentMode, LanguageBuffer};
     use settings::SettingsStore;
     use std::num::NonZeroU32;
     use text::EditType;
@@ -41,10 +41,10 @@ mod tests {
         });
 
         cx.new(|cx| {
-            let mut buffer = Buffer::local("", cx).with_language(language, cx);
+            let mut buffer = LanguageBuffer::local("", cx).with_language(language, cx);
 
             let expect_indents_to =
-                |buffer: &mut Buffer, cx: &mut Context<Buffer>, input: &str, expected: &str| {
+                |buffer: &mut LanguageBuffer, cx: &mut Context<LanguageBuffer>, input: &str, expected: &str| {
                     buffer.edit(
                         [(0..buffer.len(), input)],
                         Some(AutoindentMode::EachLine),

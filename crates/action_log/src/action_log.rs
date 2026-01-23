@@ -6,7 +6,7 @@ use futures::{FutureExt, StreamExt, channel::mpsc};
 use gpui::{
     App, AppContext, AsyncApp, Context, Entity, SharedString, Subscription, Task, WeakEntity,
 };
-use language::{Anchor, Buffer, BufferEvent, Point, ToPoint};
+use language::{Anchor, LanguageBuffer, BufferEvent, Point, ToPoint};
 use project::{Project, ProjectItem, lsp_store::OpenLspBufferHandle};
 use std::{cmp, ops::Range, sync::Arc};
 use text::{Edit, EditType, Patch, Rope};
@@ -15,7 +15,7 @@ use util::{RangeExt, ResultExt as _};
 /// Tracks actions performed by tools in a thread
 pub struct ActionLog {
     /// Buffers that we want to notify the model about when they change.
-    tracked_buffers: BTreeMap<Entity<Buffer>, TrackedBuffer>,
+    tracked_buffers: BTreeMap<Entity<LanguageBuffer>, TrackedBuffer>,
     /// The project this action log is associated with
     project: Entity<Project>,
 }
@@ -35,7 +35,7 @@ impl ActionLog {
 
     fn track_buffer_internal(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         is_created: bool,
         cx: &mut Context<Self>,
     ) -> &mut TrackedBuffer {
@@ -126,7 +126,7 @@ impl ActionLog {
 
     fn handle_buffer_event(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         event: &BufferEvent,
         cx: &mut Context<Self>,
     ) {
@@ -148,14 +148,14 @@ impl ActionLog {
         };
     }
 
-    fn handle_buffer_edited(&mut self, buffer: Entity<Buffer>, cx: &mut Context<Self>) {
+    fn handle_buffer_edited(&mut self, buffer: Entity<LanguageBuffer>, cx: &mut Context<Self>) {
         let Some(tracked_buffer) = self.tracked_buffers.get_mut(&buffer) else {
             return;
         };
         tracked_buffer.schedule_diff_update(ChangeAuthor::User, cx);
     }
 
-    fn handle_buffer_file_changed(&mut self, buffer: Entity<Buffer>, cx: &mut Context<Self>) {
+    fn handle_buffer_file_changed(&mut self, buffer: Entity<LanguageBuffer>, cx: &mut Context<Self>) {
         let Some(tracked_buffer) = self.tracked_buffers.get_mut(&buffer) else {
             return;
         };
@@ -192,7 +192,7 @@ impl ActionLog {
 
     async fn maintain_diff(
         this: WeakEntity<Self>,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         mut buffer_updates: mpsc::UnboundedReceiver<(ChangeAuthor, text::BufferSnapshot)>,
         cx: &mut AsyncApp,
     ) -> Result<()> {
@@ -250,7 +250,7 @@ impl ActionLog {
 
     async fn track_edits(
         this: &WeakEntity<ActionLog>,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         author: ChangeAuthor,
         buffer_snapshot: text::BufferSnapshot,
         cx: &mut AsyncApp,
@@ -298,7 +298,7 @@ impl ActionLog {
 
     async fn keep_committed_edits(
         this: &WeakEntity<ActionLog>,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         git_diff: &Entity<BufferDiff>,
         cx: &mut AsyncApp,
     ) -> Result<()> {
@@ -387,7 +387,7 @@ impl ActionLog {
 
     async fn update_diff(
         this: &WeakEntity<ActionLog>,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         buffer_snapshot: text::BufferSnapshot,
         new_base_text: Arc<str>,
         new_diff_base: Rope,
@@ -462,17 +462,17 @@ impl ActionLog {
     }
 
     /// Track a buffer as read by agent, so we can notify the model about user edits.
-    pub fn buffer_read(&mut self, buffer: Entity<Buffer>, cx: &mut Context<Self>) {
+    pub fn buffer_read(&mut self, buffer: Entity<LanguageBuffer>, cx: &mut Context<Self>) {
         self.track_buffer_internal(buffer, false, cx);
     }
 
     /// Mark a buffer as created by agent, so we can refresh it in the context
-    pub fn buffer_created(&mut self, buffer: Entity<Buffer>, cx: &mut Context<Self>) {
+    pub fn buffer_created(&mut self, buffer: Entity<LanguageBuffer>, cx: &mut Context<Self>) {
         self.track_buffer_internal(buffer, true, cx);
     }
 
     /// Mark a buffer as edited by agent, so we can refresh it in the context
-    pub fn buffer_edited(&mut self, buffer: Entity<Buffer>, cx: &mut Context<Self>) {
+    pub fn buffer_edited(&mut self, buffer: Entity<LanguageBuffer>, cx: &mut Context<Self>) {
         let new_version = buffer.read(cx).version();
         let tracked_buffer = self.track_buffer_internal(buffer, false, cx);
         if let TrackedBufferStatus::Deleted = tracked_buffer.status {
@@ -483,7 +483,7 @@ impl ActionLog {
         tracked_buffer.schedule_diff_update(ChangeAuthor::Agent, cx);
     }
 
-    pub fn will_delete_buffer(&mut self, buffer: Entity<Buffer>, cx: &mut Context<Self>) {
+    pub fn will_delete_buffer(&mut self, buffer: Entity<LanguageBuffer>, cx: &mut Context<Self>) {
         let tracked_buffer = self.track_buffer_internal(buffer.clone(), false, cx);
         match tracked_buffer.status {
             TrackedBufferStatus::Created { .. } => {
@@ -502,7 +502,7 @@ impl ActionLog {
 
     pub fn keep_edits_in_range(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         buffer_range: Range<impl language::ToPoint>,
         telemetry: Option<ActionLogTelemetry>,
         cx: &mut Context<Self>,
@@ -573,7 +573,7 @@ impl ActionLog {
 
     pub fn reject_edits_in_ranges(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         buffer_ranges: Vec<Range<impl language::ToPoint>>,
         telemetry: Option<ActionLogTelemetry>,
         cx: &mut Context<Self>,
@@ -766,7 +766,7 @@ impl ActionLog {
     }
 
     /// Returns the set of buffers that contain edits that haven't been reviewed by the user.
-    pub fn changed_buffers(&self, cx: &App) -> BTreeMap<Entity<Buffer>, Entity<BufferDiff>> {
+    pub fn changed_buffers(&self, cx: &App) -> BTreeMap<Entity<LanguageBuffer>, Entity<BufferDiff>> {
         self.tracked_buffers
             .iter()
             .filter(|(_, tracked)| tracked.has_edits(cx))
@@ -775,7 +775,7 @@ impl ActionLog {
     }
 
     /// Iterate over buffers changed since last read or edited by the model
-    pub fn stale_buffers<'a>(&'a self, cx: &'a App) -> impl Iterator<Item = &'a Entity<Buffer>> {
+    pub fn stale_buffers<'a>(&'a self, cx: &'a App) -> impl Iterator<Item = &'a Entity<LanguageBuffer>> {
         self.tracked_buffers
             .iter()
             .filter(|(buffer, tracked)| {
@@ -803,7 +803,7 @@ struct ActionLogMetrics {
 }
 
 impl ActionLogMetrics {
-    fn for_buffer(buffer: &Buffer) -> Self {
+    fn for_buffer(buffer: &LanguageBuffer) -> Self {
         Self {
             language: buffer.language().map(|l| l.name().0),
             lines_removed: 0,
@@ -974,7 +974,7 @@ enum TrackedBufferStatus {
 }
 
 struct TrackedBuffer {
-    buffer: Entity<Buffer>,
+    buffer: Entity<LanguageBuffer>,
     diff_base: Rope,
     unreviewed_edits: Patch<u32>,
     status: TrackedBufferStatus,
@@ -2256,7 +2256,7 @@ mod tests {
 
         fn quiesce(
             action_log: &Entity<ActionLog>,
-            buffer: &Entity<Buffer>,
+            buffer: &Entity<LanguageBuffer>,
             cx: &mut TestAppContext,
         ) {
             log::info!("quiescing...");
@@ -2454,7 +2454,7 @@ mod tests {
     fn unreviewed_hunks(
         action_log: &Entity<ActionLog>,
         cx: &TestAppContext,
-    ) -> Vec<(Entity<Buffer>, Vec<HunkStatus>)> {
+    ) -> Vec<(Entity<LanguageBuffer>, Vec<HunkStatus>)> {
         cx.read(|cx| {
             action_log
                 .read(cx)

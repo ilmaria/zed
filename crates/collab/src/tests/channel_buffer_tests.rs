@@ -716,6 +716,6 @@ fn assert_collaborators(collaborators: &HashMap<PeerId, Collaborator>, ids: &[Op
     );
 }
 
-fn buffer_text(channel_buffer: &Entity<language::Buffer>, cx: &mut TestAppContext) -> String {
+fn buffer_text(channel_buffer: &Entity<language::LanguageBuffer>, cx: &mut TestAppContext) -> String {
     channel_buffer.read_with(cx, |buffer, _| buffer.text())
 }

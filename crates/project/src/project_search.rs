@@ -15,7 +15,7 @@ use fs::Fs;
 use futures::FutureExt as _;
 use futures::{SinkExt, StreamExt, select_biased, stream::FuturesOrdered};
 use gpui::{App, AppContext, AsyncApp, BackgroundExecutor, Entity, Priority, Task};
-use language::{Buffer, BufferSnapshot};
+use language::{LanguageBuffer, BufferSnapshot};
 use parking_lot::Mutex;
 use postage::oneshot;
 use rpc::{AnyProtoClient, proto};
@@ -61,7 +61,7 @@ enum SearchKind {
 #[must_use]
 pub struct SearchResultsHandle {
     results: Receiver<SearchResult>,
-    matching_buffers: Receiver<Entity<Buffer>>,
+    matching_buffers: Receiver<Entity<LanguageBuffer>>,
     trigger_search: Box<dyn FnOnce(&mut App) -> Task<()> + Send + Sync>,
 }
 
@@ -76,7 +76,7 @@ impl SearchResultsHandle {
             rx: self.results,
         }
     }
-    pub fn matching_buffers(self, cx: &mut App) -> SearchResults<Entity<Buffer>> {
+    pub fn matching_buffers(self, cx: &mut App) -> SearchResults<Entity<LanguageBuffer>> {
         SearchResults {
             _task_handle: (self.trigger_search)(cx),
             rx: self.matching_buffers,
@@ -500,7 +500,7 @@ impl Search {
     async fn open_buffers(
         buffer_store: Entity<BufferStore>,
         rx: Receiver<ProjectPath>,
-        find_all_matches_tx: Sender<Entity<Buffer>>,
+        find_all_matches_tx: Sender<Entity<LanguageBuffer>>,
         mut cx: AsyncApp,
     ) {
         let mut rx = pin!(rx.ready_chunks(64));
@@ -525,13 +525,13 @@ impl Search {
     }
 
     async fn grab_buffer_snapshots(
-        rx: Receiver<Entity<Buffer>>,
+        rx: Receiver<Entity<LanguageBuffer>>,
         find_all_matches_tx: Sender<(
-            Entity<Buffer>,
+            Entity<LanguageBuffer>,
             BufferSnapshot,
-            oneshot::Sender<(Entity<Buffer>, Vec<Range<language::Anchor>>)>,
+            oneshot::Sender<(Entity<LanguageBuffer>, Vec<Range<language::Anchor>>)>,
         )>,
-        results: Sender<oneshot::Receiver<(Entity<Buffer>, Vec<Range<language::Anchor>>)>>,
+        results: Sender<oneshot::Receiver<(Entity<LanguageBuffer>, Vec<Range<language::Anchor>>)>>,
         mut cx: AsyncApp,
     ) {
         _ = maybe!(async move {
@@ -548,7 +548,7 @@ impl Search {
     }
 
     async fn ensure_matched_ranges_are_reported_in_order(
-        rx: Receiver<oneshot::Receiver<(Entity<Buffer>, Vec<Range<language::Anchor>>)>>,
+        rx: Receiver<oneshot::Receiver<(Entity<LanguageBuffer>, Vec<Range<language::Anchor>>)>>,
         tx: Sender<SearchResult>,
     ) {
         use postage::stream::Stream;
@@ -576,7 +576,7 @@ impl Search {
         .await;
     }
 
-    fn all_loaded_buffers(&self, search_query: &SearchQuery, cx: &App) -> Vec<Entity<Buffer>> {
+    fn all_loaded_buffers(&self, search_query: &SearchQuery, cx: &App) -> Vec<Entity<LanguageBuffer>> {
         let worktree_store = self.worktree_store.read(cx);
         let mut buffers = search_query
             .buffers()
@@ -623,9 +623,9 @@ struct Worker {
     /// Ok, we're back in background: run full scan & find all matches in a given buffer snapshot.
     /// Then, when you're done, share them via the channel you were given.
     find_all_matches_rx: Receiver<(
-        Entity<Buffer>,
+        Entity<LanguageBuffer>,
         BufferSnapshot,
-        oneshot::Sender<(Entity<Buffer>, Vec<Range<language::Anchor>>)>,
+        oneshot::Sender<(Entity<LanguageBuffer>, Vec<Range<language::Anchor>>)>,
     )>,
 }
 
@@ -710,9 +710,9 @@ impl RequestHandler<'_> {
     async fn handle_find_all_matches(
         &self,
         (buffer, snapshot, mut report_matches): (
-            Entity<Buffer>,
+            Entity<LanguageBuffer>,
             BufferSnapshot,
-            oneshot::Sender<(Entity<Buffer>, Vec<Range<language::Anchor>>)>,
+            oneshot::Sender<(Entity<LanguageBuffer>, Vec<Range<language::Anchor>>)>,
         ),
     ) {
         let ranges = self

@@ -15,11 +15,11 @@ use askpass::AskPassDelegate;
 use cloud_llm_client::CompletionIntent;
 use collections::{BTreeMap, HashMap, HashSet};
 use db::kvp::KEY_VALUE_STORE;
-use editor::{EditType, RewrapOptions};
 use editor::{
     Direction, Editor, EditorElement, EditorMode, MultiBuffer, MultiBufferOffset,
     actions::ExpandAllDiffHunks,
 };
+use editor::{EditType, RewrapOptions};
 use futures::StreamExt as _;
 use git::commit::ParsedCommitMessage;
 use git::repository::{
@@ -41,7 +41,7 @@ use gpui::{
     anchored, deferred, point, size, uniform_list,
 };
 use itertools::Itertools;
-use language::{Buffer, File};
+use language::{LanguageBuffer, File};
 use language_model::{
     ConfiguredModel, LanguageModelRegistry, LanguageModelRequest, LanguageModelRequestMessage,
     Role, ZED_CLOUD_PROVIDER_ID,
@@ -628,7 +628,7 @@ struct BulkStaging {
 const MAX_PANEL_EDITOR_LINES: usize = 6;
 
 pub(crate) fn commit_message_editor(
-    commit_message_buffer: Entity<Buffer>,
+    commit_message_buffer: Entity<LanguageBuffer>,
     placeholder: Option<SharedString>,
     project: Entity<Project>,
     in_panel: bool,
@@ -693,7 +693,7 @@ impl GitPanel {
 
             // just to let us render a placeholder editor.
             // Once the active git repo is set, this buffer will be replaced.
-            let temporary_buffer = cx.new(|cx| Buffer::local("", cx));
+            let temporary_buffer = cx.new(|cx| LanguageBuffer::local("", cx));
             let commit_editor = cx.new(|cx| {
                 commit_message_editor(temporary_buffer, None, project.clone(), true, window, cx)
             });
@@ -1383,7 +1383,7 @@ impl GitPanel {
 
                 let gitignore_abs_path = repo_root.join(".gitignore");
 
-                let buffer: Entity<Buffer> = project
+                let buffer: Entity<LanguageBuffer> = project
                     .update(cx, |project, cx| {
                         project.open_local_buffer(gitignore_abs_path, cx)
                     })?
@@ -1999,7 +1999,7 @@ impl GitPanel {
         .detach();
     }
 
-    pub fn commit_message_buffer(&self, cx: &App) -> Entity<Buffer> {
+    pub fn commit_message_buffer(&self, cx: &App) -> Entity<LanguageBuffer> {
         self.commit_editor
             .read(cx)
             .buffer()
@@ -2180,7 +2180,7 @@ impl GitPanel {
             return None;
         }
         let buffer = cx.new(|cx| {
-            let mut buffer = Buffer::local(message, cx);
+            let mut buffer = LanguageBuffer::local(message, cx);
             buffer.set_language(git_commit_language, cx);
             buffer
         });
@@ -6126,7 +6126,7 @@ fn open_output(
     cx: &mut Context<Workspace>,
 ) {
     let operation = operation.into();
-    let buffer = cx.new(|cx| Buffer::local(output, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(output, cx));
     buffer.update(cx, |buffer, cx| {
         buffer.set_capability(language::Capability::ReadOnly, cx);
     });

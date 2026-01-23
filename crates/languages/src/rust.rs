@@ -261,7 +261,7 @@ impl LspAdapter for RustLspAdapter {
         &self,
         params: &mut lsp::PublishDiagnosticsParams,
         _: LanguageServerId,
-        _: Option<&'_ Buffer>,
+        _: Option<&'_ LanguageBuffer>,
     ) {
         static REGEX: LazyLock<Regex> =
             LazyLock::new(|| Regex::new(r"(?m)`([^`]+)\n`$").expect("Failed to create REGEX"));
@@ -1855,7 +1855,7 @@ mod tests {
         let language = crate::language("rust", tree_sitter_rust::LANGUAGE.into());
 
         cx.new(|cx| {
-            let mut buffer = Buffer::local("", cx).with_language(language, cx);
+            let mut buffer = LanguageBuffer::local("", cx).with_language(language, cx);
 
             // indent between braces
             buffer.set_text("fn a() {}", cx);

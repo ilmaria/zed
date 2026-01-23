@@ -7,7 +7,7 @@ use buffer_diff::BufferDiffSnapshot;
 use collections::HashMap;
 use feature_flags::FeatureFlagAppExt as _;
 use gpui::{App, Entity, Task};
-use language::{Buffer, ToPoint as _};
+use language::{LanguageBuffer, ToPoint as _};
 use project::{Project, WorktreeId};
 use std::{collections::hash_map, fmt::Write as _, ops::Range, path::Path, sync::Arc};
 use text::{BufferSnapshot as TextBufferSnapshot, Point};
@@ -16,7 +16,7 @@ pub(crate) const DEFAULT_EXAMPLE_CAPTURE_RATE_PER_10K_PREDICTIONS: u16 = 10;
 
 pub fn capture_example(
     project: Entity<Project>,
-    buffer: Entity<Buffer>,
+    buffer: Entity<LanguageBuffer>,
     cursor_anchor: language::Anchor,
     mut events: Vec<StoredEvent>,
     populate_expected_patch: bool,

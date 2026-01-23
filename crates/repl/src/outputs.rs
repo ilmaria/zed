@@ -35,7 +35,7 @@
 
 use editor::{Editor, MultiBuffer};
 use gpui::{AnyElement, ClipboardItem, Entity, EventEmitter, Render, WeakEntity};
-use language::Buffer;
+use language::LanguageBuffer;
 use runtimelib::{ExecutionState, JupyterMessageContent, MimeBundle, MimeType};
 use ui::{CommonAnimationExt, CopyButton, IconButton, Tooltip, prelude::*};
 
@@ -79,7 +79,7 @@ pub(crate) trait OutputContent {
     fn has_buffer_content(&self, _window: &Window, _cx: &App) -> bool {
         false
     }
-    fn buffer_content(&mut self, _window: &mut Window, _cx: &mut App) -> Option<Entity<Buffer>> {
+    fn buffer_content(&mut self, _window: &mut Window, _cx: &mut App) -> Option<Entity<LanguageBuffer>> {
         None
     }
 }
@@ -97,7 +97,7 @@ impl<V: OutputContent + 'static> OutputContent for Entity<V> {
         self.read(cx).has_buffer_content(window, cx)
     }
 
-    fn buffer_content(&mut self, window: &mut Window, cx: &mut App) -> Option<Entity<Buffer>> {
+    fn buffer_content(&mut self, window: &mut Window, cx: &mut App) -> Option<Entity<LanguageBuffer>> {
         self.update(cx, |item, cx| item.buffer_content(window, cx))
     }
 }
@@ -265,7 +265,7 @@ impl Output {
                                         let full_error =
                                             format!("{}: {}\n{}", ename, evalue, traceback_text);
                                         let buffer = cx.new(|cx| {
-                                            let mut buffer = Buffer::local(full_error, cx)
+                                            let mut buffer = LanguageBuffer::local(full_error, cx)
                                                 .with_language(language::PLAIN_TEXT.clone(), cx);
                                             buffer
                                                 .set_capability(language::Capability::ReadOnly, cx);

@@ -192,7 +192,7 @@ pub trait ToLspPosition {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Location {
-    pub buffer: Entity<Buffer>,
+    pub buffer: Entity<LanguageBuffer>,
     pub range: Range<Anchor>,
 }
 
@@ -280,7 +280,7 @@ impl CachedLspAdapter {
         &self,
         params: &mut lsp::PublishDiagnosticsParams,
         server_id: LanguageServerId,
-        existing_diagnostics: Option<&'_ Buffer>,
+        existing_diagnostics: Option<&'_ LanguageBuffer>,
     ) {
         self.adapter
             .process_diagnostics(params, server_id, existing_diagnostics)
@@ -393,7 +393,7 @@ pub trait LspAdapter: 'static + Send + Sync + DynLspInstaller {
         &self,
         _: &mut lsp::PublishDiagnosticsParams,
         _: LanguageServerId,
-        _: Option<&'_ Buffer>,
+        _: Option<&'_ LanguageBuffer>,
     ) {
     }
 

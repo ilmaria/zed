@@ -7,7 +7,7 @@ use gpui::{
     Subscription, Task, TextStyle, TitlebarOptions, WindowBounds, WindowHandle, WindowOptions,
     actions, point, size, transparent_black,
 };
-use language::{Buffer, LanguageRegistry, language_settings::SoftWrap};
+use language::{LanguageBuffer, LanguageRegistry, language_settings::SoftWrap};
 use language_model::{
     ConfiguredModel, LanguageModelRegistry, LanguageModelRequest, LanguageModelRequestMessage, Role,
 };
@@ -736,7 +736,7 @@ impl RulesLibrary {
                         });
                         let body_editor = cx.new(|cx| {
                             let buffer = cx.new(|cx| {
-                                let mut buffer = Buffer::local(rule, cx);
+                                let mut buffer = LanguageBuffer::local(rule, cx);
                                 buffer.set_language(markdown.log_err(), cx);
                                 buffer.set_language_registry(language_registry);
                                 buffer

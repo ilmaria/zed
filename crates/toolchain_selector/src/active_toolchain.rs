@@ -5,7 +5,7 @@ use gpui::{
     AsyncWindowContext, Context, Entity, IntoElement, ParentElement, Render, Styled, Subscription,
     Task, WeakEntity, Window, div,
 };
-use language::{Buffer, BufferEvent, LanguageName, Toolchain, ToolchainScope};
+use language::{LanguageBuffer, BufferEvent, LanguageName, Toolchain, ToolchainScope};
 use project::{Project, ProjectPath, Toolchains, WorktreeId, toolchain_store::ToolchainStoreEvent};
 use ui::{Button, ButtonCommon, Clickable, LabelSize, SharedString, Tooltip};
 use util::{maybe, rel_path::RelPath};
@@ -17,7 +17,7 @@ pub struct ActiveToolchain {
     active_toolchain: Option<Toolchain>,
     term: SharedString,
     workspace: WeakEntity<Workspace>,
-    active_buffer: Option<(WorktreeId, WeakEntity<Buffer>, Subscription)>,
+    active_buffer: Option<(WorktreeId, WeakEntity<LanguageBuffer>, Subscription)>,
     _update_toolchain_task: Task<Option<()>>,
 }
 

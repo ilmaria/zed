@@ -17,7 +17,7 @@ use gpui::{
     ParentElement, Pixels, SharedString, Styled, Task, WeakEntity, Window, point,
 };
 use language::{
-    Bias, Buffer, BufferRow, CharKind, CharScopeContext, LocalFile, Point, SelectionGoal,
+    Bias, LanguageBuffer, BufferRow, CharKind, CharScopeContext, LocalFile, Point, SelectionGoal,
     proto::serialize_anchor as serialize_text_anchor,
 };
 use lsp::DiagnosticSeverity;
@@ -1337,7 +1337,7 @@ pub struct RestorationData {
 }
 
 impl ProjectItem for Editor {
-    type Item = Buffer;
+    type Item = LanguageBuffer;
 
     fn project_item_kind() -> Option<ProjectItemKind> {
         Some(ProjectItemKind("Editor"))
@@ -1346,7 +1346,7 @@ impl ProjectItem for Editor {
     fn for_project_item(
         project: Entity<Project>,
         pane: Option<&Pane>,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Self {

@@ -30,7 +30,7 @@ use futures::{
 };
 use gpui::{App, AppContext, AsyncApp, Context, Entity, EventEmitter, SharedString, Task};
 use http_client::HttpClient;
-use language::{Buffer, LanguageToolchainStore};
+use language::{LanguageBuffer, LanguageToolchainStore};
 use node_runtime::NodeRuntime;
 use settings::InlayHintKind;
 
@@ -617,7 +617,7 @@ impl DapStore {
         &self,
         session: Entity<Session>,
         stack_frame_id: StackFrameId,
-        buffer_handle: Entity<Buffer>,
+        buffer_handle: Entity<LanguageBuffer>,
         inline_value_locations: Vec<dap::inline_value::InlineValueLocation>,
         cx: &mut Context<Self>,
     ) -> Task<Result<Vec<InlayHint>>> {

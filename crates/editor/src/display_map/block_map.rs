@@ -2069,7 +2069,7 @@ mod tests {
     };
     use gpui::{App, AppContext as _, Element, div, font, px};
     use itertools::Itertools;
-    use language::{Buffer, Capability};
+    use language::{LanguageBuffer, Capability};
     use multi_buffer::{ExcerptRange, MultiBuffer};
     use rand::prelude::*;
     use settings::SettingsStore;
@@ -2282,9 +2282,9 @@ mod tests {
     fn test_multibuffer_headers_and_footers(cx: &mut App) {
         init_test(cx);
 
-        let buffer1 = cx.new(|cx| Buffer::local("Buffer 1", cx));
-        let buffer2 = cx.new(|cx| Buffer::local("Buffer 2", cx));
-        let buffer3 = cx.new(|cx| Buffer::local("Buffer 3", cx));
+        let buffer1 = cx.new(|cx| LanguageBuffer::local("Buffer 1", cx));
+        let buffer2 = cx.new(|cx| LanguageBuffer::local("Buffer 2", cx));
+        let buffer3 = cx.new(|cx| LanguageBuffer::local("Buffer 3", cx));
 
         let mut excerpt_ids = Vec::new();
         let multi_buffer = cx.new(|cx| {

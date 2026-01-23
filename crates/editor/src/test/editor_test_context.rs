@@ -12,7 +12,7 @@ use gpui::{
     VisualTestContext, Window, WindowHandle, prelude::*,
 };
 use itertools::Itertools;
-use language::{Buffer, BufferSnapshot, LanguageRegistry};
+use language::{LanguageBuffer, BufferSnapshot, LanguageRegistry};
 use multi_buffer::{Anchor, ExcerptRange, MultiBufferOffset, MultiBufferRow};
 use parking_lot::RwLock;
 use project::{FakeFs, Project};
@@ -131,7 +131,7 @@ impl EditorTestContext {
         let buffer = cx.new(|cx| {
             for excerpt in excerpts.into_iter() {
                 let (text, ranges) = marked_text_ranges(excerpt, false);
-                let buffer = cx.new(|cx| Buffer::local(text, cx));
+                let buffer = cx.new(|cx| LanguageBuffer::local(text, cx));
                 multibuffer.push_excerpts(buffer, ranges.into_iter().map(ExcerptRange::new), cx);
             }
             multibuffer
@@ -202,7 +202,7 @@ impl EditorTestContext {
 
     pub fn buffer<F, T>(&mut self, read: F) -> T
     where
-        F: FnOnce(&Buffer, &App) -> T,
+        F: FnOnce(&LanguageBuffer, &App) -> T,
     {
         self.multibuffer(|multibuffer, cx| {
             let buffer = multibuffer.as_singleton().unwrap().read(cx);
@@ -224,7 +224,7 @@ impl EditorTestContext {
 
     pub fn update_buffer<F, T>(&mut self, update: F) -> T
     where
-        F: FnOnce(&mut Buffer, &mut Context<Buffer>) -> T,
+        F: FnOnce(&mut LanguageBuffer, &mut Context<LanguageBuffer>) -> T,
     {
         self.update_multibuffer(|multibuffer, cx| {
             let buffer = multibuffer.as_singleton().unwrap();

@@ -6,7 +6,7 @@ use gpui::{
     App, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement, ParentElement, Render,
     RenderImage, Styled, Subscription, Task, WeakEntity, Window, div, img,
 };
-use language::{Buffer, BufferEvent};
+use language::{LanguageBuffer, BufferEvent};
 use multi_buffer::MultiBuffer;
 use ui::prelude::*;
 use workspace::item::Item;
@@ -16,7 +16,7 @@ use crate::{OpenFollowingPreview, OpenPreview, OpenPreviewToTheSide};
 
 pub struct SvgPreviewView {
     focus_handle: FocusHandle,
-    buffer: Option<Entity<Buffer>>,
+    buffer: Option<Entity<LanguageBuffer>>,
     current_svg: Option<Result<Arc<RenderImage>, SharedString>>,
     _refresh: Task<()>,
     _buffer_subscription: Option<Subscription>,
@@ -174,7 +174,7 @@ impl SvgPreviewView {
     }
 
     fn create_buffer_subscription(
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         window: &Window,
         cx: &mut Context<Self>,
     ) -> Subscription {

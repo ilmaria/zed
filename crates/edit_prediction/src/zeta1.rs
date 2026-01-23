@@ -12,7 +12,7 @@ use cloud_llm_client::{
 };
 use gpui::{App, AppContext as _, AsyncApp, Context, Entity, SharedString, Task};
 use language::{
-    Anchor, Buffer, BufferSnapshot, OffsetRangeExt as _, Point, ToOffset, ToPoint as _, text_diff,
+    Anchor, LanguageBuffer, BufferSnapshot, OffsetRangeExt as _, Point, ToOffset, ToPoint as _, text_diff,
 };
 use project::{Project, ProjectPath};
 use release_channel::AppVersion;
@@ -242,7 +242,7 @@ pub(crate) fn request_prediction_with_zeta1(
 
 fn process_completion_response(
     prediction_response: PredictEditsResponse,
-    buffer: Entity<Buffer>,
+    buffer: Entity<LanguageBuffer>,
     snapshot: &BufferSnapshot,
     editable_range: Range<usize>,
     inputs: ZetaPromptInput,
@@ -580,7 +580,7 @@ mod tests {
     use super::*;
     use gpui::{App, AppContext};
     use indoc::indoc;
-    use language::Buffer;
+    use language::LanguageBuffer;
 
     #[gpui::test]
     fn test_excerpt_for_cursor_position(cx: &mut App) {
@@ -609,7 +609,7 @@ mod tests {
                 numbers
             }
         "#};
-        let buffer = cx.new(|cx| Buffer::local(text, cx).with_language(language::rust_lang(), cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(language::rust_lang(), cx));
         let snapshot = buffer.read(cx).snapshot();
 
         // Ensure we try to fit the largest possible syntax scope, resorting to line-based expansion

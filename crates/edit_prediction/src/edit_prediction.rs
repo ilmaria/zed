@@ -27,7 +27,7 @@ use gpui::{
     prelude::*,
 };
 use language::language_settings::all_language_settings;
-use language::{Anchor, Buffer, File, Point, TextBufferSnapshot, ToOffset, ToPoint};
+use language::{Anchor, LanguageBuffer, File, Point, TextBufferSnapshot, ToOffset, ToPoint};
 use language::{BufferSnapshot, OffsetRangeExt};
 use language_model::{LlmApiToken, RefreshLlmTokenListener};
 use project::{Project, ProjectPath, WorktreeId};
@@ -190,7 +190,7 @@ pub enum EditPredictionModel {
 
 pub struct EditPredictionModelInput {
     project: Entity<Project>,
-    buffer: Entity<Buffer>,
+    buffer: Entity<LanguageBuffer>,
     snapshot: BufferSnapshot,
     position: Anchor,
     events: Vec<Arc<zeta_prompt::Event>>,
@@ -232,14 +232,14 @@ pub struct ContextRetrievalFinishedDebugEvent {
 
 #[derive(Debug)]
 pub struct EditPredictionStartedDebugEvent {
-    pub buffer: WeakEntity<Buffer>,
+    pub buffer: WeakEntity<LanguageBuffer>,
     pub position: Anchor,
     pub prompt: Option<String>,
 }
 
 #[derive(Debug)]
 pub struct EditPredictionFinishedDebugEvent {
-    pub buffer: WeakEntity<Buffer>,
+    pub buffer: WeakEntity<LanguageBuffer>,
     pub position: Anchor,
     pub model_output: Option<String>,
 }
@@ -347,7 +347,7 @@ impl ProjectState {
         &self,
         project: &Entity<Project>,
         cx: &App,
-    ) -> Option<(Entity<Buffer>, Option<Anchor>)> {
+    ) -> Option<(Entity<LanguageBuffer>, Option<Anchor>)> {
         let project = project.read(cx);
         let active_path = project.path_for_entry(project.active_entry()?, cx)?;
         let active_buffer = project.buffer_store().read(cx).get_by_path(&active_path)?;
@@ -778,7 +778,7 @@ impl EditPredictionStore {
         &'a self,
         project: &Entity<Project>,
         cx: &'a App,
-    ) -> Option<impl 'a + Iterator<Item = (RelatedFile, Entity<Buffer>)>> {
+    ) -> Option<impl 'a + Iterator<Item = (RelatedFile, Entity<LanguageBuffer>)>> {
         self.projects
             .get(&project.entity_id())
             .map(|project| project.context.read(cx).related_files_with_buffers())
@@ -798,7 +798,7 @@ impl EditPredictionStore {
 
     pub fn register_buffer(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         project: &Entity<Project>,
         cx: &mut Context<Self>,
     ) {
@@ -949,7 +949,7 @@ impl EditPredictionStore {
 
     fn register_buffer_impl<'a>(
         project_state: &'a mut ProjectState,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         project: &Entity<Project>,
         cx: &mut Context<Self>,
     ) -> &'a mut RegisteredBuffer {
@@ -1015,7 +1015,7 @@ impl EditPredictionStore {
 
     fn report_changes_for_buffer(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         project: &Entity<Project>,
         cx: &mut Context<Self>,
     ) {
@@ -1139,7 +1139,7 @@ impl EditPredictionStore {
 
     fn prediction_at(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: Option<language::Anchor>,
         project: &Entity<Project>,
         cx: &App,
@@ -1355,7 +1355,7 @@ impl EditPredictionStore {
     pub fn refresh_prediction_from_buffer(
         &mut self,
         project: Entity<Project>,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         position: language::Anchor,
         cx: &mut Context<Self>,
     ) {
@@ -1655,7 +1655,7 @@ impl EditPredictionStore {
     pub fn request_prediction(
         &mut self,
         project: &Entity<Project>,
-        active_buffer: &Entity<Buffer>,
+        active_buffer: &Entity<LanguageBuffer>,
         position: language::Anchor,
         trigger: PredictEditsRequestTrigger,
         cx: &mut Context<Self>,
@@ -1673,7 +1673,7 @@ impl EditPredictionStore {
     fn request_prediction_internal(
         &mut self,
         project: Entity<Project>,
-        active_buffer: Entity<Buffer>,
+        active_buffer: Entity<LanguageBuffer>,
         position: language::Anchor,
         trigger: PredictEditsRequestTrigger,
         allow_jump: bool,
@@ -1807,13 +1807,13 @@ impl EditPredictionStore {
     }
 
     async fn next_diagnostic_location(
-        active_buffer: Entity<Buffer>,
+        active_buffer: Entity<LanguageBuffer>,
         active_buffer_snapshot: &BufferSnapshot,
         active_buffer_diagnostic_search_range: Range<Point>,
         active_buffer_cursor_point: Point,
         project: &Entity<Project>,
         cx: &mut AsyncApp,
-    ) -> Result<Option<(Entity<Buffer>, language::Anchor)>> {
+    ) -> Result<Option<(Entity<LanguageBuffer>, language::Anchor)>> {
         // find the closest diagnostic to the cursor that wasn't close enough to be included in the last request
         let mut jump_location = active_buffer_snapshot
             .diagnostic_groups(None)
@@ -2067,7 +2067,7 @@ impl EditPredictionStore {
     pub fn refresh_context(
         &mut self,
         project: &Entity<Project>,
-        buffer: &Entity<language::Buffer>,
+        buffer: &Entity<language::LanguageBuffer>,
         cursor_position: language::Anchor,
         cx: &mut Context<Self>,
     ) {

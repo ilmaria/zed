@@ -1,6 +1,6 @@
 use anyhow::{Context as _, bail};
 use futures::{FutureExt, StreamExt as _, channel::mpsc, future::Shared};
-use language::Buffer;
+use language::LanguageBuffer;
 use remote::RemoteClient;
 use rpc::proto::{self, REMOTE_SERVER_PROJECT_ID};
 use std::{collections::VecDeque, path::Path, sync::Arc};
@@ -82,7 +82,7 @@ impl ProjectEnvironment {
 
     pub fn buffer_environment(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         worktree_store: &Entity<WorktreeStore>,
         cx: &mut Context<Self>,
     ) -> Shared<Task<Option<HashMap<String, String>>>> {

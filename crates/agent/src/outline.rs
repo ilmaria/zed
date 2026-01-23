@@ -1,6 +1,6 @@
 use anyhow::Result;
 use gpui::{AsyncApp, Entity};
-use language::{Buffer, OutlineItem};
+use language::{LanguageBuffer, OutlineItem};
 use regex::Regex;
 use std::fmt::Write;
 use text::Point;
@@ -21,7 +21,7 @@ pub struct BufferContent {
 /// For files larger than AUTO_OUTLINE_SIZE, returns an outline with a header.
 /// For smaller files, returns the full content.
 pub async fn get_buffer_content_or_outline(
-    buffer: Entity<Buffer>,
+    buffer: Entity<LanguageBuffer>,
     path: Option<&str>,
     cx: &AsyncApp,
 ) -> Result<BufferContent> {

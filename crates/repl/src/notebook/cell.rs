@@ -6,7 +6,7 @@ use futures::future::Shared;
 use gpui::{
     App, Entity, Hsla, RetainAllImageCache, Task, TextStyleRefinement, image_cache, prelude::*,
 };
-use language::{Buffer, Language, LanguageRegistry};
+use language::{LanguageBuffer, Language, LanguageRegistry};
 use markdown_preview::{markdown_parser::parse_markdown, markdown_renderer::render_markdown_block};
 use nbformat::v4::{CellId, CellMetadata, CellType};
 use settings::Settings as _;
@@ -172,7 +172,7 @@ impl Cell {
             } => Cell::Code(cx.new(|cx| {
                 let text = source.join("");
 
-                let buffer = cx.new(|cx| Buffer::local(text.clone(), cx));
+                let buffer = cx.new(|cx| LanguageBuffer::local(text.clone(), cx));
                 let multi_buffer = cx.new(|cx| MultiBuffer::singleton(buffer.clone(), cx));
 
                 let editor_view = cx.new(|cx| {

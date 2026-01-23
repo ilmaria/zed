@@ -6,7 +6,7 @@ use collections::HashMap;
 use gpui::AsyncApp;
 use gpui::{App, Entity, Task};
 use itertools::Itertools;
-use language::Buffer;
+use language::LanguageBuffer;
 use language::Language;
 use lsp::LanguageServerId;
 use lsp::LanguageServerName;
@@ -28,7 +28,7 @@ pub(crate) fn find_specific_language_server_in_selection<F>(
     cx: &mut App,
     filter_language: F,
     language_server_name: LanguageServerName,
-) -> Option<(Anchor, Arc<Language>, LanguageServerId, Entity<Buffer>)>
+) -> Option<(Anchor, Arc<Language>, LanguageServerId, Entity<LanguageBuffer>)>
 where
     F: Fn(&Language) -> bool,
 {
@@ -57,7 +57,7 @@ where
 
 async fn lsp_task_context(
     project: &Entity<Project>,
-    buffer: &Entity<Buffer>,
+    buffer: &Entity<LanguageBuffer>,
     cx: &mut AsyncApp,
 ) -> Option<TaskContext> {
     let (worktree_store, environment) = project.read_with(cx, |project, _| {

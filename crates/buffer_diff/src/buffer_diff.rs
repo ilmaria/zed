@@ -21,7 +21,7 @@ pub const MAX_WORD_DIFF_LINE_COUNT: usize = 5;
 
 pub struct BufferDiff {
     pub buffer_id: BufferId,
-    inner: BufferDiffInner<Entity<language::Buffer>>,
+    inner: BufferDiffInner<Entity<language::LanguageBuffer>>,
     // diff of the index vs head
     secondary_diff: Option<Entity<BufferDiff>>,
 }
@@ -391,7 +391,7 @@ impl BufferDiffSnapshot {
     }
 }
 
-impl BufferDiffInner<Entity<language::Buffer>> {
+impl BufferDiffInner<Entity<language::LanguageBuffer>> {
     /// Returns the new index text and new pending hunks.
     fn stage_or_unstage_hunks_impl(
         &mut self,
@@ -1094,7 +1094,7 @@ impl EventEmitter<BufferDiffEvent> for BufferDiff {}
 impl BufferDiff {
     pub fn new(buffer: &text::BufferSnapshot, cx: &mut App) -> Self {
         let base_text = cx.new(|cx| {
-            let mut buffer = language::Buffer::local("", cx);
+            let mut buffer = language::LanguageBuffer::local("", cx);
             buffer.set_capability(Capability::ReadOnly, cx);
             buffer
         });
@@ -1114,7 +1114,7 @@ impl BufferDiff {
     pub fn new_unchanged(buffer: &text::BufferSnapshot, cx: &mut Context<Self>) -> Self {
         let base_text = buffer.text();
         let base_text = cx.new(|cx| {
-            let mut buffer = language::Buffer::local(base_text, cx);
+            let mut buffer = language::LanguageBuffer::local(base_text, cx);
             buffer.set_capability(Capability::ReadOnly, cx);
             buffer
         });
@@ -1513,7 +1513,7 @@ impl BufferDiff {
         })
     }
 
-    pub fn base_text_buffer(&self) -> Entity<language::Buffer> {
+    pub fn base_text_buffer(&self) -> Entity<language::LanguageBuffer> {
         self.inner.base_text.clone()
     }
 }
@@ -1661,7 +1661,7 @@ mod tests {
     use gpui::TestAppContext;
     use pretty_assertions::{assert_eq, assert_ne};
     use rand::{Rng as _, rngs::StdRng};
-    use text::{Buffer, BufferId, EditType, ReplicaId, Rope};
+    use text::{BufferId, EditType, ReplicaId, Rope, TextBuffer};
     use unindent::Unindent as _;
     use util::test::marked_text_ranges;
 
@@ -1686,7 +1686,7 @@ mod tests {
         "
         .unindent();
 
-        let mut buffer = Buffer::new(ReplicaId::LOCAL, BufferId::new(1).unwrap(), buffer_text);
+        let mut buffer = TextBuffer::new(ReplicaId::LOCAL, BufferId::new(1).unwrap(), buffer_text);
         let mut diff = BufferDiffSnapshot::new_sync(buffer.clone(), diff_base.clone(), cx);
         assert_hunks(
             diff.hunks_intersecting_range(
@@ -1769,7 +1769,7 @@ mod tests {
         "
         .unindent();
 
-        let buffer = Buffer::new(ReplicaId::LOCAL, BufferId::new(1).unwrap(), buffer_text);
+        let buffer = TextBuffer::new(ReplicaId::LOCAL, BufferId::new(1).unwrap(), buffer_text);
         let unstaged_diff = BufferDiffSnapshot::new_sync(buffer.clone(), index_text, cx);
         let mut uncommitted_diff =
             BufferDiffSnapshot::new_sync(buffer.clone(), head_text.clone(), cx);
@@ -1839,7 +1839,7 @@ mod tests {
         "
         .unindent();
 
-        let buffer = Buffer::new(ReplicaId::LOCAL, BufferId::new(1).unwrap(), buffer_text);
+        let buffer = TextBuffer::new(ReplicaId::LOCAL, BufferId::new(1).unwrap(), buffer_text);
         let diff = BufferDiffSnapshot::new_sync(buffer.snapshot(), diff_base.clone(), cx);
         assert_eq!(
             diff.hunks_intersecting_range(
@@ -2095,7 +2095,7 @@ mod tests {
 
         for example in table {
             let (buffer_text, ranges) = marked_text_ranges(&example.buffer_marked_text, false);
-            let buffer = Buffer::new(ReplicaId::LOCAL, BufferId::new(1).unwrap(), buffer_text);
+            let buffer = TextBuffer::new(ReplicaId::LOCAL, BufferId::new(1).unwrap(), buffer_text);
             let hunk_range =
                 buffer.anchor_before(ranges[0].start)..buffer.anchor_before(ranges[0].end);
 
@@ -2161,7 +2161,7 @@ mod tests {
         "
         .unindent();
 
-        let buffer = Buffer::new(
+        let buffer = TextBuffer::new(
             ReplicaId::LOCAL,
             BufferId::new(1).unwrap(),
             buffer_text.clone(),
@@ -2231,7 +2231,8 @@ mod tests {
         "
         .unindent();
 
-        let mut buffer = Buffer::new(ReplicaId::LOCAL, BufferId::new(1).unwrap(), buffer_text_1);
+        let mut buffer =
+            TextBuffer::new(ReplicaId::LOCAL, BufferId::new(1).unwrap(), buffer_text_1);
 
         let empty_diff = cx.update(|cx| BufferDiff::new(&buffer, cx).snapshot(cx));
         let diff_1 = BufferDiffSnapshot::new_sync(buffer.clone(), base_text.clone(), cx);
@@ -2463,7 +2464,7 @@ mod tests {
         });
         let working_copy = gen_working_copy(rng, &head_text);
         let working_copy = cx.new(|cx| {
-            language::Buffer::local_normalized(
+            language::LanguageBuffer::local_normalized(
                 Rope::from(working_copy.as_str()),
                 text::LineEnding::default(),
                 cx,
@@ -2572,7 +2573,7 @@ mod tests {
         //   seven
         // + eight
 
-        let buffer = Buffer::new(ReplicaId::LOCAL, BufferId::new(1).unwrap(), buffer_text);
+        let buffer = TextBuffer::new(ReplicaId::LOCAL, BufferId::new(1).unwrap(), buffer_text);
         let buffer_snapshot = buffer.snapshot();
         let diff = BufferDiffSnapshot::new_sync(buffer_snapshot.clone(), base_text, cx);
         let expected_results = [
@@ -2619,7 +2620,7 @@ mod tests {
             six
         "
         .unindent();
-        let buffer = cx.new(|cx| language::Buffer::local(buffer_text, cx));
+        let buffer = cx.new(|cx| language::LanguageBuffer::local(buffer_text, cx));
         let diff = cx.new(|cx| {
             BufferDiff::new_with_base_text(&base_text, &buffer.read(cx).text_snapshot(), cx)
         });

@@ -11,7 +11,7 @@ use edit_prediction::{
 };
 use futures::AsyncWriteExt as _;
 use gpui::{AsyncApp, Entity};
-use language::{Anchor, Buffer, LanguageNotFound, OffsetRangeExt as _, ToOffset, ToPoint};
+use language::{Anchor, LanguageBuffer, LanguageNotFound, OffsetRangeExt as _, ToOffset, ToPoint};
 use project::Project;
 use project::buffer_store::BufferStoreEvent;
 use std::{fs, path::PathBuf, sync::Arc};
@@ -83,7 +83,7 @@ async fn cursor_position(
     project: &Entity<Project>,
     open_buffers: &OpenedBuffers,
     cx: &mut AsyncApp,
-) -> Result<(Entity<Buffer>, Anchor)> {
+) -> Result<(Entity<LanguageBuffer>, Anchor)> {
     let language_registry = project.read_with(cx, |project, _| project.languages().clone());
     let result = language_registry
         .load_language_for_file_path(&example.spec.cursor_path)

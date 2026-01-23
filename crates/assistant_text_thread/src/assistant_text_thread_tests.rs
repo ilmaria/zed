@@ -15,7 +15,7 @@ use futures::{
     stream::{self, StreamExt},
 };
 use gpui::{App, Entity, SharedString, Task, TestAppContext, WeakEntity, prelude::*};
-use language::{Buffer, BufferSnapshot, LanguageRegistry, LspAdapterDelegate};
+use language::{LanguageBuffer, BufferSnapshot, LanguageRegistry, LspAdapterDelegate};
 use language_model::{
     ConfiguredModel, LanguageModelCacheConfiguration, LanguageModelRegistry, Role,
     fake_provider::{FakeLanguageModel, FakeLanguageModelProvider},
@@ -611,7 +611,7 @@ async fn test_slash_commands(cx: &mut TestAppContext) {
 
     #[track_caller]
     fn assert_text_and_context_ranges(
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         ranges: &RefCell<ContextRanges>,
         expected_marked_text: &str,
         cx: &mut TestAppContext,

@@ -8,7 +8,7 @@ use gpui::{
     App, Context, Entity, InteractiveElement as _, ParentElement as _, Subscription, Task,
     WeakEntity,
 };
-use language::{Anchor, Buffer, BufferId};
+use language::{Anchor, LanguageBuffer, BufferId};
 use project::{ConflictRegion, ConflictSet, ConflictSetUpdate, ProjectItem as _};
 use std::{ops::Range, sync::Arc};
 use ui::{ActiveTheme, Element as _, Styled, Window, prelude::*};
@@ -112,7 +112,7 @@ fn excerpt_for_buffer_updated(
 }
 
 #[ztracing::instrument(skip_all)]
-fn buffer_added(editor: &mut Editor, buffer: Entity<Buffer>, cx: &mut Context<Editor>) {
+fn buffer_added(editor: &mut Editor, buffer: Entity<LanguageBuffer>, cx: &mut Context<Editor>) {
     let Some(project) = editor.project() else {
         return;
     };

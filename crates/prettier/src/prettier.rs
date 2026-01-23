@@ -3,7 +3,7 @@ use collections::{HashMap, HashSet};
 use fs::Fs;
 use gpui::{AsyncApp, Entity};
 use language::language_settings::PrettierSettings;
-use language::{Buffer, Diff, Language, language_settings::language_settings};
+use language::{LanguageBuffer, Diff, Language, language_settings::language_settings};
 use lsp::{LanguageServer, LanguageServerId};
 use node_runtime::NodeRuntime;
 use paths::default_prettier_dir;
@@ -341,7 +341,7 @@ impl Prettier {
 
     pub async fn format(
         &self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         buffer_path: Option<PathBuf>,
         ignore_dir: Option<PathBuf>,
         cx: &mut AsyncApp,

@@ -881,7 +881,7 @@ impl Editor {
 struct VisibleExcerpts {
     ranges: Vec<Range<text::Anchor>>,
     buffer_version: Global,
-    buffer: Entity<language::Buffer>,
+    buffer: Entity<language::LanguageBuffer>,
 }
 
 fn spawn_editor_hints_refresh(

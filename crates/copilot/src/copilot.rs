@@ -18,7 +18,7 @@ use gpui::{
 use http_client::HttpClient;
 use language::language_settings::CopilotSettings;
 use language::{
-    Anchor, Bias, Buffer, BufferSnapshot, Language, PointUtf16, ToPointUtf16,
+    Anchor, Bias, LanguageBuffer, BufferSnapshot, Language, PointUtf16, ToPointUtf16,
     language_settings::{EditPredictionProvider, all_language_settings},
     point_from_lsp, point_to_lsp,
 };
@@ -205,7 +205,7 @@ struct RegisteredBuffer {
 impl RegisteredBuffer {
     fn report_changes(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         cx: &mut Context<Copilot>,
     ) -> oneshot::Receiver<(i32, BufferSnapshot)> {
         let (done_tx, done_rx) = oneshot::channel();
@@ -299,7 +299,7 @@ pub struct Copilot {
     fs: Arc<dyn Fs>,
     node_runtime: NodeRuntime,
     server: CopilotServer,
-    buffers: HashSet<WeakEntity<Buffer>>,
+    buffers: HashSet<WeakEntity<LanguageBuffer>>,
     server_id: LanguageServerId,
     _subscription: gpui::Subscription,
 }
@@ -318,7 +318,7 @@ impl Global for GlobalCopilot {}
 
 /// Copilot's NextEditSuggestion response, with coordinates converted to Anchors.
 struct CopilotEditPrediction {
-    buffer: Entity<Buffer>,
+    buffer: Entity<LanguageBuffer>,
     range: Range<Anchor>,
     text: String,
     command: Option<lsp::Command>,
@@ -746,7 +746,7 @@ impl Copilot {
         }
     }
 
-    pub fn register_buffer(&mut self, buffer: &Entity<Buffer>, cx: &mut Context<Self>) {
+    pub fn register_buffer(&mut self, buffer: &Entity<LanguageBuffer>, cx: &mut Context<Self>) {
         let weak_buffer = buffer.downgrade();
         self.buffers.insert(weak_buffer.clone());
 
@@ -803,7 +803,7 @@ impl Copilot {
 
     fn handle_buffer_event(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         event: &language::BufferEvent,
         cx: &mut Context<Self>,
     ) -> Result<()> {
@@ -868,7 +868,7 @@ impl Copilot {
         Ok(())
     }
 
-    fn unregister_buffer(&mut self, buffer: &WeakEntity<Buffer>) {
+    fn unregister_buffer(&mut self, buffer: &WeakEntity<LanguageBuffer>) {
         if let Ok(server) = self.server.as_running()
             && let Some(buffer) = server.registered_buffers.remove(&buffer.entity_id())
         {
@@ -885,7 +885,7 @@ impl Copilot {
 
     pub(crate) fn completions(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: Anchor,
         cx: &mut Context<Self>,
     ) -> Task<Result<Vec<CopilotEditPrediction>>> {
@@ -1072,7 +1072,7 @@ fn id_for_language(language: Option<&Arc<Language>>) -> String {
         .unwrap_or_else(|| "plaintext".to_string())
 }
 
-fn uri_for_buffer(buffer: &Entity<Buffer>, cx: &App) -> Result<lsp::Uri, ()> {
+fn uri_for_buffer(buffer: &Entity<LanguageBuffer>, cx: &App) -> Result<lsp::Uri, ()> {
     if let Some(file) = buffer.read(cx).file().and_then(|file| file.as_local()) {
         lsp::Uri::from_file_path(file.abs_path(cx))
     } else {
@@ -1213,7 +1213,7 @@ mod tests {
     async fn test_buffer_management(cx: &mut TestAppContext) {
         let (copilot, mut lsp) = Copilot::fake(cx);
 
-        let buffer_1 = cx.new(|cx| Buffer::local("Hello", cx));
+        let buffer_1 = cx.new(|cx| LanguageBuffer::local("Hello", cx));
         let buffer_1_uri: lsp::Uri = format!("buffer://{}", buffer_1.entity_id().as_u64())
             .parse()
             .unwrap();
@@ -1231,7 +1231,7 @@ mod tests {
             }
         );
 
-        let buffer_2 = cx.new(|cx| Buffer::local("Goodbye", cx));
+        let buffer_2 = cx.new(|cx| LanguageBuffer::local("Goodbye", cx));
         let buffer_2_uri: lsp::Uri = format!("buffer://{}", buffer_2.entity_id().as_u64())
             .parse()
             .unwrap();

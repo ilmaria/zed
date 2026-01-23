@@ -2,7 +2,7 @@ use anyhow::Result;
 use gpui::{
     App, ClipboardItem, Context, Entity, RetainAllImageCache, Task, Window, div, prelude::*,
 };
-use language::Buffer;
+use language::LanguageBuffer;
 use markdown_preview::{
     markdown_elements::ParsedMarkdown, markdown_parser::parse_markdown,
     markdown_renderer::render_markdown_block,
@@ -56,10 +56,10 @@ impl OutputContent for MarkdownView {
         true
     }
 
-    fn buffer_content(&mut self, _: &mut Window, cx: &mut App) -> Option<Entity<Buffer>> {
+    fn buffer_content(&mut self, _: &mut Window, cx: &mut App) -> Option<Entity<LanguageBuffer>> {
         let buffer = cx.new(|cx| {
             // TODO: Bring in the language registry so we can set the language to markdown
-            let mut buffer = Buffer::local(self.raw_text.clone(), cx)
+            let mut buffer = LanguageBuffer::local(self.raw_text.clone(), cx)
                 .with_language(language::PLAIN_TEXT.clone(), cx);
             buffer.set_capability(language::Capability::ReadOnly, cx);
             buffer

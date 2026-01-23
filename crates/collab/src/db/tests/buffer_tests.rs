@@ -1,7 +1,7 @@
 use super::*;
 use crate::test_both_dbs;
 use language::proto::{self, serialize_version};
-use text::{Buffer, EditType, ReplicaId};
+use text::{TextBuffer, EditType, ReplicaId};
 
 test_both_dbs!(
     test_channel_buffers,
@@ -70,7 +70,7 @@ async fn test_channel_buffers(db: &Arc<Database>) {
         .await
         .unwrap();
 
-    let mut buffer_a = Buffer::new(
+    let mut buffer_a = TextBuffer::new(
         ReplicaId::new(0),
         text::BufferId::new(1).unwrap(),
         "".to_string(),
@@ -98,7 +98,7 @@ async fn test_channel_buffers(db: &Arc<Database>) {
         .await
         .unwrap();
 
-    let mut buffer_b = Buffer::new(
+    let mut buffer_b = TextBuffer::new(
         ReplicaId::new(0),
         text::BufferId::new(1).unwrap(),
         buffer_response_b.base_text,
@@ -243,7 +243,7 @@ async fn test_channel_buffers_last_operations(db: &Database) {
                 .unwrap(),
         );
 
-        text_buffers.push(Buffer::new(
+        text_buffers.push(TextBuffer::new(
             ReplicaId::new(res.replica_id as u16),
             text::BufferId::new(1).unwrap(),
             "".to_string(),
@@ -282,7 +282,7 @@ async fn test_channel_buffers_last_operations(db: &Database) {
         .await
         .unwrap();
     let replica_id = text_buffers[1].replica_id();
-    text_buffers[1] = Buffer::new(
+    text_buffers[1] = TextBuffer::new(
         replica_id,
         text::BufferId::new(1).unwrap(),
         "def".to_string(),

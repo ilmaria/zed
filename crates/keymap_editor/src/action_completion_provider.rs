@@ -27,7 +27,7 @@ impl CompletionProvider for ActionCompletionProvider {
     fn completions(
         &self,
         _excerpt_id: editor::ExcerptId,
-        buffer: &Entity<language::Buffer>,
+        buffer: &Entity<language::LanguageBuffer>,
         buffer_position: language::Anchor,
         _trigger: editor::CompletionContext,
         _window: &mut Window,
@@ -123,7 +123,7 @@ impl CompletionProvider for ActionCompletionProvider {
 
     fn is_completion_trigger(
         &self,
-        _buffer: &Entity<language::Buffer>,
+        _buffer: &Entity<language::LanguageBuffer>,
         _position: language::Anchor,
         text: &str,
         _trigger_in_words: bool,

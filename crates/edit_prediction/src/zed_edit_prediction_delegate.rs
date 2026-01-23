@@ -4,7 +4,7 @@ use client::{Client, UserStore};
 use cloud_llm_client::EditPredictionRejectReason;
 use edit_prediction_types::{DataCollectionState, EditPredictionDelegate, SuggestionDisplayType};
 use gpui::{App, Entity, prelude::*};
-use language::{Buffer, ToPoint as _};
+use language::{LanguageBuffer, ToPoint as _};
 use project::Project;
 
 use crate::{BufferEditPrediction, EditPredictionModel, EditPredictionStore};
@@ -12,13 +12,13 @@ use crate::{BufferEditPrediction, EditPredictionModel, EditPredictionStore};
 pub struct ZedEditPredictionDelegate {
     store: Entity<EditPredictionStore>,
     project: Entity<Project>,
-    singleton_buffer: Option<Entity<Buffer>>,
+    singleton_buffer: Option<Entity<LanguageBuffer>>,
 }
 
 impl ZedEditPredictionDelegate {
     pub fn new(
         project: Entity<Project>,
-        singleton_buffer: Option<Entity<Buffer>>,
+        singleton_buffer: Option<Entity<LanguageBuffer>>,
         client: &Arc<Client>,
         user_store: &Entity<UserStore>,
         cx: &mut Context<Self>,
@@ -94,7 +94,7 @@ impl EditPredictionDelegate for ZedEditPredictionDelegate {
 
     fn is_enabled(
         &self,
-        _buffer: &Entity<language::Buffer>,
+        _buffer: &Entity<language::LanguageBuffer>,
         _cursor_position: language::Anchor,
         cx: &App,
     ) -> bool {
@@ -112,7 +112,7 @@ impl EditPredictionDelegate for ZedEditPredictionDelegate {
 
     fn refresh(
         &mut self,
-        buffer: Entity<language::Buffer>,
+        buffer: Entity<language::LanguageBuffer>,
         cursor_position: language::Anchor,
         _debounce: bool,
         cx: &mut Context<Self>,
@@ -159,7 +159,7 @@ impl EditPredictionDelegate for ZedEditPredictionDelegate {
 
     fn suggest(
         &mut self,
-        buffer: &Entity<language::Buffer>,
+        buffer: &Entity<language::LanguageBuffer>,
         cursor_position: language::Anchor,
         cx: &mut Context<Self>,
     ) -> Option<edit_prediction_types::EditPrediction> {

@@ -36,7 +36,7 @@ use gpui::{
     Action as _, AnyView, AppContext, Axis, Entity, EntityId, EventEmitter, FocusHandle, Focusable,
     NoAction, Pixels, Point, Subscription, Task, WeakEntity,
 };
-use language::Buffer;
+use language::LanguageBuffer;
 use loaded_source_list::LoadedSourceList;
 use module_list::ModuleList;
 use project::{
@@ -964,7 +964,7 @@ impl RunningState {
         &self,
         scenario: DebugScenario,
         task_context: TaskContext,
-        buffer: Option<Entity<Buffer>>,
+        buffer: Option<Entity<LanguageBuffer>>,
         worktree_id: Option<WorktreeId>,
         window: &Window,
         cx: &mut Context<Self>,

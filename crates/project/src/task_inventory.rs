@@ -14,7 +14,7 @@ use dap::DapRegistry;
 use gpui::{App, AppContext as _, Context, Entity, SharedString, Task, WeakEntity};
 use itertools::Itertools;
 use language::{
-    Buffer, ContextLocation, ContextProvider, File, Language, LanguageToolchainStore, Location,
+    LanguageBuffer, ContextLocation, ContextProvider, File, Language, LanguageToolchainStore, Location,
     language_settings::language_settings,
 };
 use lsp::{LanguageServerId, LanguageServerName};
@@ -34,7 +34,7 @@ use crate::{task_store::TaskSettingsLocation, worktree_store::WorktreeStore};
 pub struct DebugScenarioContext {
     pub task_context: TaskContext,
     pub worktree_id: Option<WorktreeId>,
-    pub active_buffer: Option<WeakEntity<Buffer>>,
+    pub active_buffer: Option<WeakEntity<LanguageBuffer>>,
 }
 
 /// Inventory tracks available tasks for a given project.
@@ -254,7 +254,7 @@ impl Inventory {
         scenario: DebugScenario,
         task_context: TaskContext,
         worktree_id: Option<WorktreeId>,
-        active_buffer: Option<WeakEntity<Buffer>>,
+        active_buffer: Option<WeakEntity<LanguageBuffer>>,
     ) {
         self.last_scheduled_scenarios
             .retain(|(s, _)| s.label != scenario.label);
@@ -345,7 +345,7 @@ impl Inventory {
 
     pub fn task_template_by_label(
         &self,
-        buffer: Option<Entity<Buffer>>,
+        buffer: Option<Entity<LanguageBuffer>>,
         worktree_id: Option<WorktreeId>,
         label: &str,
         cx: &App,

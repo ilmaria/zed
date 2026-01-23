@@ -10,7 +10,7 @@ use gpui::{
 };
 use language::language_settings::SoftWrap;
 use language::{
-    Anchor, Buffer, BufferSnapshot, CodeLabel, Diagnostic, DiagnosticEntry, DiagnosticSet,
+    Anchor, LanguageBuffer, BufferSnapshot, CodeLabel, Diagnostic, DiagnosticEntry, DiagnosticSet,
     DiagnosticSeverity, LanguageServerId, Point, ToOffset as _, ToPoint as _,
 };
 use project::lsp_store::CompletionDocumentation;
@@ -53,13 +53,13 @@ pub(crate) struct DivInspector {
 enum State {
     Loading,
     BuffersLoaded {
-        rust_style_buffer: Entity<Buffer>,
-        json_style_buffer: Entity<Buffer>,
+        rust_style_buffer: Entity<LanguageBuffer>,
+        json_style_buffer: Entity<LanguageBuffer>,
     },
     Ready {
-        rust_style_buffer: Entity<Buffer>,
+        rust_style_buffer: Entity<LanguageBuffer>,
         rust_style_editor: Entity<Editor>,
-        json_style_buffer: Entity<Buffer>,
+        json_style_buffer: Entity<LanguageBuffer>,
         json_style_editor: Entity<Editor>,
     },
     LoadError {
@@ -87,7 +87,7 @@ impl DivInspector {
                 // Rust Analyzer doesn't get started for it.
                 let rust_language_result = languages.language_for_name("Rust").await;
                 let rust_style_buffer = rust_language_result.map(|rust_language| {
-                    cx.new(|cx| Buffer::local("", cx).with_language_async(rust_language, cx))
+                    cx.new(|cx| LanguageBuffer::local("", cx).with_language_async(rust_language, cx))
                 });
 
                 match json_style_buffer.and_then(|json_style_buffer| {
@@ -291,8 +291,8 @@ impl DivInspector {
 
     fn reset_style_editors(
         &self,
-        rust_style_buffer: &Entity<Buffer>,
-        json_style_buffer: &Entity<Buffer>,
+        rust_style_buffer: &Entity<LanguageBuffer>,
+        json_style_buffer: &Entity<LanguageBuffer>,
         cx: &mut App,
     ) -> Result<StyleRefinement> {
         let json_text = match serde_json::to_string_pretty(&self.initial_style) {
@@ -343,8 +343,8 @@ impl DivInspector {
 
     fn update_json_style_from_rust(
         &mut self,
-        json_style_buffer: &Entity<Buffer>,
-        rust_style_buffer: &Entity<Buffer>,
+        json_style_buffer: &Entity<LanguageBuffer>,
+        rust_style_buffer: &Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) {
         let rust_style = rust_style_buffer.update(cx, |rust_style_buffer, cx| {
@@ -435,9 +435,9 @@ impl DivInspector {
 
     fn set_rust_buffer_diagnostics(
         unrecognized_ranges: Vec<Range<Anchor>>,
-        rust_style_buffer: &mut Buffer,
+        rust_style_buffer: &mut LanguageBuffer,
         snapshot: &BufferSnapshot,
-        cx: &mut Context<Buffer>,
+        cx: &mut Context<LanguageBuffer>,
     ) {
         let diagnostic_entries = unrecognized_ranges
             .into_iter()
@@ -460,7 +460,7 @@ impl DivInspector {
         path: impl AsRef<Path>,
         project: &Entity<Project>,
         cx: &mut AsyncWindowContext,
-    ) -> Result<Entity<Buffer>> {
+    ) -> Result<Entity<LanguageBuffer>> {
         let worktree = project
             .update(cx, |project, cx| project.create_worktree(path, false, cx))
             .await?;
@@ -480,7 +480,7 @@ impl DivInspector {
 
     fn create_editor(
         &self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Entity<Editor> {
@@ -642,7 +642,7 @@ impl CompletionProvider for RustStyleCompletionProvider {
     fn completions(
         &self,
         _excerpt_id: ExcerptId,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         position: Anchor,
         _: editor::CompletionContext,
         _window: &mut Window,
@@ -682,7 +682,7 @@ impl CompletionProvider for RustStyleCompletionProvider {
 
     fn is_completion_trigger(
         &self,
-        buffer: &Entity<language::Buffer>,
+        buffer: &Entity<language::LanguageBuffer>,
         position: language::Anchor,
         _text: &str,
         _trigger_in_words: bool,

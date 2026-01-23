@@ -22,7 +22,7 @@ use gpui::{
     Action, AnyElement, App, AppContext as _, AsyncWindowContext, Entity, EventEmitter,
     FocusHandle, Focusable, Render, Subscription, Task, WeakEntity, actions,
 };
-use language::{Anchor, Buffer, Capability, OffsetRangeExt};
+use language::{Anchor, LanguageBuffer, Capability, OffsetRangeExt};
 use multi_buffer::{MultiBuffer, PathKey};
 use project::{
     Project, ProjectPath,
@@ -558,7 +558,7 @@ impl ProjectDiff {
         &mut self,
         path_key: PathKey,
         file_status: FileStatus,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         diff: Entity<BufferDiff>,
         window: &mut Window,
         cx: &mut Context<Self>,

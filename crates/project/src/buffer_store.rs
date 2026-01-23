@@ -11,7 +11,7 @@ use gpui::{
     App, AppContext as _, AsyncApp, Context, Entity, EventEmitter, Subscription, Task, WeakEntity,
 };
 use language::{
-    Buffer, BufferEvent, Capability, DiskState, File as _, Language, Operation,
+    BufferEvent, Capability, DiskState, File as _, Language, LanguageBuffer, Operation,
     proto::{
         deserialize_line_ending, deserialize_version, serialize_line_ending, serialize_version,
         split_operations,
@@ -32,7 +32,8 @@ use worktree::{File, PathChange, ProjectEntryId, Worktree, WorktreeId, WorktreeS
 pub struct BufferStore {
     state: BufferStoreState,
     #[allow(clippy::type_complexity)]
-    loading_buffers: HashMap<ProjectPath, Shared<Task<Result<Entity<Buffer>, Arc<anyhow::Error>>>>>,
+    loading_buffers:
+        HashMap<ProjectPath, Shared<Task<Result<Entity<LanguageBuffer>, Arc<anyhow::Error>>>>>,
     worktree_store: Entity<WorktreeStore>,
     opened_buffers: HashMap<BufferId, OpenBuffer>,
     path_to_buffer_id: HashMap<ProjectPath, BufferId>,
@@ -54,7 +55,7 @@ struct RemoteProjectSearchState {
 
 #[derive(Hash, Eq, PartialEq, Clone)]
 struct SharedBuffer {
-    buffer: Entity<Buffer>,
+    buffer: Entity<LanguageBuffer>,
     lsp_handle: Option<OpenLspBufferHandle>,
 }
 
@@ -64,12 +65,12 @@ enum BufferStoreState {
 }
 
 struct RemoteBufferStore {
-    shared_with_me: HashSet<Entity<Buffer>>,
+    shared_with_me: HashSet<Entity<LanguageBuffer>>,
     upstream_client: AnyProtoClient,
     project_id: u64,
-    loading_remote_buffers_by_id: HashMap<BufferId, Entity<Buffer>>,
+    loading_remote_buffers_by_id: HashMap<BufferId, Entity<LanguageBuffer>>,
     remote_buffer_listeners:
-        HashMap<BufferId, Vec<oneshot::Sender<anyhow::Result<Entity<Buffer>>>>>,
+        HashMap<BufferId, Vec<oneshot::Sender<anyhow::Result<Entity<LanguageBuffer>>>>>,
     worktree_store: Entity<WorktreeStore>,
 }
 
@@ -80,26 +81,26 @@ struct LocalBufferStore {
 }
 
 enum OpenBuffer {
-    Complete { buffer: WeakEntity<Buffer> },
+    Complete { buffer: WeakEntity<LanguageBuffer> },
     Operations(Vec<Operation>),
 }
 
 pub enum BufferStoreEvent {
-    BufferAdded(Entity<Buffer>),
+    BufferAdded(Entity<LanguageBuffer>),
     BufferOpened {
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         project_path: ProjectPath,
     },
     SharedBufferClosed(proto::PeerId, BufferId),
     BufferDropped(BufferId),
     BufferChangedFilePath {
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         old_file: Option<Arc<dyn language::File>>,
     },
 }
 
 #[derive(Default, Debug, Clone)]
-pub struct ProjectTransaction(pub HashMap<Entity<Buffer>, language::Transaction>);
+pub struct ProjectTransaction(pub HashMap<Entity<LanguageBuffer>, language::Transaction>);
 
 impl PartialEq for ProjectTransaction {
     fn eq(&self, other: &Self) -> bool {
@@ -117,7 +118,7 @@ impl RemoteBufferStore {
         &mut self,
         id: BufferId,
         cx: &mut Context<BufferStore>,
-    ) -> Task<Result<Entity<Buffer>>> {
+    ) -> Task<Result<Entity<LanguageBuffer>>> {
         let (tx, rx) = oneshot::channel();
         self.remote_buffer_listeners.entry(id).or_default().push(tx);
 
@@ -136,7 +137,7 @@ impl RemoteBufferStore {
 
     fn save_remote_buffer(
         &self,
-        buffer_handle: Entity<Buffer>,
+        buffer_handle: Entity<LanguageBuffer>,
         new_path: Option<proto::ProjectPath>,
         cx: &Context<BufferStore>,
     ) -> Task<Result<()>> {
@@ -171,7 +172,7 @@ impl RemoteBufferStore {
         replica_id: ReplicaId,
         capability: Capability,
         cx: &mut Context<BufferStore>,
-    ) -> Result<Option<Entity<Buffer>>> {
+    ) -> Result<Option<Entity<LanguageBuffer>>> {
         match envelope.payload.variant.context("missing variant")? {
             proto::create_buffer_for_peer::Variant::State(mut state) => {
                 let buffer_id = BufferId::new(state.id)?;
@@ -190,7 +191,7 @@ impl RemoteBufferStore {
                         buffer_file = Some(Arc::new(File::from_proto(file, worktree, cx)?)
                             as Arc<dyn language::File>);
                     }
-                    Buffer::from_proto(replica_id, capability, state, buffer_file)
+                    LanguageBuffer::from_proto(replica_id, capability, state, buffer_file)
                 });
 
                 match buffer_result {
@@ -305,7 +306,7 @@ impl RemoteBufferStore {
         path: Arc<RelPath>,
         worktree: Entity<Worktree>,
         cx: &mut Context<BufferStore>,
-    ) -> Task<Result<Entity<Buffer>>> {
+    ) -> Task<Result<Entity<LanguageBuffer>>> {
         let worktree_id = worktree.read(cx).id().to_proto();
         let project_id = self.project_id;
         let client = self.upstream_client.clone();
@@ -333,7 +334,7 @@ impl RemoteBufferStore {
         &self,
         project_searchable: bool,
         cx: &mut Context<BufferStore>,
-    ) -> Task<Result<Entity<Buffer>>> {
+    ) -> Task<Result<Entity<LanguageBuffer>>> {
         let create = self.upstream_client.request(proto::OpenNewBuffer {
             project_id: self.project_id,
         });
@@ -353,7 +354,7 @@ impl RemoteBufferStore {
 
     fn reload_buffers(
         &self,
-        buffers: HashSet<Entity<Buffer>>,
+        buffers: HashSet<Entity<LanguageBuffer>>,
         push_to_history: bool,
         cx: &mut Context<BufferStore>,
     ) -> Task<Result<ProjectTransaction>> {
@@ -378,7 +379,7 @@ impl RemoteBufferStore {
 impl LocalBufferStore {
     fn save_local_buffer(
         &self,
-        buffer_handle: Entity<Buffer>,
+        buffer_handle: Entity<LanguageBuffer>,
         worktree: Entity<Worktree>,
         path: Arc<RelPath>,
         mut has_changed_file: bool,
@@ -600,7 +601,7 @@ impl LocalBufferStore {
 
     fn save_buffer(
         &self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         cx: &mut Context<BufferStore>,
     ) -> Task<Result<()>> {
         let Some(file) = File::from_dyn(buffer.read(cx).file()) else {
@@ -612,7 +613,7 @@ impl LocalBufferStore {
 
     fn save_buffer_as(
         &self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         path: ProjectPath,
         cx: &mut Context<BufferStore>,
     ) -> Task<Result<()>> {
@@ -631,22 +632,25 @@ impl LocalBufferStore {
         path: Arc<RelPath>,
         worktree: Entity<Worktree>,
         cx: &mut Context<BufferStore>,
-    ) -> Task<Result<Entity<Buffer>>> {
+    ) -> Task<Result<Entity<LanguageBuffer>>> {
         let load_file = worktree.update(cx, |worktree, cx| worktree.load_file(path.as_ref(), cx));
         cx.spawn(async move |this, cx| {
             let path = path.clone();
             let buffer = match load_file.await {
                 Ok(loaded) => {
-                    let reservation = cx.reserve_entity::<Buffer>();
+                    let reservation = cx.reserve_entity::<LanguageBuffer>();
                     let buffer_id = BufferId::from(reservation.entity_id().as_non_zero_u64());
                     let text_buffer = cx
                         .background_spawn(async move {
-                            text::Buffer::new(ReplicaId::LOCAL, buffer_id, loaded.text)
+                            text::TextBuffer::new(ReplicaId::LOCAL, buffer_id, loaded.text)
                         })
                         .await;
                     cx.insert_entity(reservation, |_| {
-                        let mut buffer =
-                            Buffer::build(text_buffer, Some(loaded.file), Capability::ReadWrite);
+                        let mut buffer = LanguageBuffer::build(
+                            text_buffer,
+                            Some(loaded.file),
+                            Capability::ReadWrite,
+                        );
                         buffer.set_encoding(loaded.encoding);
                         buffer.set_has_bom(loaded.has_bom);
                         buffer
@@ -654,8 +658,8 @@ impl LocalBufferStore {
                 }
                 Err(error) if is_not_found_error(&error) => cx.new(|cx| {
                     let buffer_id = BufferId::from(cx.entity_id().as_non_zero_u64());
-                    let text_buffer = text::Buffer::new(ReplicaId::LOCAL, buffer_id, "");
-                    Buffer::build(
+                    let text_buffer = text::TextBuffer::new(ReplicaId::LOCAL, buffer_id, "");
+                    LanguageBuffer::build(
                         text_buffer,
                         Some(Arc::new(File {
                             worktree,
@@ -712,10 +716,11 @@ impl LocalBufferStore {
         &self,
         project_searchable: bool,
         cx: &mut Context<BufferStore>,
-    ) -> Task<Result<Entity<Buffer>>> {
+    ) -> Task<Result<Entity<LanguageBuffer>>> {
         cx.spawn(async move |buffer_store, cx| {
-            let buffer =
-                cx.new(|cx| Buffer::local("", cx).with_language(language::PLAIN_TEXT.clone(), cx));
+            let buffer = cx.new(|cx| {
+                LanguageBuffer::local("", cx).with_language(language::PLAIN_TEXT.clone(), cx)
+            });
             buffer_store.update(cx, |buffer_store, cx| {
                 buffer_store.add_buffer(buffer.clone(), cx).log_err();
                 if !project_searchable {
@@ -730,7 +735,7 @@ impl LocalBufferStore {
 
     fn reload_buffers(
         &self,
-        buffers: HashSet<Entity<Buffer>>,
+        buffers: HashSet<Entity<LanguageBuffer>>,
         push_to_history: bool,
         cx: &mut Context<BufferStore>,
     ) -> Task<Result<ProjectTransaction>> {
@@ -837,7 +842,7 @@ impl BufferStore {
         &mut self,
         project_path: ProjectPath,
         cx: &mut Context<Self>,
-    ) -> Task<Result<Entity<Buffer>>> {
+    ) -> Task<Result<Entity<LanguageBuffer>>> {
         if let Some(buffer) = self.get_by_path(&project_path) {
             cx.emit(BufferStoreEvent::BufferOpened {
                 buffer: buffer.clone(),
@@ -902,7 +907,7 @@ impl BufferStore {
         &mut self,
         project_searchable: bool,
         cx: &mut Context<Self>,
-    ) -> Task<Result<Entity<Buffer>>> {
+    ) -> Task<Result<Entity<LanguageBuffer>>> {
         match &self.state {
             BufferStoreState::Local(this) => this.create_buffer(project_searchable, cx),
             BufferStoreState::Remote(this) => this.create_buffer(project_searchable, cx),
@@ -911,7 +916,7 @@ impl BufferStore {
 
     pub fn save_buffer(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         cx: &mut Context<Self>,
     ) -> Task<Result<()>> {
         match &mut self.state {
@@ -922,7 +927,7 @@ impl BufferStore {
 
     pub fn save_buffer_as(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         path: ProjectPath,
         cx: &mut Context<Self>,
     ) -> Task<Result<()>> {
@@ -948,7 +953,11 @@ impl BufferStore {
         })
     }
 
-    fn add_buffer(&mut self, buffer_entity: Entity<Buffer>, cx: &mut Context<Self>) -> Result<()> {
+    fn add_buffer(
+        &mut self,
+        buffer_entity: Entity<LanguageBuffer>,
+        cx: &mut Context<Self>,
+    ) -> Result<()> {
         let buffer = buffer_entity.read(cx);
         let remote_id = buffer.remote_id();
         let path = File::from_dyn(buffer.file()).map(|file| ProjectPath {
@@ -1002,7 +1011,7 @@ impl BufferStore {
         Ok(())
     }
 
-    pub fn buffers(&self) -> impl '_ + Iterator<Item = Entity<Buffer>> {
+    pub fn buffers(&self) -> impl '_ + Iterator<Item = Entity<LanguageBuffer>> {
         self.opened_buffers
             .values()
             .filter_map(|buffer| buffer.upgrade())
@@ -1014,7 +1023,12 @@ impl BufferStore {
 
     pub fn loading_buffers(
         &self,
-    ) -> impl Iterator<Item = (&ProjectPath, impl Future<Output = Result<Entity<Buffer>>>)> {
+    ) -> impl Iterator<
+        Item = (
+            &ProjectPath,
+            impl Future<Output = Result<Entity<LanguageBuffer>>>,
+        ),
+    > {
         self.loading_buffers.iter().map(|(path, task)| {
             let task = task.clone();
             (path, async move {
@@ -1033,22 +1047,22 @@ impl BufferStore {
         self.path_to_buffer_id.get(project_path)
     }
 
-    pub fn get_by_path(&self, path: &ProjectPath) -> Option<Entity<Buffer>> {
+    pub fn get_by_path(&self, path: &ProjectPath) -> Option<Entity<LanguageBuffer>> {
         self.path_to_buffer_id
             .get(path)
             .and_then(|buffer_id| self.get(*buffer_id))
     }
 
-    pub fn get(&self, buffer_id: BufferId) -> Option<Entity<Buffer>> {
+    pub fn get(&self, buffer_id: BufferId) -> Option<Entity<LanguageBuffer>> {
         self.opened_buffers.get(&buffer_id)?.upgrade()
     }
 
-    pub fn get_existing(&self, buffer_id: BufferId) -> Result<Entity<Buffer>> {
+    pub fn get_existing(&self, buffer_id: BufferId) -> Result<Entity<LanguageBuffer>> {
         self.get(buffer_id)
             .with_context(|| format!("unknown buffer id {buffer_id}"))
     }
 
-    pub fn get_possibly_incomplete(&self, buffer_id: BufferId) -> Option<Entity<Buffer>> {
+    pub fn get_possibly_incomplete(&self, buffer_id: BufferId) -> Option<Entity<LanguageBuffer>> {
         self.get(buffer_id).or_else(|| {
             self.as_remote()
                 .and_then(|remote| remote.loading_remote_buffers_by_id.get(&buffer_id).cloned())
@@ -1107,7 +1121,7 @@ impl BufferStore {
             .retain(|_, buffer| !matches!(buffer, OpenBuffer::Operations(_)));
     }
 
-    fn buffer_changed_file(&mut self, buffer: Entity<Buffer>, cx: &mut App) -> Option<()> {
+    fn buffer_changed_file(&mut self, buffer: Entity<LanguageBuffer>, cx: &mut App) -> Option<()> {
         let file = File::from_dyn(buffer.read(cx).file())?;
 
         let remote_id = buffer.read(cx).remote_id();
@@ -1138,7 +1152,7 @@ impl BufferStore {
 
     fn on_buffer_event(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         event: &BufferEvent,
         cx: &mut Context<Self>,
     ) {
@@ -1498,7 +1512,7 @@ impl BufferStore {
 
     pub fn reload_buffers(
         &self,
-        buffers: HashSet<Entity<Buffer>>,
+        buffers: HashSet<Entity<LanguageBuffer>>,
         push_to_history: bool,
         cx: &mut Context<Self>,
     ) -> Task<Result<ProjectTransaction>> {
@@ -1537,7 +1551,7 @@ impl BufferStore {
 
     pub fn create_buffer_for_peer(
         &mut self,
-        buffer: &Entity<Buffer>,
+        buffer: &Entity<LanguageBuffer>,
         peer_id: proto::PeerId,
         cx: &mut Context<Self>,
     ) -> Task<Result<()>> {
@@ -1624,9 +1638,9 @@ impl BufferStore {
         language: Option<Arc<Language>>,
         project_searchable: bool,
         cx: &mut Context<Self>,
-    ) -> Entity<Buffer> {
+    ) -> Entity<LanguageBuffer> {
         let buffer = cx.new(|cx| {
-            Buffer::local(text, cx)
+            LanguageBuffer::local(text, cx)
                 .with_language(language.unwrap_or_else(|| language::PLAIN_TEXT.clone()), cx)
         });
 
@@ -1673,7 +1687,7 @@ impl BufferStore {
         &mut self,
         id: BufferId,
         cx: &mut Context<BufferStore>,
-    ) -> Task<Result<Entity<Buffer>>> {
+    ) -> Task<Result<Entity<LanguageBuffer>>> {
         if let Some(this) = self.as_remote_mut() {
             this.wait_for_remote_buffer(id, cx)
         } else {
@@ -1783,7 +1797,7 @@ impl BufferStore {
 }
 
 impl OpenBuffer {
-    fn upgrade(&self) -> Option<Entity<Buffer>> {
+    fn upgrade(&self) -> Option<Entity<LanguageBuffer>> {
         match self {
             OpenBuffer::Complete { buffer, .. } => buffer.upgrade(),
             OpenBuffer::Operations(_) => None,

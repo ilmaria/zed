@@ -10,7 +10,7 @@ use gpui::{
     App, Context, DismissEvent, Entity, EventEmitter, FocusHandle, Focusable, ParentElement,
     Render, Styled, WeakEntity, Window, actions,
 };
-use language::{Buffer, LanguageMatcher, LanguageName, LanguageRegistry};
+use language::{LanguageBuffer, LanguageMatcher, LanguageName, LanguageRegistry};
 use picker::{Picker, PickerDelegate};
 use project::Project;
 use settings::Settings;
@@ -66,7 +66,7 @@ impl LanguageSelector {
     }
 
     fn new(
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         project: Entity<Project>,
         language_registry: Arc<LanguageRegistry>,
         window: &mut Window,
@@ -104,7 +104,7 @@ impl ModalView for LanguageSelector {}
 
 pub struct LanguageSelectorDelegate {
     language_selector: WeakEntity<LanguageSelector>,
-    buffer: Entity<Buffer>,
+    buffer: Entity<LanguageBuffer>,
     project: Entity<Project>,
     language_registry: Arc<LanguageRegistry>,
     candidates: Vec<StringMatchCandidate>,
@@ -115,7 +115,7 @@ pub struct LanguageSelectorDelegate {
 impl LanguageSelectorDelegate {
     fn new(
         language_selector: WeakEntity<LanguageSelector>,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         project: Entity<Project>,
         language_registry: Arc<LanguageRegistry>,
     ) -> Self {

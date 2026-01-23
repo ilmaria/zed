@@ -9,7 +9,7 @@ use collections::HashSet;
 use edit_prediction::{DebugEvent, EditPredictionStore};
 use futures::{FutureExt as _, StreamExt as _, channel::mpsc};
 use gpui::{AsyncApp, Entity};
-use language::Buffer;
+use language::LanguageBuffer;
 use project::Project;
 use std::sync::Arc;
 use std::time::Duration;
@@ -71,7 +71,7 @@ pub async fn run_context_retrieval(
 
 async fn wait_for_language_servers_to_start(
     project: &Entity<Project>,
-    buffer: &Entity<Buffer>,
+    buffer: &Entity<LanguageBuffer>,
     step_progress: &Arc<StepProgress>,
     cx: &mut AsyncApp,
 ) -> anyhow::Result<()> {

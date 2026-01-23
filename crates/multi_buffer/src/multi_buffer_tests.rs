@@ -2,7 +2,7 @@ use super::*;
 use buffer_diff::{DiffHunkStatus, DiffHunkStatusKind};
 use gpui::{App, TestAppContext};
 use indoc::indoc;
-use language::{Buffer, Rope};
+use language::{LanguageBuffer, Rope};
 use parking_lot::RwLock;
 use rand::prelude::*;
 use settings::SettingsStore;
@@ -19,7 +19,7 @@ fn init_logger() {
 
 #[gpui::test]
 fn test_empty_singleton(cx: &mut App) {
-    let buffer = cx.new(|cx| Buffer::local("", cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local("", cx));
     let buffer_id = buffer.read(cx).remote_id();
     let multibuffer = cx.new(|cx| MultiBuffer::singleton(buffer.clone(), cx));
     let snapshot = multibuffer.read(cx).snapshot(cx);
@@ -39,7 +39,7 @@ fn test_empty_singleton(cx: &mut App) {
 
 #[gpui::test]
 fn test_singleton(cx: &mut App) {
-    let buffer = cx.new(|cx| Buffer::local(sample_text(6, 6, 'a'), cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(sample_text(6, 6, 'a'), cx));
     let multibuffer = cx.new(|cx| MultiBuffer::singleton(buffer.clone(), cx));
 
     let snapshot = multibuffer.read(cx).snapshot(cx);
@@ -76,15 +76,19 @@ fn test_singleton(cx: &mut App) {
 
 #[gpui::test]
 fn test_remote(cx: &mut App) {
-    let host_buffer = cx.new(|cx| Buffer::local("a", cx));
+    let host_buffer = cx.new(|cx| LanguageBuffer::local("a", cx));
     let guest_buffer = cx.new(|cx| {
         let state = host_buffer.read(cx).to_proto(cx);
         let ops = cx
             .background_executor()
             .block(host_buffer.read(cx).serialize_ops(None, cx));
-        let mut buffer =
-            Buffer::from_proto(ReplicaId::REMOTE_SERVER, Capability::ReadWrite, state, None)
-                .unwrap();
+        let mut buffer = LanguageBuffer::from_proto(
+            ReplicaId::REMOTE_SERVER,
+            Capability::ReadWrite,
+            state,
+            None,
+        )
+        .unwrap();
         buffer.apply_ops(
             ops.into_iter()
                 .map(|op| language::proto::deserialize_operation(op).unwrap()),
@@ -111,8 +115,8 @@ fn test_remote(cx: &mut App) {
 
 #[gpui::test]
 fn test_excerpt_boundaries_and_clipping(cx: &mut App) {
-    let buffer_1 = cx.new(|cx| Buffer::local(sample_text(6, 6, 'a'), cx));
-    let buffer_2 = cx.new(|cx| Buffer::local(sample_text(6, 6, 'g'), cx));
+    let buffer_1 = cx.new(|cx| LanguageBuffer::local(sample_text(6, 6, 'a'), cx));
+    let buffer_2 = cx.new(|cx| LanguageBuffer::local(sample_text(6, 6, 'g'), cx));
     let multibuffer = cx.new(|_| MultiBuffer::new(Capability::ReadWrite));
 
     let events = Arc::new(RwLock::new(Vec::<Event>::new()));
@@ -360,7 +364,7 @@ fn test_excerpt_boundaries_and_clipping(cx: &mut App) {
 async fn test_diff_boundary_anchors(cx: &mut TestAppContext) {
     let base_text = "one\ntwo\nthree\n";
     let text = "one\nthree\n";
-    let buffer = cx.new(|cx| Buffer::local(text, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx));
     let diff = cx
         .new(|cx| BufferDiff::new_with_base_text(base_text, &buffer.read(cx).text_snapshot(), cx));
     let multibuffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
@@ -403,7 +407,7 @@ async fn test_diff_boundary_anchors(cx: &mut TestAppContext) {
 async fn test_diff_hunks_in_range(cx: &mut TestAppContext) {
     let base_text = "one\ntwo\nthree\nfour\nfive\nsix\nseven\neight\n";
     let text = "one\nfour\nseven\n";
-    let buffer = cx.new(|cx| Buffer::local(text, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx));
     let diff = cx
         .new(|cx| BufferDiff::new_with_base_text(base_text, &buffer.read(cx).text_snapshot(), cx));
     let multibuffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
@@ -484,7 +488,7 @@ async fn test_diff_hunks_in_range(cx: &mut TestAppContext) {
 async fn test_inverted_diff_hunks_in_range(cx: &mut TestAppContext) {
     let base_text = "one\ntwo\nthree\nfour\nfive\nsix\nseven\neight\n";
     let text = "ZERO\none\nTHREE\nfour\nseven\nEIGHT\nNINE\n";
-    let buffer = cx.new(|cx| Buffer::local(text, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx));
     let diff = cx
         .new(|cx| BufferDiff::new_with_base_text(base_text, &buffer.read(cx).text_snapshot(), cx));
     let base_text_buffer = diff.read_with(cx, |diff, _| diff.base_text_buffer());
@@ -541,7 +545,7 @@ async fn test_inverted_diff_hunks_in_range(cx: &mut TestAppContext) {
 async fn test_editing_text_in_diff_hunks(cx: &mut TestAppContext) {
     let base_text = "one\ntwo\nfour\nfive\nsix\nseven\n";
     let text = "one\ntwo\nTHREE\nfour\nfive\nseven\n";
-    let buffer = cx.new(|cx| Buffer::local(text, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx));
     let diff = cx
         .new(|cx| BufferDiff::new_with_base_text(base_text, &buffer.read(cx).text_snapshot(), cx));
     let multibuffer = cx.new(|cx| MultiBuffer::singleton(buffer.clone(), cx));
@@ -706,8 +710,8 @@ async fn test_editing_text_in_diff_hunks(cx: &mut TestAppContext) {
 
 #[gpui::test]
 fn test_excerpt_events(cx: &mut App) {
-    let buffer_1 = cx.new(|cx| Buffer::local(sample_text(10, 3, 'a'), cx));
-    let buffer_2 = cx.new(|cx| Buffer::local(sample_text(10, 3, 'm'), cx));
+    let buffer_1 = cx.new(|cx| LanguageBuffer::local(sample_text(10, 3, 'a'), cx));
+    let buffer_2 = cx.new(|cx| LanguageBuffer::local(sample_text(10, 3, 'm'), cx));
 
     let leader_multibuffer = cx.new(|_| MultiBuffer::new(Capability::ReadWrite));
     let follower_multibuffer = cx.new(|_| MultiBuffer::new(Capability::ReadWrite));
@@ -794,7 +798,7 @@ fn test_excerpt_events(cx: &mut App) {
 
 #[gpui::test]
 fn test_expand_excerpts(cx: &mut App) {
-    let buffer = cx.new(|cx| Buffer::local(sample_text(20, 3, 'a'), cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(sample_text(20, 3, 'a'), cx));
     let multibuffer = cx.new(|_| MultiBuffer::new(Capability::ReadWrite));
 
     multibuffer.update(cx, |multibuffer, cx| {
@@ -871,8 +875,8 @@ fn test_expand_excerpts(cx: &mut App) {
 
 #[gpui::test(iterations = 100)]
 async fn test_set_anchored_excerpts_for_path(cx: &mut TestAppContext) {
-    let buffer_1 = cx.new(|cx| Buffer::local(sample_text(20, 3, 'a'), cx));
-    let buffer_2 = cx.new(|cx| Buffer::local(sample_text(15, 4, 'a'), cx));
+    let buffer_1 = cx.new(|cx| LanguageBuffer::local(sample_text(20, 3, 'a'), cx));
+    let buffer_2 = cx.new(|cx| LanguageBuffer::local(sample_text(15, 4, 'a'), cx));
     let snapshot_1 = buffer_1.update(cx, |buffer, _| buffer.snapshot());
     let snapshot_2 = buffer_2.update(cx, |buffer, _| buffer.snapshot());
     let ranges_1 = vec![
@@ -993,7 +997,7 @@ fn test_empty_multibuffer(cx: &mut App) {
 #[gpui::test]
 async fn test_empty_diff_excerpt(cx: &mut TestAppContext) {
     let multibuffer = cx.new(|_| MultiBuffer::new(Capability::ReadWrite));
-    let buffer = cx.new(|cx| Buffer::local("", cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local("", cx));
     let base_text = "a\nb\nc";
 
     let diff = cx
@@ -1015,7 +1019,7 @@ async fn test_empty_diff_excerpt(cx: &mut TestAppContext) {
 
     assert_eq!(hunk.diff_base_byte_range.start, BufferOffset(0));
 
-    let buf2 = cx.new(|cx| Buffer::local("X", cx));
+    let buf2 = cx.new(|cx| LanguageBuffer::local("X", cx));
     multibuffer.update(cx, |multibuffer, cx| {
         multibuffer.push_excerpts(buf2, [ExcerptRange::new(0..1)], cx);
     });
@@ -1047,7 +1051,7 @@ async fn test_empty_diff_excerpt(cx: &mut TestAppContext) {
 
 #[gpui::test]
 fn test_singleton_multibuffer_anchors(cx: &mut App) {
-    let buffer = cx.new(|cx| Buffer::local("abcd", cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local("abcd", cx));
     let multibuffer = cx.new(|cx| MultiBuffer::singleton(buffer.clone(), cx));
     let old_snapshot = multibuffer.read(cx).snapshot(cx);
     buffer.update(cx, |buffer, cx| {
@@ -1087,8 +1091,8 @@ fn test_singleton_multibuffer_anchors(cx: &mut App) {
 
 #[gpui::test]
 fn test_multibuffer_anchors(cx: &mut App) {
-    let buffer_1 = cx.new(|cx| Buffer::local("abcd", cx));
-    let buffer_2 = cx.new(|cx| Buffer::local("efghi", cx));
+    let buffer_1 = cx.new(|cx| LanguageBuffer::local("abcd", cx));
+    let buffer_2 = cx.new(|cx| LanguageBuffer::local("efghi", cx));
     let multibuffer = cx.new(|cx| {
         let mut multibuffer = MultiBuffer::new(Capability::ReadWrite);
         multibuffer.push_excerpts(buffer_1.clone(), [ExcerptRange::new(0..4)], cx);
@@ -1197,8 +1201,8 @@ fn test_multibuffer_anchors(cx: &mut App) {
 
 #[gpui::test]
 fn test_resolving_anchors_after_replacing_their_excerpts(cx: &mut App) {
-    let buffer_1 = cx.new(|cx| Buffer::local("abcd", cx));
-    let buffer_2 = cx.new(|cx| Buffer::local("ABCDEFGHIJKLMNOP", cx));
+    let buffer_1 = cx.new(|cx| LanguageBuffer::local("abcd", cx));
+    let buffer_2 = cx.new(|cx| LanguageBuffer::local("ABCDEFGHIJKLMNOP", cx));
     let multibuffer = cx.new(|_| MultiBuffer::new(Capability::ReadWrite));
 
     // Create an insertion id in buffer 1 that doesn't exist in buffer 2.
@@ -1345,7 +1349,7 @@ async fn test_basic_diff_hunks(cx: &mut TestAppContext) {
         "
     );
 
-    let buffer = cx.new(|cx| Buffer::local(text, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx));
     let diff = cx
         .new(|cx| BufferDiff::new_with_base_text(base_text, &buffer.read(cx).text_snapshot(), cx));
     cx.run_until_parked();
@@ -1590,7 +1594,7 @@ async fn test_repeatedly_expand_a_diff_hunk(cx: &mut TestAppContext) {
         "
     );
 
-    let buffer = cx.new(|cx| Buffer::local(text, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx));
     let diff = cx
         .new(|cx| BufferDiff::new_with_base_text(base_text, &buffer.read(cx).text_snapshot(), cx));
     cx.run_until_parked();
@@ -1710,7 +1714,7 @@ async fn test_repeatedly_expand_a_diff_hunk(cx: &mut TestAppContext) {
 #[gpui::test]
 fn test_set_excerpts_for_buffer_ordering(cx: &mut TestAppContext) {
     let buf1 = cx.new(|cx| {
-        Buffer::local(
+        LanguageBuffer::local(
             indoc! {
             "zero
             one
@@ -1812,7 +1816,7 @@ fn test_set_excerpts_for_buffer_ordering(cx: &mut TestAppContext) {
 #[gpui::test]
 fn test_set_excerpts_for_buffer(cx: &mut TestAppContext) {
     let buf1 = cx.new(|cx| {
-        Buffer::local(
+        LanguageBuffer::local(
             indoc! {
             "zero
             one
@@ -1829,7 +1833,7 @@ fn test_set_excerpts_for_buffer(cx: &mut TestAppContext) {
     });
     let path1: PathKey = PathKey::with_sort_prefix(0, rel_path("root").into_arc());
     let buf2 = cx.new(|cx| {
-        Buffer::local(
+        LanguageBuffer::local(
             indoc! {
             "000
             111
@@ -2008,7 +2012,7 @@ fn test_set_excerpts_for_buffer(cx: &mut TestAppContext) {
 #[gpui::test]
 fn test_set_excerpts_for_buffer_rename(cx: &mut TestAppContext) {
     let buf1 = cx.new(|cx| {
-        Buffer::local(
+        LanguageBuffer::local(
             indoc! {
             "zero
             one
@@ -2025,7 +2029,7 @@ fn test_set_excerpts_for_buffer_rename(cx: &mut TestAppContext) {
     });
     let path: PathKey = PathKey::with_sort_prefix(0, rel_path("root").into_arc());
     let buf2 = cx.new(|cx| {
-        Buffer::local(
+        LanguageBuffer::local(
             indoc! {
             "000
             111
@@ -2127,8 +2131,8 @@ async fn test_diff_hunks_with_multiple_excerpts(cx: &mut TestAppContext) {
         "
     );
 
-    let buffer_1 = cx.new(|cx| Buffer::local(text_1, cx));
-    let buffer_2 = cx.new(|cx| Buffer::local(text_2, cx));
+    let buffer_1 = cx.new(|cx| LanguageBuffer::local(text_1, cx));
+    let buffer_2 = cx.new(|cx| LanguageBuffer::local(text_2, cx));
     let diff_1 = cx.new(|cx| {
         BufferDiff::new_with_base_text(base_text_1, &buffer_1.read(cx).text_snapshot(), cx)
     });
@@ -2326,13 +2330,13 @@ async fn test_diff_hunks_with_multiple_excerpts(cx: &mut TestAppContext) {
 struct ReferenceMultibuffer {
     excerpts: Vec<ReferenceExcerpt>,
     diffs: HashMap<BufferId, Entity<BufferDiff>>,
-    inverted_diffs: HashMap<BufferId, (Entity<BufferDiff>, WeakEntity<Buffer>)>,
+    inverted_diffs: HashMap<BufferId, (Entity<BufferDiff>, WeakEntity<LanguageBuffer>)>,
 }
 
 #[derive(Debug)]
 struct ReferenceExcerpt {
     id: ExcerptId,
-    buffer: Entity<Buffer>,
+    buffer: Entity<LanguageBuffer>,
     range: Range<text::Anchor>,
     expanded_diff_hunks: Vec<text::Anchor>,
 }
@@ -2395,7 +2399,7 @@ impl ReferenceMultibuffer {
         &mut self,
         prev_id: ExcerptId,
         new_excerpt_id: ExcerptId,
-        (buffer_handle, anchor_range): (Entity<Buffer>, Range<text::Anchor>),
+        (buffer_handle, anchor_range): (Entity<LanguageBuffer>, Range<text::Anchor>),
     ) {
         let excerpt_ix = if prev_id == ExcerptId::max() {
             self.excerpts.len()
@@ -2787,7 +2791,7 @@ impl ReferenceMultibuffer {
     fn add_inverted_diff(
         &mut self,
         diff: Entity<BufferDiff>,
-        main_buffer: Entity<Buffer>,
+        main_buffer: Entity<LanguageBuffer>,
         cx: &App,
     ) {
         let base_text_buffer_id = diff.read(cx).base_text(cx).remote_id();
@@ -2799,7 +2803,7 @@ impl ReferenceMultibuffer {
 #[gpui::test(iterations = 100)]
 async fn test_random_set_ranges(cx: &mut TestAppContext, mut rng: StdRng) {
     let base_text = "a\n".repeat(100);
-    let buf = cx.update(|cx| cx.new(|cx| Buffer::local(base_text, cx)));
+    let buf = cx.update(|cx| cx.new(|cx| LanguageBuffer::local(base_text, cx)));
     let multibuffer = cx.new(|_| MultiBuffer::new(Capability::ReadWrite));
 
     let operations = env::var("OPERATIONS")
@@ -2877,7 +2881,7 @@ async fn test_random_multibuffer(cx: &mut TestAppContext, mut rng: StdRng) {
         .map(|i| i.parse().expect("invalid `OPERATIONS` variable"))
         .unwrap_or(10);
     let multibuffer = cx.new(|_| MultiBuffer::new(Capability::ReadWrite));
-    let mut buffers: Vec<Entity<Buffer>> = Vec::new();
+    let mut buffers: Vec<Entity<LanguageBuffer>> = Vec::new();
     let mut base_texts: HashMap<BufferId, String> = HashMap::default();
     let mut reference = ReferenceMultibuffer::default();
     let mut anchors = Vec::new();
@@ -3052,7 +3056,8 @@ async fn test_random_multibuffer(cx: &mut TestAppContext, mut rng: StdRng) {
                         let mut main_buffer_text = util::RandomCharIter::new(&mut rng)
                             .take(256)
                             .collect::<String>();
-                        let main_buffer = cx.new(|cx| Buffer::local(main_buffer_text.clone(), cx));
+                        let main_buffer =
+                            cx.new(|cx| LanguageBuffer::local(main_buffer_text.clone(), cx));
                         text::LineEnding::normalize(&mut main_buffer_text);
                         let main_buffer_id =
                             main_buffer.read_with(cx, |buffer, _| buffer.remote_id());
@@ -3079,7 +3084,8 @@ async fn test_random_multibuffer(cx: &mut TestAppContext, mut rng: StdRng) {
                             .take(256)
                             .collect::<String>();
 
-                        let buffer_handle = cx.new(|cx| Buffer::local(base_text.clone(), cx));
+                        let buffer_handle =
+                            cx.new(|cx| LanguageBuffer::local(base_text.clone(), cx));
                         text::LineEnding::normalize(&mut base_text);
                         let buffer_id = buffer_handle.read_with(cx, |buffer, _| buffer.remote_id());
                         base_texts.insert(buffer_id, base_text.clone());
@@ -3411,8 +3417,8 @@ fn test_history(cx: &mut App) {
     cx.set_global(test_settings);
 
     let group_interval: Duration = Duration::from_millis(1);
-    let buffer_1 = cx.new(|cx| Buffer::local("1234", cx));
-    let buffer_2 = cx.new(|cx| Buffer::local("5678", cx));
+    let buffer_1 = cx.new(|cx| LanguageBuffer::local("1234", cx));
+    let buffer_2 = cx.new(|cx| LanguageBuffer::local("5678", cx));
     let multibuffer = cx.new(|_| MultiBuffer::new(Capability::ReadWrite));
     multibuffer.update(cx, |this, _| {
         this.set_group_interval(group_interval);
@@ -3668,8 +3674,8 @@ async fn test_summaries_for_anchors(cx: &mut TestAppContext) {
         "
     );
 
-    let buffer_1 = cx.new(|cx| Buffer::local(text_1, cx));
-    let buffer_2 = cx.new(|cx| Buffer::local(text_2, cx));
+    let buffer_1 = cx.new(|cx| LanguageBuffer::local(text_1, cx));
+    let buffer_2 = cx.new(|cx| LanguageBuffer::local(text_2, cx));
     let diff_1 = cx.new(|cx| {
         BufferDiff::new_with_base_text(base_text_1, &buffer_1.read(cx).text_snapshot(), cx)
     });
@@ -3731,7 +3737,7 @@ async fn test_trailing_deletion_without_newline(cx: &mut TestAppContext) {
     let base_text_1 = "one\ntwo".to_owned();
     let text_1 = "one\n".to_owned();
 
-    let buffer_1 = cx.new(|cx| Buffer::local(text_1, cx));
+    let buffer_1 = cx.new(|cx| LanguageBuffer::local(text_1, cx));
     let diff_1 = cx.new(|cx| {
         BufferDiff::new_with_base_text(&base_text_1, &buffer_1.read(cx).text_snapshot(), cx)
     });
@@ -3779,7 +3785,7 @@ async fn test_trailing_deletion_without_newline(cx: &mut TestAppContext) {
     // The same, for an excerpt that's not at the end of the multibuffer.
 
     let text_2 = "foo\n".to_owned();
-    let buffer_2 = cx.new(|cx| Buffer::local(&text_2, cx));
+    let buffer_2 = cx.new(|cx| LanguageBuffer::local(&text_2, cx));
     multibuffer.update(cx, |multibuffer, cx| {
         multibuffer.push_excerpts(
             buffer_2.clone(),
@@ -3909,7 +3915,7 @@ async fn test_inverted_diff_hunk_invalidation_on_main_buffer_edit(cx: &mut TestA
     let text = "one\ntwo\nthree\n";
     let base_text = "one\nTWO\nthree\n";
 
-    let buffer = cx.new(|cx| Buffer::local(text, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx));
     let diff = cx
         .new(|cx| BufferDiff::new_with_base_text(base_text, &buffer.read(cx).text_snapshot(), cx));
     cx.run_until_parked();
@@ -3982,7 +3988,7 @@ async fn test_singleton_with_inverted_diff(cx: &mut TestAppContext) {
         "
     );
 
-    let buffer = cx.new(|cx| Buffer::local(text, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(text, cx));
     let diff = cx
         .new(|cx| BufferDiff::new_with_base_text(base_text, &buffer.read(cx).text_snapshot(), cx));
     cx.run_until_parked();
@@ -4360,7 +4366,7 @@ fn assert_position_translation(snapshot: &MultiBufferSnapshot) {
 fn assert_line_indents(snapshot: &MultiBufferSnapshot) {
     let max_row = snapshot.max_point().row;
     let buffer_id = snapshot.excerpts().next().unwrap().1.remote_id();
-    let text = text::Buffer::new(ReplicaId::LOCAL, buffer_id, snapshot.text());
+    let text = text::TextBuffer::new(ReplicaId::LOCAL, buffer_id, snapshot.text());
     let mut line_indents = text
         .line_indents_in_row_range(0..max_row + 1)
         .collect::<Vec<_>>();
@@ -4388,7 +4394,7 @@ fn assert_line_indents(snapshot: &MultiBufferSnapshot) {
 
 #[gpui::test]
 fn test_new_empty_buffer_uses_untitled_title(cx: &mut App) {
-    let buffer = cx.new(|cx| Buffer::local("", cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local("", cx));
     let multibuffer = cx.new(|cx| MultiBuffer::singleton(buffer.clone(), cx));
 
     assert_eq!(multibuffer.read(cx).title(cx), "untitled");
@@ -4396,7 +4402,7 @@ fn test_new_empty_buffer_uses_untitled_title(cx: &mut App) {
 
 #[gpui::test]
 fn test_new_empty_buffer_uses_untitled_title_when_only_contains_whitespace(cx: &mut App) {
-    let buffer = cx.new(|cx| Buffer::local("\n ", cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local("\n ", cx));
     let multibuffer = cx.new(|cx| MultiBuffer::singleton(buffer.clone(), cx));
 
     assert_eq!(multibuffer.read(cx).title(cx), "untitled");
@@ -4404,7 +4410,7 @@ fn test_new_empty_buffer_uses_untitled_title_when_only_contains_whitespace(cx: &
 
 #[gpui::test]
 fn test_new_empty_buffer_takes_first_line_for_title(cx: &mut App) {
-    let buffer = cx.new(|cx| Buffer::local("Hello World\nSecond line", cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local("Hello World\nSecond line", cx));
     let multibuffer = cx.new(|cx| MultiBuffer::singleton(buffer.clone(), cx));
 
     assert_eq!(multibuffer.read(cx).title(cx), "Hello World");
@@ -4412,7 +4418,7 @@ fn test_new_empty_buffer_takes_first_line_for_title(cx: &mut App) {
 
 #[gpui::test]
 fn test_new_empty_buffer_takes_trimmed_first_line_for_title(cx: &mut App) {
-    let buffer = cx.new(|cx| Buffer::local("\nHello, World ", cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local("\nHello, World ", cx));
     let multibuffer = cx.new(|cx| MultiBuffer::singleton(buffer.clone(), cx));
 
     assert_eq!(multibuffer.read(cx).title(cx), "Hello, World");
@@ -4422,7 +4428,7 @@ fn test_new_empty_buffer_takes_trimmed_first_line_for_title(cx: &mut App) {
 fn test_new_empty_buffer_uses_truncated_first_line_for_title(cx: &mut App) {
     let title = "aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeee";
     let title_after = "aaaaaaaaaabbbbbbbbbbccccccccccdddddddddd";
-    let buffer = cx.new(|cx| Buffer::local(title, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(title, cx));
     let multibuffer = cx.new(|cx| MultiBuffer::singleton(buffer.clone(), cx));
 
     assert_eq!(multibuffer.read(cx).title(cx), title_after);
@@ -4434,7 +4440,7 @@ fn test_new_empty_buffer_uses_truncated_first_line_for_title_after_merging_adjac
 ) {
     let title = "aaaaaaaaaabbbbbbbbbb    ccccccccccddddddddddeeeeeeeeee";
     let title_after = "aaaaaaaaaabbbbbbbbbb ccccccccccddddddddd";
-    let buffer = cx.new(|cx| Buffer::local(title, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(title, cx));
     let multibuffer = cx.new(|cx| MultiBuffer::singleton(buffer.clone(), cx));
 
     assert_eq!(multibuffer.read(cx).title(cx), title_after);
@@ -4442,7 +4448,7 @@ fn test_new_empty_buffer_uses_truncated_first_line_for_title_after_merging_adjac
 
 #[gpui::test]
 fn test_new_empty_buffers_title_can_be_set(cx: &mut App) {
-    let buffer = cx.new(|cx| Buffer::local("Hello World", cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local("Hello World", cx));
     let multibuffer = cx.new(|cx| MultiBuffer::singleton(buffer.clone(), cx));
     assert_eq!(multibuffer.read(cx).title(cx), "Hello World");
 
@@ -4457,7 +4463,7 @@ fn test_random_chunk_bitmaps(cx: &mut App, mut rng: StdRng) {
     let multibuffer = if rng.random() {
         let len = rng.random_range(0..10000);
         let text = RandomCharIter::new(&mut rng).take(len).collect::<String>();
-        let buffer = cx.new(|cx| Buffer::local(text, cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local(text, cx));
         cx.new(|cx| MultiBuffer::singleton(buffer, cx))
     } else {
         MultiBuffer::build_random(&mut rng, cx)
@@ -4537,7 +4543,7 @@ fn test_random_chunk_bitmaps_with_diffs(cx: &mut App, mut rng: StdRng) {
     let multibuffer = if rng.random() {
         let len = rng.random_range(100..10000);
         let text = RandomCharIter::new(&mut rng).take(len).collect::<String>();
-        let buffer = cx.new(|cx| Buffer::local(text, cx));
+        let buffer = cx.new(|cx| LanguageBuffer::local(text, cx));
         cx.new(|cx| MultiBuffer::singleton(buffer, cx))
     } else {
         MultiBuffer::build_random(&mut rng, cx)
@@ -4696,7 +4702,7 @@ fn collect_word_diffs(
     modified_text: &str,
     cx: &mut TestAppContext,
 ) -> Vec<String> {
-    let buffer = cx.new(|cx| Buffer::local(modified_text, cx));
+    let buffer = cx.new(|cx| LanguageBuffer::local(modified_text, cx));
     let diff = cx
         .new(|cx| BufferDiff::new_with_base_text(base_text, &buffer.read(cx).text_snapshot(), cx));
     cx.run_until_parked();
@@ -4817,9 +4823,9 @@ fn test_excerpts_containment_functions(cx: &mut App) {
     //    -----MultiBufferOffset(0)..
     // 4: cc0
 
-    let buffer_1 = cx.new(|cx| Buffer::local("aa0\naa1", cx));
-    let buffer_2 = cx.new(|cx| Buffer::local("bb0\nbb1", cx));
-    let buffer_3 = cx.new(|cx| Buffer::local("cc0", cx));
+    let buffer_1 = cx.new(|cx| LanguageBuffer::local("aa0\naa1", cx));
+    let buffer_2 = cx.new(|cx| LanguageBuffer::local("bb0\nbb1", cx));
+    let buffer_3 = cx.new(|cx| LanguageBuffer::local("cc0", cx));
 
     let multibuffer = cx.new(|_| MultiBuffer::new(Capability::ReadWrite));
 

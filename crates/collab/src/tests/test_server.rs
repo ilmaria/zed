@@ -71,7 +71,7 @@ pub struct TestClient {
 struct TestClientState {
     local_projects: Vec<Entity<Project>>,
     dev_server_projects: Vec<Entity<Project>>,
-    buffers: HashMap<Entity<Project>, HashSet<Entity<language::Buffer>>>,
+    buffers: HashMap<Entity<Project>, HashSet<Entity<language::LanguageBuffer>>>,
     channel_buffers: HashSet<Entity<ChannelBuffer>>,
 }
 
@@ -701,7 +701,7 @@ impl TestClient {
     pub fn buffers_for_project<'a>(
         &'a self,
         project: &Entity<Project>,
-    ) -> impl DerefMut<Target = HashSet<Entity<language::Buffer>>> + 'a {
+    ) -> impl DerefMut<Target = HashSet<Entity<language::LanguageBuffer>>> + 'a {
         RefMut::map(self.state.borrow_mut(), |state| {
             state.buffers.entry(project.clone()).or_default()
         })
@@ -709,7 +709,7 @@ impl TestClient {
 
     pub fn buffers(
         &self,
-    ) -> impl DerefMut<Target = HashMap<Entity<Project>, HashSet<Entity<language::Buffer>>>> + '_
+    ) -> impl DerefMut<Target = HashMap<Entity<Project>, HashSet<Entity<language::LanguageBuffer>>>> + '_
     {
         RefMut::map(self.state.borrow_mut(), |state| &mut state.buffers)
     }

@@ -911,7 +911,7 @@ pub fn split_display_range_by_lines(
 mod tests {
     use super::*;
     use crate::{
-        Buffer, DisplayMap, DisplayRow, ExcerptRange, FoldPlaceholder, MultiBuffer,
+        LanguageBuffer, DisplayMap, DisplayRow, ExcerptRange, FoldPlaceholder, MultiBuffer,
         inlays::Inlay,
         test::{editor_test_context::EditorTestContext, marked_display_snapshot},
     };
@@ -1228,7 +1228,7 @@ mod tests {
 
             let font = font("Helvetica");
 
-            let buffer = cx.new(|cx| Buffer::local("abc\ndefg\nhijkl\nmn", cx));
+            let buffer = cx.new(|cx| LanguageBuffer::local("abc\ndefg\nhijkl\nmn", cx));
             let multibuffer = cx.new(|cx| {
                 let mut multibuffer = MultiBuffer::new(Capability::ReadWrite);
                 multibuffer.push_excerpts(

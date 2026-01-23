@@ -11991,7 +11991,7 @@ mod tests {
         editor_tests::{init_test, update_test_language_settings},
     };
     use gpui::{TestAppContext, VisualTestContext};
-    use language::{Buffer, language_settings, tree_sitter_python};
+    use language::{LanguageBuffer, language_settings, tree_sitter_python};
     use log::info;
     use std::num::NonZeroU32;
     use util::test::sample_text;
@@ -12210,7 +12210,7 @@ mod tests {
 
         let window = cx.add_window(|window, cx| {
             let buffer = cx.new(|cx| {
-                Buffer::local(
+                LanguageBuffer::local(
                     indoc::indoc! {"
                         fn test() -> int {
                             return 2;

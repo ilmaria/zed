@@ -15,7 +15,7 @@ use gpui::{
     InteractiveElement, IntoElement, ParentElement, Render, SharedString, Styled, Subscription,
     Task, WeakEntity, Window, actions, div,
 };
-use language::{Buffer, Capability, DiagnosticEntry, DiagnosticEntryRef, Point};
+use language::{LanguageBuffer, Capability, DiagnosticEntry, DiagnosticEntryRef, Point};
 use project::{
     DiagnosticSummary, Event, Project, ProjectItem, ProjectPath,
     project_settings::{DiagnosticSeverity, ProjectSettings},
@@ -60,7 +60,7 @@ pub(crate) struct BufferDiagnosticsEditor {
     multibuffer: Entity<MultiBuffer>,
     /// The buffer for which the editor is displaying diagnostics and excerpts
     /// for.
-    buffer: Option<Entity<Buffer>>,
+    buffer: Option<Entity<LanguageBuffer>>,
     /// The path for which the editor is displaying diagnostics for.
     project_path: ProjectPath,
     /// Summary of the number of warnings and errors for the path. Used to
@@ -83,7 +83,7 @@ impl BufferDiagnosticsEditor {
     pub fn new(
         project_path: ProjectPath,
         project_handle: Entity<Project>,
-        buffer: Option<Entity<Buffer>>,
+        buffer: Option<Entity<LanguageBuffer>>,
         include_warnings: bool,
         window: &mut Window,
         cx: &mut Context<Self>,
@@ -307,7 +307,7 @@ impl BufferDiagnosticsEditor {
     /// buffer.
     fn update_excerpts(
         &mut self,
-        buffer: Entity<Buffer>,
+        buffer: Entity<LanguageBuffer>,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Task<Result<()>> {

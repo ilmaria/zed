@@ -91,7 +91,7 @@ impl TriggerPoint {
 }
 
 pub fn exclude_link_to_position(
-    buffer: &Entity<language::Buffer>,
+    buffer: &Entity<language::LanguageBuffer>,
     current_position: &text::Anchor,
     location: &LocationLink,
     cx: &App,
@@ -469,7 +469,7 @@ pub fn show_link_definition(
 }
 
 pub(crate) fn find_url(
-    buffer: &Entity<language::Buffer>,
+    buffer: &Entity<language::LanguageBuffer>,
     position: text::Anchor,
     cx: AsyncWindowContext,
 ) -> Option<(Range<text::Anchor>, String)> {
@@ -529,7 +529,7 @@ pub(crate) fn find_url(
 }
 
 pub(crate) fn find_url_from_range(
-    buffer: &Entity<language::Buffer>,
+    buffer: &Entity<language::LanguageBuffer>,
     range: Range<text::Anchor>,
     cx: AsyncWindowContext,
 ) -> Option<String> {
@@ -587,7 +587,7 @@ pub(crate) fn find_url_from_range(
 }
 
 pub(crate) async fn find_file(
-    buffer: &Entity<language::Buffer>,
+    buffer: &Entity<language::LanguageBuffer>,
     project: Option<Entity<Project>>,
     position: text::Anchor,
     cx: &mut AsyncWindowContext,
@@ -601,7 +601,7 @@ pub(crate) async fn find_file(
     async fn check_path(
         candidate_file_path: &str,
         project: &Entity<Project>,
-        buffer: &Entity<language::Buffer>,
+        buffer: &Entity<language::LanguageBuffer>,
         cx: &mut AsyncWindowContext,
     ) -> Option<ResolvedPath> {
         project

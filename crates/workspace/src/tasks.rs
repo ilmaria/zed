@@ -2,7 +2,7 @@ use std::process::ExitStatus;
 
 use anyhow::Result;
 use gpui::{AppContext, Context, Entity, Task};
-use language::Buffer;
+use language::LanguageBuffer;
 use project::{TaskSourceKind, WorktreeId};
 use remote::ConnectionState;
 use task::{DebugScenario, ResolvedTask, SpawnInTerminal, TaskContext, TaskTemplate};
@@ -102,7 +102,7 @@ impl Workspace {
         &mut self,
         scenario: DebugScenario,
         task_context: TaskContext,
-        active_buffer: Option<Entity<Buffer>>,
+        active_buffer: Option<Entity<LanguageBuffer>>,
         worktree_id: Option<WorktreeId>,
         window: &mut Window,
         cx: &mut Context<Self>,

@@ -5,7 +5,7 @@ use db::kvp::KEY_VALUE_STORE;
 use editor::Editor;
 use extension_host::ExtensionStore;
 use gpui::{AppContext as _, Context, Entity, SharedString, Window};
-use language::Buffer;
+use language::LanguageBuffer;
 use ui::prelude::*;
 use util::rel_path::RelPath;
 use workspace::notifications::simple_message_notification::MessageNotification;
@@ -133,7 +133,7 @@ fn language_extension_key(extension_id: &str) -> String {
     format!("{}_extension_suggest", extension_id)
 }
 
-pub(crate) fn suggest(buffer: Entity<Buffer>, window: &mut Window, cx: &mut Context<Workspace>) {
+pub(crate) fn suggest(buffer: Entity<LanguageBuffer>, window: &mut Window, cx: &mut Context<Workspace>) {
     let Some(file) = buffer.read(cx).file().cloned() else {
         return;
     };

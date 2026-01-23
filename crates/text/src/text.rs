@@ -48,7 +48,7 @@ static LINE_SEPARATORS_REGEX: LazyLock<Regex> =
 
 pub type TransactionId = clock::Lamport;
 
-pub struct Buffer {
+pub struct TextBuffer {
     snapshot: BufferSnapshot,
     pub history: History,
     deferred_ops: OperationQueue<Operation>,
@@ -738,8 +738,12 @@ impl FromIterator<char> for LineIndent {
     }
 }
 
-impl Buffer {
-    pub fn new(replica_id: ReplicaId, remote_id: BufferId, base_text: impl Into<String>) -> Buffer {
+impl TextBuffer {
+    pub fn new(
+        replica_id: ReplicaId,
+        remote_id: BufferId,
+        base_text: impl Into<String>,
+    ) -> TextBuffer {
         let mut base_text = base_text.into();
         let line_ending = LineEnding::detect(&base_text);
         LineEnding::normalize(&mut base_text);
@@ -751,7 +755,7 @@ impl Buffer {
         remote_id: BufferId,
         line_ending: LineEnding,
         normalized: Rope,
-    ) -> Buffer {
+    ) -> TextBuffer {
         let history = History::new(normalized);
         let mut fragments = SumTree::new(&None);
         let mut insertions = SumTree::default();
@@ -778,7 +782,7 @@ impl Buffer {
             fragments.push(fragment, &None);
         }
 
-        Buffer {
+        TextBuffer {
             snapshot: BufferSnapshot {
                 replica_id,
                 remote_id,
@@ -1724,7 +1728,7 @@ impl Buffer {
 }
 
 #[cfg(any(test, feature = "test-support"))]
-impl Buffer {
+impl TextBuffer {
     #[track_caller]
     pub fn edit_via_marked_text(&mut self, marked_string: &str) {
         let edits = self.edits_for_marked_text(marked_string);
@@ -1900,7 +1904,7 @@ impl Buffer {
     }
 }
 
-impl Deref for Buffer {
+impl Deref for TextBuffer {
     type Target = BufferSnapshot;
 
     fn deref(&self) -> &Self::Target {
