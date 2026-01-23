@@ -169,15 +169,6 @@ impl ThemeColors {
             version_control_word_deleted: WORD_DELETED_COLOR,
             version_control_conflict_marker_ours: green().light().step_10().alpha(0.5),
             version_control_conflict_marker_theirs: blue().light().step_10().alpha(0.5),
-            vim_normal_background: system.transparent,
-            vim_insert_background: system.transparent,
-            vim_replace_background: system.transparent,
-            vim_visual_background: system.transparent,
-            vim_visual_line_background: system.transparent,
-            vim_visual_block_background: system.transparent,
-            vim_helix_normal_background: system.transparent,
-            vim_helix_select_background: system.transparent,
-            vim_mode_text: system.transparent,
         }
     }
 
@@ -307,15 +298,6 @@ impl ThemeColors {
             version_control_word_deleted: WORD_DELETED_COLOR,
             version_control_conflict_marker_ours: green().dark().step_10().alpha(0.5),
             version_control_conflict_marker_theirs: blue().dark().step_10().alpha(0.5),
-            vim_normal_background: system.transparent,
-            vim_insert_background: system.transparent,
-            vim_replace_background: system.transparent,
-            vim_visual_background: system.transparent,
-            vim_visual_line_background: system.transparent,
-            vim_visual_block_background: system.transparent,
-            vim_helix_normal_background: system.transparent,
-            vim_helix_select_background: system.transparent,
-            vim_mode_text: system.transparent,
         }
     }
 }

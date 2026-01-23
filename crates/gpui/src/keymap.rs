@@ -581,7 +581,6 @@ mod tests {
     #[test]
     fn test_pending_match_enabled() {
         let bindings = [
-            KeyBinding::new("ctrl-x", ActionBeta, Some("vim_mode == normal")),
             KeyBinding::new("ctrl-x 0", ActionAlpha, Some("Workspace")),
         ];
         let mut keymap = Keymap::default();
@@ -592,7 +591,6 @@ mod tests {
             &[
                 KeyContext::parse("Workspace"),
                 KeyContext::parse("Pane"),
-                KeyContext::parse("Editor vim_mode=normal"),
             ]
             .map(Result::unwrap),
         );
@@ -604,7 +602,6 @@ mod tests {
     #[test]
     fn test_pending_match_enabled_extended() {
         let bindings = [
-            KeyBinding::new("ctrl-x", ActionBeta, Some("vim_mode == normal")),
             KeyBinding::new("ctrl-x 0", NoAction, Some("Workspace")),
         ];
         let mut keymap = Keymap::default();
@@ -615,7 +612,6 @@ mod tests {
             &[
                 KeyContext::parse("Workspace"),
                 KeyContext::parse("Pane"),
-                KeyContext::parse("Editor vim_mode=normal"),
             ]
             .map(Result::unwrap),
         );
@@ -624,7 +620,6 @@ mod tests {
         assert!(!matched.1);
         let bindings = [
             KeyBinding::new("ctrl-x", ActionBeta, Some("Workspace")),
-            KeyBinding::new("ctrl-x 0", NoAction, Some("vim_mode == normal")),
         ];
         let mut keymap = Keymap::default();
         keymap.add_bindings(bindings);
@@ -634,7 +629,6 @@ mod tests {
             &[
                 KeyContext::parse("Workspace"),
                 KeyContext::parse("Pane"),
-                KeyContext::parse("Editor vim_mode=normal"),
             ]
             .map(Result::unwrap),
         );
@@ -647,7 +641,6 @@ mod tests {
     fn test_overriding_prefix() {
         let bindings = [
             KeyBinding::new("ctrl-x 0", ActionAlpha, Some("Workspace")),
-            KeyBinding::new("ctrl-x", ActionBeta, Some("vim_mode == normal")),
         ];
         let mut keymap = Keymap::default();
         keymap.add_bindings(bindings);
@@ -657,7 +650,6 @@ mod tests {
             &[
                 KeyContext::parse("Workspace"),
                 KeyContext::parse("Pane"),
-                KeyContext::parse("Editor vim_mode=normal"),
             ]
             .map(Result::unwrap),
         );

@@ -643,7 +643,6 @@ fn main() {
         tasks_ui::init(cx);
         snippets_ui::init(cx);
         search::init(cx);
-        vim::init(cx);
         terminal_view::init(cx);
         journal::init(app_state.clone(), cx);
         language_selector::init(cx);

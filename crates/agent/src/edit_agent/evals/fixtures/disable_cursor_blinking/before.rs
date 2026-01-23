@@ -927,7 +927,6 @@ pub struct Editor {
     /// Used to prevent flickering as the user types while the menu is open
     stale_inline_completion_in_menu: Option<InlineCompletionState>,
     edit_prediction_settings: EditPredictionSettings,
-    inline_completions_hidden_for_vim_mode: bool,
     show_inline_completions_override: Option<bool>,
     menu_inline_completions_policy: MenuInlineCompletionsPolicy,
     edit_prediction_preview: EditPredictionPreview,
@@ -1748,7 +1747,6 @@ impl Editor {
             hovered_cursors: Default::default(),
             next_editor_action_id: EditorActionId::default(),
             editor_actions: Rc::default(),
-            inline_completions_hidden_for_vim_mode: false,
             show_inline_completions_override: None,
             menu_inline_completions_policy: MenuInlineCompletionsPolicy::ByProvider,
             edit_prediction_settings: EditPredictionSettings::Disabled,
@@ -1838,27 +1836,25 @@ impl Editor {
                     }
                 }
                 EditorEvent::Edited { .. } => {
-                    if !vim_enabled(cx) {
-                        let (map, selections) = editor.selections.all_adjusted_display(cx);
-                        let pop_state = editor
-                            .change_list
-                            .last()
-                            .map(|previous| {
-                                previous.len() == selections.len()
-                                    && previous.iter().enumerate().all(|(ix, p)| {
-                                        p.to_display_point(&map).row()
-                                            == selections[ix].head().row()
-                                    })
-                            })
-                            .unwrap_or(false);
-                        let new_positions = selections
-                            .into_iter()
-                            .map(|s| map.display_point_to_anchor(s.head(), Bias::Left))
-                            .collect();
-                        editor
-                            .change_list
-                            .push_to_change_list(pop_state, new_positions);
-                    }
+                    let (map, selections) = editor.selections.all_adjusted_display(cx);
+                    let pop_state = editor
+                        .change_list
+                        .last()
+                        .map(|previous| {
+                            previous.len() == selections.len()
+                                && previous.iter().enumerate().all(|(ix, p)| {
+                                    p.to_display_point(&map).row()
+                                        == selections[ix].head().row()
+                                })
+                        })
+                        .unwrap_or(false);
+                    let new_positions = selections
+                        .into_iter()
+                        .map(|s| map.display_point_to_anchor(s.head(), Bias::Left))
+                        .collect();
+                    editor
+                        .change_list
+                        .push_to_change_list(pop_state, new_positions);
                 }
                 _ => (),
             },
@@ -2373,22 +2369,6 @@ impl Editor {
 
     pub fn set_input_enabled(&mut self, input_enabled: bool) {
         self.input_enabled = input_enabled;
-    }
-
-    pub fn set_inline_completions_hidden_for_vim_mode(
-        &mut self,
-        hidden: bool,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        if hidden != self.inline_completions_hidden_for_vim_mode {
-            self.inline_completions_hidden_for_vim_mode = hidden;
-            if hidden {
-                self.update_visible_inline_completion(window, cx);
-            } else {
-                self.refresh_inline_completion(true, false, window, cx);
-            }
-        }
     }
 
     pub fn set_menu_inline_completions_policy(&mut self, value: MenuInlineCompletionsPolicy) {
@@ -6071,7 +6051,7 @@ impl Editor {
         let cursor = self.selections.newest_anchor().head();
         let (buffer, cursor_buffer_position) =
             self.buffer.read(cx).text_anchor_for_position(cursor, cx)?;
-        if self.inline_completions_hidden_for_vim_mode || !self.should_show_edit_predictions() {
+        if !self.should_show_edit_predictions() {
             return None;
         }
 
@@ -6593,16 +6573,14 @@ impl Editor {
         } else {
             None
         };
-        let is_move =
-            move_invalidation_row_range.is_some() || self.inline_completions_hidden_for_vim_mode;
+        let is_move = move_invalidation_row_range.is_some();
         let completion = if is_move {
             invalidation_row_range =
                 move_invalidation_row_range.unwrap_or(edit_start_row..edit_end_row);
             let target = first_edit_start;
             InlineCompletion::Move { target, snapshot }
         } else {
-            let show_completions_in_buffer = !self.edit_prediction_visible_in_cursor_popover(true)
-                && !self.inline_completions_hidden_for_vim_mode;
+            let show_completions_in_buffer = !self.edit_prediction_visible_in_cursor_popover(true);
 
             if show_completions_in_buffer {
                 if edits
@@ -18281,8 +18259,6 @@ impl Editor {
             .and_then(|e| e.to_str())
             .map(|a| a.to_string()));
 
-        let vim_mode = vim_enabled(cx);
-
         let edit_predictions_provider = all_language_settings(file, cx).edit_predictions.provider;
         let copilot_enabled = edit_predictions_provider
             == language::language_settings::EditPredictionProvider::Copilot;
@@ -18296,7 +18272,7 @@ impl Editor {
         telemetry::event!(
             event_type,
             file_extension,
-            vim_mode,
+            false,
             copilot_enabled,
             copilot_enabled_for_language,
             edit_predictions_provider,
@@ -18734,13 +18710,6 @@ impl Editor {
 
         self.read_scroll_position_from_db(item_id, workspace_id, window, cx);
     }
-}
-
-fn vim_enabled(cx: &App) -> bool {
-    cx.global::<SettingsStore>()
-        .raw_user_settings()
-        .get("vim_mode")
-        == Some(&serde_json::Value::Bool(true))
 }
 
 // Consider user intent and default settings

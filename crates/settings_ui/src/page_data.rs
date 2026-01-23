@@ -1281,37 +1281,9 @@ fn keymap_page() -> SettingsPage {
         ]
     }
 
-    fn modal_editing_section() -> [SettingsPageItem; 3] {
+    fn modal_editing_section() -> [SettingsPageItem; 1] {
         [
             SettingsPageItem::SectionHeader("Modal Editing"),
-            // todo(settings_ui): Vim/Helix Mode should be apart of one type because it's undefined
-            // behavior to have them both enabled at the same time
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Vim Mode",
-                description: "Enable Vim mode and key bindings.",
-                field: Box::new(SettingField {
-                    json_path: Some("vim_mode"),
-                    pick: |settings_content| settings_content.vim_mode.as_ref(),
-                    write: |settings_content, value| {
-                        settings_content.vim_mode = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Helix Mode",
-                description: "Enable Helix mode and key bindings.",
-                field: Box::new(SettingField {
-                    json_path: Some("helix_mode"),
-                    pick: |settings_content| settings_content.helix_mode.as_ref(),
-                    write: |settings_content, value| {
-                        settings_content.helix_mode = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
         ]
     }
 

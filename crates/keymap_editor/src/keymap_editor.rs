@@ -1840,10 +1840,6 @@ impl Render for KeymapEditor {
                                                                     zed_actions::OpenDefaultKeymap
                                                                         .boxed_clone(),
                                                                 )
-                                                                .action(
-                                                                    "Vim Bindings",
-                                                                    zed_actions::vim::OpenDefaultKeymap.boxed_clone(),
-                                                                )
                                                         }))
                                                     })
                                                     .anchor(gpui::Corner::TopRight)
@@ -2122,7 +2118,6 @@ impl Render for KeymapEditor {
                                                 let context = overriding_binding.and_then(|binding| {
                                                     match conflict.override_source {
                                                         KeybindSource::User  => Some("your keymap"),
-                                                        KeybindSource::Vim => Some("the vim keymap"),
                                                         KeybindSource::Base => Some("your base keymap"),
                                                         _ => {
                                                             log::error!("Unexpected override from the {} keymap", conflict.override_source.name());
@@ -3505,7 +3500,6 @@ async fn remove_keybinding(
 fn collect_contexts_from_assets() -> Vec<SharedString> {
     let mut keymap_assets = vec![
         util::asset_str::<SettingsAssets>(settings::DEFAULT_KEYMAP_PATH),
-        util::asset_str::<SettingsAssets>(settings::VIM_KEYMAP_PATH),
     ];
     keymap_assets.extend(
         BaseKeymap::OPTIONS

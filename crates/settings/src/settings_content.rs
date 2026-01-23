@@ -26,7 +26,6 @@ use serde::{Deserialize, Serialize};
 use settings_macros::{MergeFrom, with_fallible_options};
 use std::collections::BTreeSet;
 use std::env;
-use std::sync::Arc;
 pub use util::serde::default_true;
 
 use crate::{ActiveSettingsProfileName, merge_from};
@@ -100,11 +99,6 @@ pub struct SettingsContent {
 
     pub repl: Option<ReplSettingsContent>,
 
-    /// Whether or not to enable Helix mode.
-    ///
-    /// Default: false
-    pub helix_mode: Option<bool>,
-
     pub journal: Option<JournalSettingsContent>,
 
     /// A map of log scopes to the desired log level.
@@ -145,11 +139,6 @@ pub struct SettingsContent {
 
     pub title_bar: Option<TitleBarSettingsContent>,
 
-    /// Whether or not to enable Vim mode.
-    ///
-    /// Default: false
-    pub vim_mode: Option<bool>,
-
     // Settings related to calls in Zed
     pub calls: Option<CallSettingsContent>,
 
@@ -160,9 +149,6 @@ pub struct SettingsContent {
 
     /// Settings for the which-key popup.
     pub which_key: Option<WhichKeySettingsContent>,
-
-    /// Settings related to Vim mode in Zed.
-    pub vim: Option<VimSettingsContent>,
 }
 
 impl SettingsContent {
@@ -673,18 +659,6 @@ pub enum FileFinderWidthContent {
     Large,
     XLarge,
     Full,
-}
-
-#[with_fallible_options]
-#[derive(Clone, Default, Serialize, Deserialize, PartialEq, Debug, JsonSchema, MergeFrom)]
-pub struct VimSettingsContent {
-    pub default_mode: Option<ModeContent>,
-    pub toggle_relative_line_numbers: Option<bool>,
-    pub use_system_clipboard: Option<UseSystemClipboard>,
-    pub use_smartcase_find: Option<bool>,
-    pub custom_digraphs: Option<HashMap<String, Arc<str>>>,
-    pub highlight_on_yank_duration: Option<u64>,
-    pub cursor_shape: Option<CursorShapeSettings>,
 }
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema, MergeFrom, PartialEq, Debug)]

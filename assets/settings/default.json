@@ -117,11 +117,6 @@
   // 2. Maps `Control` on Linux and Windows and to `Command` on MacOS:
   //    "cmd_or_ctrl" (alias: "cmd", "ctrl")
   "multi_cursor_modifier": "alt",
-  // Whether to enable vim modes and key bindings.
-  "vim_mode": false,
-  // Whether to enable helix mode and key bindings.
-  // Enabling this mode will automatically enable vim mode.
-  "helix_mode": false,
   // Whether to show the informational hover box when moving the mouse
   // over symbols in the editor.
   "hover_popover_enabled": true,
@@ -2275,20 +2270,6 @@
     // Maximum number of lines to keep in REPL's scrollback buffer.
     // Clamped with [4, 256] range.
     "max_lines": 32,
-  },
-  // Vim settings
-  "vim": {
-    "default_mode": "normal",
-    "toggle_relative_line_numbers": false,
-    "use_system_clipboard": "always",
-    "use_smartcase_find": false,
-    "highlight_on_yank_duration": 200,
-    "custom_digraphs": {},
-    // Cursor shape for the each mode.
-    // Specify the mode as the key and the shape as the value.
-    // The mode can be one of the following: "normal", "replace", "insert", "visual".
-    // The shape can be one of the following: "block", "bar", "underline", "hollow".
-    "cursor_shape": {},
   },
   // Which-key popup settings
   "which_key": {

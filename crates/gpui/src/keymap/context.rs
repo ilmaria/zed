@@ -626,7 +626,6 @@ mod tests {
         assert_is_superset("editor", "editor", true);
         assert_is_superset("editor", "workspace", false);
 
-        assert_is_superset("editor", "editor && vim_mode", true);
         assert_is_superset("editor", "mode == full && editor", true);
         assert_is_superset("editor && mode == full", "editor", false);
 
