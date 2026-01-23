@@ -1,5 +1,4 @@
 mod application_menu;
-pub mod collab;
 mod onboarding_banner;
 pub mod platform_title_bar;
 mod platforms;
@@ -39,8 +38,8 @@ use std::sync::Arc;
 use theme::ActiveTheme;
 use title_bar_settings::TitleBarSettings;
 use ui::{
-    Avatar, ButtonLike, Chip, ContextMenu, IconWithIndicator, Indicator, PopoverMenu,
-    PopoverMenuHandle, TintColor, Tooltip, prelude::*,
+    Avatar, ButtonLike, Chip, ContextMenu, IconWithIndicator, Indicator, PopoverMenu, TintColor,
+    Tooltip, prelude::*,
 };
 use util::{ResultExt, rel_path::RelPath};
 use workspace::{ToggleWorktreeSecurity, Workspace, notifications::NotifyResultExt};
@@ -135,14 +134,13 @@ pub struct TitleBar {
     application_menu: Option<Entity<ApplicationMenu>>,
     _subscriptions: Vec<Subscription>,
     banner: Entity<OnboardingBanner>,
-    screen_share_popover_handle: PopoverMenuHandle<ContextMenu>,
 }
 
 impl Render for TitleBar {
-    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let title_bar_settings = *TitleBarSettings::get_global(cx);
 
-        let show_menus = show_menus(cx);
+        let show_menus = show_menus();
 
         let mut children = Vec::new();
 
@@ -157,7 +155,7 @@ impl Render for TitleBar {
                             self.application_menu.clone().filter(|_| !show_menus),
                             |title_bar, menu| {
                                 render_project_items &=
-                                    !menu.update(cx, |menu, cx| menu.all_menus_shown(cx));
+                                    !menu.update(cx, |menu, _| menu.all_menus_shown());
                                 title_bar.child(menu)
                             },
                         )
@@ -177,8 +175,6 @@ impl Render for TitleBar {
                 .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                 .into_any_element(),
         );
-
-        children.push(self.render_collaborator_list(window, cx).into_any_element());
 
         if title_bar_settings.show_onboarding_banner {
             children.push(self.banner.clone().into_any_element())
@@ -201,7 +197,6 @@ impl Render for TitleBar {
                 })
                 .gap_1()
                 .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-                .children(self.render_call_controls(window, cx))
                 .children(self.render_connection_status(status, cx))
                 .when(
                     user.is_none() && TitleBarSettings::get_global(cx).show_sign_in,
@@ -222,25 +217,9 @@ impl Render for TitleBar {
                 );
             });
 
-            let height = PlatformTitleBar::height(window);
-            let title_bar_color = self.platform_titlebar.update(cx, |platform_titlebar, cx| {
-                platform_titlebar.title_bar_color(window, cx)
-            });
-            _ = height;
-            _ = title_bar_color;
-
             v_flex()
                 .w_full()
                 .child(self.platform_titlebar.clone().into_any_element())
-                /*.child(
-                    h_flex()
-                        .bg(title_bar_color)
-                        .h(height)
-                        .pl_2()
-                        .justify_between()
-                        .w_full()
-                        .children(children),
-                )*/
                 .into_any_element()
         } else {
             self.platform_titlebar.update(cx, |this, _| {
@@ -327,7 +306,6 @@ impl TitleBar {
             client,
             _subscriptions: subscriptions,
             banner,
-            screen_share_popover_handle: PopoverMenuHandle::default(),
         }
     }
 
@@ -703,22 +681,6 @@ impl TitleBar {
 
     fn active_call_changed(&mut self, cx: &mut Context<Self>) {
         cx.notify();
-    }
-
-    fn share_project(&mut self, cx: &mut Context<Self>) {
-        let active_call = ActiveCall::global(cx);
-        let project = self.project.clone();
-        active_call
-            .update(cx, |call, cx| call.share_project(project, cx))
-            .detach_and_log_err(cx);
-    }
-
-    fn unshare_project(&mut self, _: &mut Window, cx: &mut Context<Self>) {
-        let active_call = ActiveCall::global(cx);
-        let project = self.project.clone();
-        active_call
-            .update(cx, |call, cx| call.unshare_project(project, cx))
-            .log_err();
     }
 
     fn render_connection_status(

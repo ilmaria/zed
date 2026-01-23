@@ -26,15 +26,12 @@ members = [
     "crates/breadcrumbs",
     "crates/buffer_diff",
     "crates/call",
-    "crates/channel",
     "crates/cli",
     "crates/client",
     "crates/clock",
     "crates/cloud_api_client",
     "crates/cloud_api_types",
     "crates/cloud_llm_client",
-    "crates/collab",
-    "crates/collab_ui",
     "crates/collections",
     "crates/command_palette",
     "crates/command_palette_hooks",
@@ -265,14 +262,12 @@ bedrock = { path = "crates/bedrock" }
 breadcrumbs = { path = "crates/breadcrumbs" }
 buffer_diff = { path = "crates/buffer_diff" }
 call = { path = "crates/call" }
-channel = { path = "crates/channel" }
 cli = { path = "crates/cli" }
 client = { path = "crates/client" }
 clock = { path = "crates/clock" }
 cloud_api_client = { path = "crates/cloud_api_client" }
 cloud_api_types = { path = "crates/cloud_api_types" }
 cloud_llm_client = { path = "crates/cloud_llm_client" }
-collab_ui = { path = "crates/collab_ui" }
 collections = { path = "crates/collections", version = "0.1.0" }
 command_palette = { path = "crates/command_palette" }
 command_palette_hooks = { path = "crates/command_palette_hooks" }
