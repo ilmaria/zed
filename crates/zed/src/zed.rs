@@ -4579,7 +4579,6 @@ mod tests {
                 "projects",
                 "remote_debug",
                 "repl",
-                "rules_library",
                 "search",
                 "settings_editor",
                 "settings_profile_selector",
