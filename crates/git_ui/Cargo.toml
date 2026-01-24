@@ -16,7 +16,6 @@ path = "src/git_ui.rs"
 test-support = ["multi_buffer/test-support", "recent_projects/test-support"]
 
 [dependencies]
-agent_settings.workspace = true
 anyhow.workspace = true
 askpass.workspace = true
 buffer_diff.workspace = true

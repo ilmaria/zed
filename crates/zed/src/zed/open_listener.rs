@@ -46,10 +46,6 @@ pub enum OpenRequestKind {
     Extension {
         extension_id: String,
     },
-    AgentPanel,
-    SharedAgentThread {
-        session_id: String,
-    },
     DockMenuAction {
         index: usize,
     },
@@ -106,16 +102,6 @@ impl OpenRequest {
                 this.kind = Some(OpenRequestKind::Extension {
                     extension_id: extension_id.to_string(),
                 });
-            } else if url == "zed://agent" {
-                this.kind = Some(OpenRequestKind::AgentPanel);
-            } else if let Some(session_id_str) = url.strip_prefix("zed://agent/shared/") {
-                if uuid::Uuid::parse_str(session_id_str).is_ok() {
-                    this.kind = Some(OpenRequestKind::SharedAgentThread {
-                        session_id: session_id_str.to_string(),
-                    });
-                } else {
-                    log::error!("Invalid session ID in URL: {}", session_id_str);
-                }
             } else if let Some(schema_path) = url.strip_prefix("zed://schemas/") {
                 this.kind = Some(OpenRequestKind::BuiltinJsonSchema {
                     schema_path: schema_path.to_string(),

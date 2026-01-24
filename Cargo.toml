@@ -1,22 +1,12 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/acp_tools",
-    "crates/acp_thread",
     "crates/action_log",
     "crates/activity_indicator",
-    "crates/agent",
-    "crates/agent_servers",
-    "crates/agent_settings",
-    "crates/agent_ui",
-    "crates/agent_ui_v2",
     "crates/ai_onboarding",
     "crates/anthropic",
     "crates/askpass",
     "crates/assets",
-    "crates/assistant_text_thread",
-    "crates/assistant_slash_command",
-    "crates/assistant_slash_commands",
     "crates/audio",
     "crates/auto_update",
     "crates/auto_update_helper",
@@ -57,8 +47,6 @@ members = [
     "crates/edit_prediction_context",
     "crates/editor",
     "crates/encoding_selector",
-    "crates/eval",
-    "crates/eval_utils",
     "crates/explorer_command_injector",
     "crates/extension",
     "crates/extension_api",
@@ -236,22 +224,12 @@ edition = "2024"
 # Workspace member crates
 #
 
-acp_tools = { path = "crates/acp_tools" }
-acp_thread = { path = "crates/acp_thread" }
 action_log = { path = "crates/action_log" }
-agent = { path = "crates/agent" }
 activity_indicator = { path = "crates/activity_indicator" }
-agent_ui = { path = "crates/agent_ui" }
-agent_ui_v2 = { path = "crates/agent_ui_v2" }
-agent_settings = { path = "crates/agent_settings" }
-agent_servers = { path = "crates/agent_servers" }
 ai_onboarding = { path = "crates/ai_onboarding" }
 anthropic = { path = "crates/anthropic" }
 askpass = { path = "crates/askpass" }
 assets = { path = "crates/assets" }
-assistant_text_thread = { path = "crates/assistant_text_thread" }
-assistant_slash_command = { path = "crates/assistant_slash_command" }
-assistant_slash_commands = { path = "crates/assistant_slash_commands" }
 audio = { path = "crates/audio" }
 auto_update = { path = "crates/auto_update" }
 auto_update_ui = { path = "crates/auto_update_ui" }
@@ -287,7 +265,6 @@ derive_refineable = { path = "crates/refineable/derive_refineable" }
 diagnostics = { path = "crates/diagnostics" }
 editor = { path = "crates/editor" }
 encoding_selector = { path = "crates/encoding_selector" }
-eval_utils = { path = "crates/eval_utils" }
 extension = { path = "crates/extension" }
 extension_host = { path = "crates/extension_host" }
 extensions_ui = { path = "crates/extensions_ui" }
@@ -434,7 +411,6 @@ ztracing_macro = { path = "crates/ztracing_macro" }
 # External crates
 #
 
-agent-client-protocol = { version = "=0.9.3", features = ["unstable"] }
 aho-corasick = "1.1"
 alacritty_terminal = "0.25.1-rc1"
 any_vec = "0.14"
