@@ -1,18 +1,14 @@
-mod agent;
 mod editor;
 mod extension;
 mod language;
-mod language_model;
 mod project;
 mod terminal;
 mod theme;
 mod workspace;
 
-pub use agent::*;
 pub use editor::*;
 pub use extension::*;
 pub use language::*;
-pub use language_model::*;
 pub use project::*;
 pub use terminal::*;
 pub use theme::*;
@@ -62,9 +58,6 @@ pub struct SettingsContent {
 
     pub preview_tabs: Option<PreviewTabsSettingsContent>,
 
-    pub agent: Option<AgentSettingsContent>,
-    pub agent_servers: Option<AllAgentServersSettings>,
-
     /// Configuration of audio in Zed.
     pub audio: Option<AudioSettingsContent>,
 
@@ -108,8 +101,6 @@ pub struct SettingsContent {
     pub log: Option<HashMap<String, String>>,
 
     pub line_indicator_format: Option<LineIndicatorFormat>,
-
-    pub language_models: Option<AllLanguageModelSettingsContent>,
 
     pub outline_panel: Option<OutlinePanelSettingsContent>,
 

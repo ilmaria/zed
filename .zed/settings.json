@@ -62,4 +62,11 @@
     "**/.settings",
   ],
   "read_only_files": ["**/.rustup/**", "**/.cargo/registry/**", "**/.cargo/git/**", "target/**/*.rs", "**/*.lock"],
+  "lsp": {
+    "rust-analyzer": {
+      "initialization_options": {
+        "checkOnSave": false,
+      },
+    },
+  },
 }

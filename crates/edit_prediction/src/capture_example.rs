@@ -1,18 +1,15 @@
 use crate::{
-    EditPredictionExampleCaptureFeatureFlag, StoredEvent,
-    cursor_excerpt::editable_and_context_ranges_for_cursor_position, example_spec::ExampleSpec,
+    StoredEvent, cursor_excerpt::editable_and_context_ranges_for_cursor_position,
+    example_spec::ExampleSpec,
 };
 use anyhow::Result;
 use buffer_diff::BufferDiffSnapshot;
 use collections::HashMap;
-use feature_flags::FeatureFlagAppExt as _;
 use gpui::{App, Entity, Task};
 use language::{LanguageBuffer, ToPoint as _};
 use project::{Project, WorktreeId};
 use std::{collections::hash_map, fmt::Write as _, ops::Range, path::Path, sync::Arc};
 use text::{BufferSnapshot as TextBufferSnapshot, Point};
-
-pub(crate) const DEFAULT_EXAMPLE_CAPTURE_RATE_PER_10K_PREDICTIONS: u16 = 10;
 
 pub fn capture_example(
     project: Entity<Project>,
@@ -231,13 +228,8 @@ fn generate_timestamp_name() -> String {
     }
 }
 
-pub(crate) fn should_sample_edit_prediction_example_capture(cx: &App) -> bool {
-    let capture_rate = language::language_settings::all_language_settings(None, cx)
-        .edit_predictions
-        .example_capture_rate
-        .unwrap_or(DEFAULT_EXAMPLE_CAPTURE_RATE_PER_10K_PREDICTIONS);
-    cx.has_flag::<EditPredictionExampleCaptureFeatureFlag>()
-        && rand::random::<u16>() % 10_000 < capture_rate
+pub(crate) fn should_sample_edit_prediction_example_capture(_: &App) -> bool {
+    false
 }
 
 #[cfg(test)]
@@ -525,7 +517,6 @@ mod tests {
             zlog::init_test();
             let http_client = FakeHttpClient::with_404_response();
             let client = Client::new(Arc::new(FakeSystemClock::new()), http_client, cx);
-            language_model::init(client.clone(), cx);
             let user_store = cx.new(|cx| UserStore::new(client.clone(), cx));
             EditPredictionStore::global(&client, &user_store, cx);
         })

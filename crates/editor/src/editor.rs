@@ -9700,11 +9700,7 @@ impl Editor {
         provider: &Option<RegisteredEditPredictionDelegate>,
     ) -> IconName {
         match provider {
-            Some(provider) => match provider.provider.name() {
-                "copilot" => IconName::Copilot,
-                "supermaven" => IconName::Supermaven,
-                _ => IconName::ZedPredict,
-            },
+            Some(_) => IconName::ZedPredict,
             None => IconName::ZedPredict,
         }
     }
@@ -22754,8 +22750,7 @@ impl Editor {
             .map(|a| a.to_string()));
 
         let edit_predictions_provider = all_language_settings(file, cx).edit_predictions.provider;
-        let copilot_enabled = edit_predictions_provider
-            == language::language_settings::EditPredictionProvider::Copilot;
+        let copilot_enabled = false;
         let copilot_enabled_for_language = self
             .buffer
             .read(cx)

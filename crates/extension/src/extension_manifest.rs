@@ -93,8 +93,6 @@ pub struct ExtensionManifest {
     pub debug_adapters: BTreeMap<Arc<str>, DebugAdapterManifestEntry>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub debug_locators: BTreeMap<Arc<str>, DebugLocatorManifestEntry>,
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub language_model_providers: BTreeMap<Arc<str>, LanguageModelProviderManifestEntry>,
 }
 
 impl ExtensionManifest {
@@ -370,7 +368,6 @@ fn manifest_from_old_manifest(
         capabilities: Vec::new(),
         debug_adapters: Default::default(),
         debug_locators: Default::default(),
-        language_model_providers: Default::default(),
     }
 }
 
@@ -404,7 +401,6 @@ mod tests {
             capabilities: vec![],
             debug_adapters: Default::default(),
             debug_locators: Default::default(),
-            language_model_providers: BTreeMap::default(),
         }
     }
 

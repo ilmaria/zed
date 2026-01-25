@@ -19,7 +19,6 @@ collections.workspace = true
 time.workspace = true
 client.workspace = true
 cloud_llm_client.workspace = true
-codestral.workspace = true
 command_palette_hooks.workspace = true
 copilot.workspace = true
 edit_prediction_types.workspace = true
@@ -38,7 +37,6 @@ paths.workspace = true
 project.workspace = true
 regex.workspace = true
 settings.workspace = true
-supermaven.workspace = true
 telemetry.workspace = true
 text.workspace = true
 theme.workspace = true
@@ -54,7 +52,6 @@ copilot = { workspace = true, features = ["test-support"] }
 editor = { workspace = true, features = ["test-support"] }
 futures.workspace = true
 indoc.workspace = true
-language_model.workspace = true
 lsp = { workspace = true, features = ["test-support"] }
 pretty_assertions.workspace = true
 project = { workspace = true, features = ["test-support"] }

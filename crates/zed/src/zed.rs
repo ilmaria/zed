@@ -386,7 +386,6 @@ pub fn initialize_workspace(app_state: Arc<AppState>, cx: &mut App) {
                 app_state.fs.clone(),
                 app_state.user_store.clone(),
                 edit_prediction_menu_handle.clone(),
-                app_state.client.clone(),
                 cx,
             )
         });
@@ -4487,7 +4486,6 @@ mod tests {
                 "settings_profile_selector",
                 "snippets",
                 "stash_picker",
-                "supermaven",
                 "svg",
                 "syntax_tree_view",
                 "tab_switcher",
@@ -4637,10 +4635,6 @@ mod tests {
                 cx,
             );
             image_viewer::init(cx);
-            language_model::init(app_state.client.clone(), cx);
-            language_models::init(app_state.user_store.clone(), app_state.client.clone(), cx);
-            web_search::init(cx);
-            web_search_providers::init(app_state.client.clone(), cx);
             repl::init(app_state.fs.clone(), cx);
             repl::notebook::init(cx);
             tasks_ui::init(cx);

@@ -75,10 +75,6 @@
   "ui_font_weight": 400,
   // The default font size for text in the UI
   "ui_font_size": 16,
-  // The default font size for agent responses in the agent panel. Falls back to the UI font size if unset.
-  "agent_ui_font_size": null,
-  // The default font size for user messages in the agent panel.
-  "agent_buffer_font_size": 12,
   // How much to fade out unused code.
   "unnecessary_code_fade": 0.3,
   // Active pane styling settings.
@@ -2150,42 +2146,6 @@
     "Zig": {
       "language_servers": ["zls", "..."],
     },
-  },
-  // Different settings for specific language models.
-  "language_models": {
-    "anthropic": {
-      "api_url": "https://api.anthropic.com",
-    },
-    "bedrock": {},
-    "google": {
-      "api_url": "https://generativelanguage.googleapis.com",
-    },
-    "ollama": {
-      "api_url": "http://localhost:11434",
-    },
-    "openai": {
-      "api_url": "https://api.openai.com/v1",
-    },
-    "openai_compatible": {},
-    "open_router": {
-      "api_url": "https://openrouter.ai/api/v1",
-    },
-    "lmstudio": {
-      "api_url": "http://localhost:1234/api/v0",
-    },
-    "deepseek": {
-      "api_url": "https://api.deepseek.com/v1",
-    },
-    "mistral": {
-      "api_url": "https://api.mistral.ai/v1",
-    },
-    "vercel": {
-      "api_url": "https://api.v0.dev/v1",
-    },
-    "x_ai": {
-      "api_url": "https://api.x.ai/v1",
-    },
-    "zed.dev": {},
   },
   "session": {
     // Whether or not to restore unsaved buffers on restart.

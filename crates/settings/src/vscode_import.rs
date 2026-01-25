@@ -171,8 +171,6 @@ impl VsCodeSettings {
 
     pub fn settings_content(&self) -> SettingsContent {
         SettingsContent {
-            agent: self.agent_settings_content(),
-            agent_servers: None,
             audio: None,
             auto_update: None,
             base_keymap: Some(BaseKeymapContent::VSCode),
@@ -189,7 +187,6 @@ impl VsCodeSettings {
             global_lsp_settings: None,
             image_viewer: None,
             journal: None,
-            language_models: None,
             line_indicator_format: None,
             log: None,
             message_editor: None,
@@ -214,15 +211,6 @@ impl VsCodeSettings {
             workspace: self.workspace_settings_content(),
             which_key: None,
         }
-    }
-
-    fn agent_settings_content(&self) -> Option<AgentSettingsContent> {
-        let enabled = self.read_bool("chat.agent.enabled");
-        skip_default(AgentSettingsContent {
-            enabled: enabled,
-            button: enabled,
-            ..Default::default()
-        })
     }
 
     fn editor_settings_content(&self) -> EditorSettingsContent {
@@ -802,8 +790,6 @@ impl VsCodeSettings {
             buffer_font_weight: self.read_f32("editor.fontWeight").map(|w| w.into()),
             buffer_line_height: None,
             buffer_font_features: None,
-            agent_ui_font_size: None,
-            agent_buffer_font_size: None,
             theme: None,
             icon_theme: None,
             ui_density: None,

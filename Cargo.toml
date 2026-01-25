@@ -3,15 +3,12 @@ resolver = "2"
 members = [
     "crates/action_log",
     "crates/activity_indicator",
-    "crates/ai_onboarding",
-    "crates/anthropic",
     "crates/askpass",
     "crates/assets",
     "crates/auto_update",
     "crates/auto_update_helper",
     "crates/auto_update_ui",
     "crates/aws_http_client",
-    "crates/bedrock",
     "crates/breadcrumbs",
     "crates/buffer_diff",
     "crates/cli",
@@ -35,7 +32,6 @@ members = [
     "crates/debug_adapter_extension",
     "crates/debugger_tools",
     "crates/debugger_ui",
-    "crates/deepseek",
     "crates/denoise",
     "crates/diagnostics",
     "crates/docs_preprocessor",
@@ -63,7 +59,6 @@ members = [
     "crates/git_hosting_providers",
     "crates/git_ui",
     "crates/go_to_line",
-    "crates/google_ai",
     "crates/gpui",
     "crates/gpui_macros",
     "crates/gpui_tokio",
@@ -79,8 +74,6 @@ members = [
     "crates/keymap_editor",
     "crates/language",
     "crates/language_extension",
-    "crates/language_model",
-    "crates/language_models",
     "crates/language_onboarding",
     "crates/language_selector",
     "crates/language_tools",
@@ -93,17 +86,13 @@ members = [
     "crates/media",
     "crates/menu",
     "crates/migrator",
-    "crates/mistral",
     "crates/miniprofiler_ui",
     "crates/multi_buffer",
     "crates/nc",
     "crates/net",
     "crates/node_runtime",
     "crates/notifications",
-    "crates/ollama",
     "crates/onboarding",
-    "crates/open_ai",
-    "crates/open_router",
     "crates/outline",
     "crates/outline_panel",
     "crates/panel",
@@ -145,9 +134,6 @@ members = [
     "crates/storybook",
     "crates/streaming_diff",
     "crates/sum_tree",
-    "crates/supermaven",
-    "crates/supermaven_api",
-    "crates/codestral",
     "crates/svg_preview",
     "crates/system_specs",
     "crates/tab_switcher",
@@ -174,8 +160,6 @@ members = [
     "crates/vercel",
     "crates/which_key",
     "crates/watch",
-    "crates/web_search",
-    "crates/web_search_providers",
     "crates/workspace",
     "crates/worktree",
     "crates/worktree_benchmarks",
@@ -183,7 +167,6 @@ members = [
     "crates/zed",
     "crates/zed_actions",
     "crates/zed_env_vars",
-    "crates/edit_prediction_cli",
     "crates/zeta_prompt",
     "crates/zlog",
     "crates/zlog_settings",
@@ -221,14 +204,11 @@ edition = "2024"
 
 action_log = { path = "crates/action_log" }
 activity_indicator = { path = "crates/activity_indicator" }
-ai_onboarding = { path = "crates/ai_onboarding" }
-anthropic = { path = "crates/anthropic" }
 askpass = { path = "crates/askpass" }
 assets = { path = "crates/assets" }
 auto_update = { path = "crates/auto_update" }
 auto_update_ui = { path = "crates/auto_update_ui" }
 aws_http_client = { path = "crates/aws_http_client" }
-bedrock = { path = "crates/bedrock" }
 breadcrumbs = { path = "crates/breadcrumbs" }
 buffer_diff = { path = "crates/buffer_diff" }
 cli = { path = "crates/cli" }
@@ -253,7 +233,6 @@ db = { path = "crates/db" }
 debug_adapter_extension = { path = "crates/debug_adapter_extension" }
 debugger_tools = { path = "crates/debugger_tools" }
 debugger_ui = { path = "crates/debugger_ui" }
-deepseek = { path = "crates/deepseek" }
 derive_refineable = { path = "crates/refineable/derive_refineable" }
 diagnostics = { path = "crates/diagnostics" }
 editor = { path = "crates/editor" }
@@ -272,7 +251,6 @@ git = { path = "crates/git" }
 git_hosting_providers = { path = "crates/git_hosting_providers" }
 git_ui = { path = "crates/git_ui" }
 go_to_line = { path = "crates/go_to_line" }
-google_ai = { path = "crates/google_ai" }
 gpui = { path = "crates/gpui", default-features = false }
 gpui_macros = { path = "crates/gpui_macros" }
 gpui_tokio = { path = "crates/gpui_tokio" }
@@ -291,8 +269,6 @@ json_schema_store = { path = "crates/json_schema_store" }
 keymap_editor = { path = "crates/keymap_editor" }
 language = { path = "crates/language" }
 language_extension = { path = "crates/language_extension" }
-language_model = { path = "crates/language_model" }
-language_models = { path = "crates/language_models" }
 language_onboarding = { path = "crates/language_onboarding" }
 language_selector = { path = "crates/language_selector" }
 language_tools = { path = "crates/language_tools" }
@@ -306,17 +282,13 @@ svg_preview = { path = "crates/svg_preview" }
 media = { path = "crates/media" }
 menu = { path = "crates/menu" }
 migrator = { path = "crates/migrator" }
-mistral = { path = "crates/mistral" }
 multi_buffer = { path = "crates/multi_buffer" }
 miniprofiler_ui = { path = "crates/miniprofiler_ui" }
 nc = { path = "crates/nc" }
 net = { path = "crates/net" }
 node_runtime = { path = "crates/node_runtime" }
 notifications = { path = "crates/notifications" }
-ollama = { path = "crates/ollama" }
 onboarding = { path = "crates/onboarding" }
-open_ai = { path = "crates/open_ai" }
-open_router = { path = "crates/open_router", features = ["schemars"] }
 outline = { path = "crates/outline" }
 outline_panel = { path = "crates/outline_panel" }
 panel = { path = "crates/panel" }
@@ -354,9 +326,6 @@ sqlez_macros = { path = "crates/sqlez_macros" }
 story = { path = "crates/story" }
 streaming_diff = { path = "crates/streaming_diff" }
 sum_tree = { path = "crates/sum_tree" }
-supermaven = { path = "crates/supermaven" }
-supermaven_api = { path = "crates/supermaven_api" }
-codestral = { path = "crates/codestral" }
 system_specs = { path = "crates/system_specs" }
 tab_switcher = { path = "crates/tab_switcher" }
 task = { path = "crates/task" }
@@ -382,8 +351,6 @@ vercel = { path = "crates/vercel" }
 which_key = { path = "crates/which_key" }
 
 watch = { path = "crates/watch" }
-web_search = { path = "crates/web_search" }
-web_search_providers = { path = "crates/web_search_providers" }
 workspace = { path = "crates/workspace" }
 worktree = { path = "crates/worktree" }
 x_ai = { path = "crates/x_ai" }
@@ -422,9 +389,6 @@ async_zip = { version = "0.0.18", features = ["deflate", "deflate64"] }
 aws-config = { version = "1.8.10", features = ["behavior-version-latest"] }
 aws-credential-types = { version = "1.2.8", features = [
     "hardcoded-credentials",
-] }
-aws-sdk-bedrockruntime = { version = "1.112.0", features = [
-    "behavior-version-latest",
 ] }
 aws-smithy-runtime-api = { version = "1.9.2", features = ["http-1x", "client"] }
 aws-smithy-types = { version = "1.3.4", features = ["http-body-1-x"] }
@@ -783,7 +747,6 @@ json_schema_store = { codegen-units = 1 }
 lmstudio = { codegen-units = 1 }
 menu = { codegen-units = 1 }
 notifications = { codegen-units = 1 }
-ollama = { codegen-units = 1 }
 outline = { codegen-units = 1 }
 paths = { codegen-units = 1 }
 prettier = { codegen-units = 1 }
@@ -795,7 +758,6 @@ session = { codegen-units = 1 }
 snippet = { codegen-units = 1 }
 snippets_ui = { codegen-units = 1 }
 story = { codegen-units = 1 }
-supermaven_api = { codegen-units = 1 }
 telemetry_events = { codegen-units = 1 }
 theme_selector = { codegen-units = 1 }
 time_format = { codegen-units = 1 }

@@ -1,4 +1,3 @@
-pub mod agent_server_store;
 pub mod buffer_store;
 mod color_extractor;
 pub mod connection_manager;
@@ -42,7 +41,6 @@ use crate::{
     project_search::SearchResultsHandle,
     trusted_worktrees::{PathTrust, RemoteHostLocation, TrustedWorktrees},
 };
-pub use agent_server_store::{AgentServerStore, AgentServersUpdated, ExternalAgentServerName};
 pub use git_store::{
     ConflictRegion, ConflictSet, ConflictSetSnapshot, ConflictSetUpdate,
     git_traversal::{ChildEntriesGitIter, GitEntry, GitEntryRef, GitTraversal},
@@ -85,9 +83,9 @@ use gpui::{
     Task, WeakEntity, Window,
 };
 use language::{
-    LanguageBuffer, BufferEvent, Capability, CodeLabel, CursorShape, DiskState, Language, LanguageName,
-    LanguageRegistry, PointUtf16, ToOffset, ToPointUtf16, Toolchain, ToolchainMetadata,
-    ToolchainScope, Transaction, Unclipped, language_settings::InlayHintKind,
+    BufferEvent, Capability, CodeLabel, CursorShape, DiskState, Language, LanguageBuffer,
+    LanguageName, LanguageRegistry, PointUtf16, ToOffset, ToPointUtf16, Toolchain,
+    ToolchainMetadata, ToolchainScope, Transaction, Unclipped, language_settings::InlayHintKind,
     proto::split_operations,
 };
 use lsp::{
@@ -189,8 +187,6 @@ pub struct Project {
     buffer_ordered_messages_tx: mpsc::UnboundedSender<BufferOrderedMessage>,
     languages: Arc<LanguageRegistry>,
     dap_store: Entity<DapStore>,
-    agent_server_store: Entity<AgentServerStore>,
-
     breakpoint_store: Entity<BreakpointStore>,
     collab_client: Arc<client::Client>,
     join_project_response_message_id: u32,
@@ -1205,16 +1201,6 @@ impl Project {
                 )
             });
 
-            let agent_server_store = cx.new(|cx| {
-                AgentServerStore::local(
-                    node.clone(),
-                    fs.clone(),
-                    environment.clone(),
-                    client.http_client(),
-                    cx,
-                )
-            });
-
             cx.subscribe(&lsp_store, Self::on_lsp_store_event).detach();
 
             Self {
@@ -1241,7 +1227,6 @@ impl Project {
                 remote_client: None,
                 breakpoint_store,
                 dap_store,
-                agent_server_store,
 
                 buffers_needing_diff: Default::default(),
                 git_diff_debouncer: DebouncedDelay::new(),
@@ -1416,9 +1401,6 @@ impl Project {
                 )
             });
 
-            let agent_server_store =
-                cx.new(|_| AgentServerStore::remote(REMOTE_SERVER_PROJECT_ID, remote.clone()));
-
             cx.subscribe(&remote, Self::on_remote_client_event).detach();
 
             let this = Self {
@@ -1434,7 +1416,6 @@ impl Project {
                 join_project_response_message_id: 0,
                 client_state: ProjectClientState::Local,
                 git_store,
-                agent_server_store,
                 client_subscriptions: Vec::new(),
                 _subscriptions: vec![
                     cx.on_release(Self::release),
@@ -1490,7 +1471,6 @@ impl Project {
             remote_proto.subscribe_to_entity(REMOTE_SERVER_PROJECT_ID, &this.breakpoint_store);
             remote_proto.subscribe_to_entity(REMOTE_SERVER_PROJECT_ID, &this.settings_observer);
             remote_proto.subscribe_to_entity(REMOTE_SERVER_PROJECT_ID, &this.git_store);
-            remote_proto.subscribe_to_entity(REMOTE_SERVER_PROJECT_ID, &this.agent_server_store);
 
             remote_proto.add_entity_message_handler(Self::handle_create_buffer_for_peer);
             remote_proto.add_entity_message_handler(Self::handle_create_image_for_peer);
@@ -1513,7 +1493,6 @@ impl Project {
             DapStore::init(&remote_proto, cx);
             BreakpointStore::init(&remote_proto);
             GitStore::init(&remote_proto);
-            AgentServerStore::init_remote(&remote_proto);
 
             this
         })
@@ -1669,7 +1648,6 @@ impl Project {
             )
         });
 
-        let agent_server_store = cx.new(|cx| AgentServerStore::collab(cx));
         let replica_id = ReplicaId::new(response.payload.replica_id as u16);
 
         let project = cx.new(|cx| {
@@ -1736,7 +1714,6 @@ impl Project {
                 breakpoint_store: breakpoint_store.clone(),
                 dap_store: dap_store.clone(),
                 git_store: git_store.clone(),
-                agent_server_store,
                 buffers_needing_diff: Default::default(),
                 git_diff_debouncer: DebouncedDelay::new(),
                 terminals: Terminals {
@@ -2896,7 +2873,11 @@ impl Project {
         })
     }
 
-    pub fn save_buffer(&self, buffer: Entity<LanguageBuffer>, cx: &mut Context<Self>) -> Task<Result<()>> {
+    pub fn save_buffer(
+        &self,
+        buffer: Entity<LanguageBuffer>,
+        cx: &mut Context<Self>,
+    ) -> Task<Result<()>> {
         self.buffer_store
             .update(cx, |buffer_store, cx| buffer_store.save_buffer(buffer, cx))
     }
@@ -2916,7 +2897,11 @@ impl Project {
         self.buffer_store.read(cx).get_by_path(path)
     }
 
-    fn register_buffer(&mut self, buffer: &Entity<LanguageBuffer>, cx: &mut Context<Self>) -> Result<()> {
+    fn register_buffer(
+        &mut self,
+        buffer: &Entity<LanguageBuffer>,
+        cx: &mut Context<Self>,
+    ) -> Result<()> {
         {
             let mut remotely_created_models = self.remotely_created_models.lock();
             if remotely_created_models.retain_count > 0 {
@@ -3888,7 +3873,10 @@ impl Project {
         })
     }
 
-    pub fn open_server_settings(&mut self, cx: &mut Context<Self>) -> Task<Result<Entity<LanguageBuffer>>> {
+    pub fn open_server_settings(
+        &mut self,
+        cx: &mut Context<Self>,
+    ) -> Task<Result<Entity<LanguageBuffer>>> {
         let guard = self.retain_remotely_created_models(cx);
         let Some(remote) = self.remote_client.as_ref() else {
             return Task::ready(Err(anyhow!("not an ssh project")));
@@ -5353,7 +5341,11 @@ impl Project {
         self.lsp_store.read(cx).supplementary_language_servers()
     }
 
-    pub fn any_language_server_supports_inlay_hints(&self, buffer: &LanguageBuffer, cx: &mut App) -> bool {
+    pub fn any_language_server_supports_inlay_hints(
+        &self,
+        buffer: &LanguageBuffer,
+        cx: &mut App,
+    ) -> bool {
         let Some(language) = buffer.language().cloned() else {
             return false;
         };
@@ -5429,10 +5421,6 @@ impl Project {
 
     pub fn git_store(&self) -> &Entity<GitStore> {
         &self.git_store
-    }
-
-    pub fn agent_server_store(&self) -> &Entity<AgentServerStore> {
-        &self.agent_server_store
     }
 
     #[cfg(test)]

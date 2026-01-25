@@ -7,7 +7,7 @@ use gpui::{App, Entity, prelude::*};
 use language::{LanguageBuffer, ToPoint as _};
 use project::Project;
 
-use crate::{BufferEditPrediction, EditPredictionModel, EditPredictionStore};
+use crate::{BufferEditPrediction, EditPredictionStore};
 
 pub struct ZedEditPredictionDelegate {
     store: Entity<EditPredictionStore>,
@@ -96,14 +96,9 @@ impl EditPredictionDelegate for ZedEditPredictionDelegate {
         &self,
         _buffer: &Entity<language::LanguageBuffer>,
         _cursor_position: language::Anchor,
-        cx: &App,
+        _: &App,
     ) -> bool {
-        let store = self.store.read(cx);
-        if store.edit_prediction_model == EditPredictionModel::Sweep {
-            store.has_sweep_api_token(cx)
-        } else {
-            true
-        }
+        true
     }
 
     fn is_refreshing(&self, cx: &App) -> bool {
@@ -152,8 +147,8 @@ impl EditPredictionDelegate for ZedEditPredictionDelegate {
     }
 
     fn did_show(&mut self, display_type: SuggestionDisplayType, cx: &mut Context<Self>) {
-        self.store.update(cx, |store, cx| {
-            store.did_show_current_prediction(&self.project, display_type, cx);
+        self.store.update(cx, |store, _| {
+            store.did_show_current_prediction(&self.project, display_type);
         });
     }
 

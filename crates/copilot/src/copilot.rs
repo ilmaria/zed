@@ -18,9 +18,8 @@ use gpui::{
 use http_client::HttpClient;
 use language::language_settings::CopilotSettings;
 use language::{
-    Anchor, Bias, LanguageBuffer, BufferSnapshot, Language, PointUtf16, ToPointUtf16,
-    language_settings::{EditPredictionProvider, all_language_settings},
-    point_from_lsp, point_to_lsp,
+    Anchor, Bias, BufferSnapshot, Language, LanguageBuffer, PointUtf16, ToPointUtf16,
+    language_settings::all_language_settings, point_from_lsp, point_to_lsp,
 };
 use lsp::{LanguageServer, LanguageServerBinary, LanguageServerId, LanguageServerName};
 use node_runtime::{NodeRuntime, VersionStrategy};
@@ -388,9 +387,7 @@ impl Copilot {
             return;
         }
         let language_settings = all_language_settings(None, cx);
-        if check_edit_prediction_provider
-            && language_settings.edit_predictions.provider != EditPredictionProvider::Copilot
-        {
+        if check_edit_prediction_provider {
             return;
         }
         let server_id = self.server_id;

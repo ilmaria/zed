@@ -962,50 +962,6 @@ fn appearance_page() -> SettingsPage {
         ]
     }
 
-    fn agent_panel_font_section() -> [SettingsPageItem; 3] {
-        [
-            SettingsPageItem::SectionHeader("Agent Panel Font"),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "UI Font Size",
-                description: "Font size for agent response text in the agent panel. Falls back to the regular UI font size.",
-                field: Box::new(SettingField {
-                    json_path: Some("agent_ui_font_size"),
-                    pick: |settings_content| {
-                        settings_content
-                            .theme
-                            .agent_ui_font_size
-                            .as_ref()
-                            .or(settings_content.theme.ui_font_size.as_ref())
-                    },
-                    write: |settings_content, value| {
-                        settings_content.theme.agent_ui_font_size = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Buffer Font Size",
-                description: "Font size for user messages text in the agent panel.",
-                field: Box::new(SettingField {
-                    json_path: Some("agent_buffer_font_size"),
-                    pick: |settings_content| {
-                        settings_content
-                            .theme
-                            .agent_buffer_font_size
-                            .as_ref()
-                            .or(settings_content.theme.buffer_font_size.as_ref())
-                    },
-                    write: |settings_content, value| {
-                        settings_content.theme.agent_buffer_font_size = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-        ]
-    }
-
     fn text_rendering_section() -> [SettingsPageItem; 2] {
         [
             SettingsPageItem::SectionHeader("Text Rendering"),
@@ -1221,7 +1177,6 @@ fn appearance_page() -> SettingsPage {
         theme_section(),
         buffer_font_section(),
         ui_font_section(),
-        agent_panel_font_section(),
         text_rendering_section(),
         cursor_section(),
         highlighting_section(),
@@ -1282,9 +1237,7 @@ fn keymap_page() -> SettingsPage {
     }
 
     fn modal_editing_section() -> [SettingsPageItem; 1] {
-        [
-            SettingsPageItem::SectionHeader("Modal Editing"),
-        ]
+        [SettingsPageItem::SectionHeader("Modal Editing")]
     }
 
     let items: Box<[SettingsPageItem]> = concat_sections!(
@@ -2260,7 +2213,7 @@ fn editor_page() -> SettingsPage {
         ]
     }
 
-    fn toolbar_section() -> [SettingsPageItem; 6] {
+    fn toolbar_section() -> [SettingsPageItem; 5] {
         [
             SettingsPageItem::SectionHeader("Toolbar"),
             SettingsPageItem::SettingItem(SettingItem {
@@ -2330,30 +2283,6 @@ fn editor_page() -> SettingsPage {
                             .toolbar
                             .get_or_insert_default()
                             .selections_menu = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Agent Review",
-                description: "Show agent review buttons in the editor toolbar.",
-                field: Box::new(SettingField {
-                    json_path: Some("toolbar.agent_review"),
-                    pick: |settings_content| {
-                        settings_content
-                            .editor
-                            .toolbar
-                            .as_ref()?
-                            .agent_review
-                            .as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content
-                            .editor
-                            .toolbar
-                            .get_or_insert_default()
-                            .agent_review = value;
                     },
                 }),
                 metadata: None,
@@ -5032,71 +4961,6 @@ fn panels_page() -> SettingsPage {
         ]
     }
 
-    fn agent_panel_section() -> [SettingsPageItem; 5] {
-        [
-            SettingsPageItem::SectionHeader("Agent Panel"),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Agent Panel Button",
-                description: "Whether to show the agent panel button in the status bar.",
-                field: Box::new(SettingField {
-                    json_path: Some("agent.button"),
-                    pick: |settings_content| settings_content.agent.as_ref()?.button.as_ref(),
-                    write: |settings_content, value| {
-                        settings_content.agent.get_or_insert_default().button = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Agent Panel Dock",
-                description: "Where to dock the agent panel.",
-                field: Box::new(SettingField {
-                    json_path: Some("agent.dock"),
-                    pick: |settings_content| settings_content.agent.as_ref()?.dock.as_ref(),
-                    write: |settings_content, value| {
-                        settings_content.agent.get_or_insert_default().dock = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Agent Panel Default Width",
-                description: "Default width when the agent panel is docked to the left or right.",
-                field: Box::new(SettingField {
-                    json_path: Some("agent.default_width"),
-                    pick: |settings_content| {
-                        settings_content.agent.as_ref()?.default_width.as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content.agent.get_or_insert_default().default_width = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Agent Panel Default Height",
-                description: "Default height when the agent panel is docked to the bottom.",
-                field: Box::new(SettingField {
-                    json_path: Some("agent.default_height"),
-                    pick: |settings_content| {
-                        settings_content.agent.as_ref()?.default_height.as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content
-                            .agent
-                            .get_or_insert_default()
-                            .default_height = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-        ]
-    }
-
     SettingsPage {
         title: "Panels",
         items: concat_sections![
@@ -5108,7 +4972,6 @@ fn panels_page() -> SettingsPage {
             debugger_panel_section(),
             notification_panel_section(),
             collaboration_panel_section(),
-            agent_panel_section(),
         ],
     }
 }
@@ -6578,216 +6441,6 @@ fn ai_page() -> SettingsPage {
         ]
     }
 
-    fn agent_configuration_section() -> [SettingsPageItem; 11] {
-        [
-            SettingsPageItem::SectionHeader("Agent Configuration"),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Always Allow Tool Actions",
-                description: "When enabled, the agent can run potentially destructive actions without asking for your confirmation. This setting has no effect on external agents.",
-                field: Box::new(SettingField {
-                    json_path: Some("agent.always_allow_tool_actions"),
-                    pick: |settings_content| {
-                        settings_content
-                            .agent
-                            .as_ref()?
-                            .always_allow_tool_actions
-                            .as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content
-                            .agent
-                            .get_or_insert_default()
-                            .always_allow_tool_actions = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Single File Review",
-                description: "When enabled, agent edits will also be displayed in single-file buffers for review.",
-                field: Box::new(SettingField {
-                    json_path: Some("agent.single_file_review"),
-                    pick: |settings_content| {
-                        settings_content.agent.as_ref()?.single_file_review.as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content
-                            .agent
-                            .get_or_insert_default()
-                            .single_file_review = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Enable Feedback",
-                description: "Show voting thumbs up/down icon buttons for feedback on agent edits.",
-                field: Box::new(SettingField {
-                    json_path: Some("agent.enable_feedback"),
-                    pick: |settings_content| {
-                        settings_content.agent.as_ref()?.enable_feedback.as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content
-                            .agent
-                            .get_or_insert_default()
-                            .enable_feedback = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Notify When Agent Waiting",
-                description: "Where to show notifications when the agent has completed its response or needs confirmation before running a tool action.",
-                field: Box::new(SettingField {
-                    json_path: Some("agent.notify_when_agent_waiting"),
-                    pick: |settings_content| {
-                        settings_content
-                            .agent
-                            .as_ref()?
-                            .notify_when_agent_waiting
-                            .as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content
-                            .agent
-                            .get_or_insert_default()
-                            .notify_when_agent_waiting = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Play Sound When Agent Done",
-                description: "Whether to play a sound when the agent has either completed its response, or needs user input.",
-                field: Box::new(SettingField {
-                    json_path: Some("agent.play_sound_when_agent_done"),
-                    pick: |settings_content| {
-                        settings_content
-                            .agent
-                            .as_ref()?
-                            .play_sound_when_agent_done
-                            .as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content
-                            .agent
-                            .get_or_insert_default()
-                            .play_sound_when_agent_done = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Expand Edit Card",
-                description: "Whether to have edit cards in the agent panel expanded, showing a Preview of the diff.",
-                field: Box::new(SettingField {
-                    json_path: Some("agent.expand_edit_card"),
-                    pick: |settings_content| {
-                        settings_content.agent.as_ref()?.expand_edit_card.as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content
-                            .agent
-                            .get_or_insert_default()
-                            .expand_edit_card = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Expand Terminal Card",
-                description: "Whether to have terminal cards in the agent panel expanded, showing the whole command output.",
-                field: Box::new(SettingField {
-                    json_path: Some("agent.expand_terminal_card"),
-                    pick: |settings_content| {
-                        settings_content
-                            .agent
-                            .as_ref()?
-                            .expand_terminal_card
-                            .as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content
-                            .agent
-                            .get_or_insert_default()
-                            .expand_terminal_card = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Use Modifier To Send",
-                description: "Whether to always use cmd-enter (or ctrl-enter on Linux or Windows) to send messages.",
-                field: Box::new(SettingField {
-                    json_path: Some("agent.use_modifier_to_send"),
-                    pick: |settings_content| {
-                        settings_content
-                            .agent
-                            .as_ref()?
-                            .use_modifier_to_send
-                            .as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content
-                            .agent
-                            .get_or_insert_default()
-                            .use_modifier_to_send = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Message Editor Min Lines",
-                description: "Minimum number of lines to display in the agent message editor.",
-                field: Box::new(SettingField {
-                    json_path: Some("agent.message_editor_min_lines"),
-                    pick: |settings_content| {
-                        settings_content
-                            .agent
-                            .as_ref()?
-                            .message_editor_min_lines
-                            .as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content
-                            .agent
-                            .get_or_insert_default()
-                            .message_editor_min_lines = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Show Turn Stats",
-                description: "Whether to show turn statistics like elapsed time during generation and final turn duration.",
-                field: Box::new(SettingField {
-                    json_path: Some("agent.show_turn_stats"),
-                    pick: |settings_content| {
-                        settings_content.agent.as_ref()?.show_turn_stats.as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content
-                            .agent
-                            .get_or_insert_default()
-                            .show_turn_stats = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-        ]
-    }
-
     fn context_servers_section() -> [SettingsPageItem; 2] {
         [
             SettingsPageItem::SectionHeader("Context Servers"),
@@ -6809,68 +6462,39 @@ fn ai_page() -> SettingsPage {
         ]
     }
 
-    fn edit_prediction_display_sub_section() -> [SettingsPageItem; 2] {
-        [
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Display Mode",
-                description: "When to show edit predictions previews in buffer. The eager mode displays them inline, while the subtle mode displays them only when holding a modifier key.",
-                field: Box::new(SettingField {
-                    json_path: Some("edit_prediction.display_mode"),
-                    pick: |settings_content| {
-                        settings_content
-                            .project
-                            .all_languages
-                            .edit_predictions
-                            .as_ref()?
-                            .mode
-                            .as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content
-                            .project
-                            .all_languages
-                            .edit_predictions
-                            .get_or_insert_default()
-                            .mode = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
+    fn edit_prediction_display_sub_section() -> [SettingsPageItem; 1] {
+        [SettingsPageItem::SettingItem(SettingItem {
+            title: "Display Mode",
+            description: "When to show edit predictions previews in buffer. The eager mode displays them inline, while the subtle mode displays them only when holding a modifier key.",
+            field: Box::new(SettingField {
+                json_path: Some("edit_prediction.display_mode"),
+                pick: |settings_content| {
+                    settings_content
+                        .project
+                        .all_languages
+                        .edit_predictions
+                        .as_ref()?
+                        .mode
+                        .as_ref()
+                },
+                write: |settings_content, value| {
+                    settings_content
+                        .project
+                        .all_languages
+                        .edit_predictions
+                        .get_or_insert_default()
+                        .mode = value;
+                },
             }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Display In Text Threads",
-                description: "Whether edit predictions are enabled when editing text threads in the agent panel.",
-                field: Box::new(SettingField {
-                    json_path: Some("edit_prediction.in_text_threads"),
-                    pick: |settings_content| {
-                        settings_content
-                            .project
-                            .all_languages
-                            .edit_predictions
-                            .as_ref()?
-                            .enabled_in_text_threads
-                            .as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content
-                            .project
-                            .all_languages
-                            .edit_predictions
-                            .get_or_insert_default()
-                            .enabled_in_text_threads = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-        ]
+            metadata: None,
+            files: USER,
+        })]
     }
 
     SettingsPage {
         title: "AI",
         items: concat_sections![
             general_section(),
-            agent_configuration_section(),
             context_servers_section(),
             edit_prediction_language_settings_section(),
             edit_prediction_display_sub_section()
@@ -8470,23 +8094,9 @@ fn non_editor_language_settings_data() -> Box<[SettingsPageItem]> {
     )
 }
 
-fn edit_prediction_language_settings_section() -> [SettingsPageItem; 4] {
+fn edit_prediction_language_settings_section() -> [SettingsPageItem; 3] {
     [
         SettingsPageItem::SectionHeader("Edit Predictions"),
-        SettingsPageItem::SubPageLink(SubPageLink {
-            title: "Configure Providers".into(),
-            json_path: Some("edit_predictions.providers"),
-            description: Some("Set up different edit prediction providers in complement to Zed's built-in Zeta model.".into()),
-            in_json: false,
-            files: USER,
-            render: Arc::new(|_, window, cx| {
-                let settings_window = cx.entity();
-                let page = window.use_state(cx, |_, _| {
-                    crate::pages::EditPredictionSetupPage::new(settings_window)
-                });
-                page.into_any_element()
-            }),
-        }),
         SettingsPageItem::SettingItem(SettingItem {
             title: "Show Edit Predictions",
             description: "Controls whether edit predictions are shown immediately or manually.",
