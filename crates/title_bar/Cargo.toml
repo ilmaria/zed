@@ -16,7 +16,6 @@ doctest = false
 default = []
 stories = ["dep:story"]
 test-support = [
-    "call/test-support",
     "client/test-support",
     "collections/test-support",
     "gpui/test-support",
@@ -31,7 +30,6 @@ test-support = [
 [dependencies]
 anyhow.workspace = true
 auto_update.workspace = true
-call.workspace = true
 chrono.workspace = true
 client.workspace = true
 cloud_llm_client.workspace = true
@@ -59,7 +57,6 @@ zed_actions.workspace = true
 windows.workspace = true
 
 [dev-dependencies]
-call = { workspace = true, features = ["test-support"] }
 client = { workspace = true, features = ["test-support"] }
 collections = { workspace = true, features = ["test-support"] }
 gpui = { workspace = true, features = ["test-support"] }

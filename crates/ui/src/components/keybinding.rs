@@ -3,8 +3,8 @@ use std::rc::Rc;
 use crate::PlatformStyle;
 use crate::{Icon, IconName, IconSize, h_flex, prelude::*};
 use gpui::{
-    Action, AnyElement, App, FocusHandle, IntoElement, KeybindingKeystroke, Keystroke,
-    Modifiers, Window, relative,
+    Action, AnyElement, App, FocusHandle, IntoElement, KeybindingKeystroke, Keystroke, Modifiers,
+    Window, relative,
 };
 use itertools::Itertools;
 use settings::KeybindSource;
@@ -191,18 +191,14 @@ pub fn render_keybinding_keystroke(
     platform_style: PlatformStyle,
 ) -> Vec<AnyElement> {
     let use_text = matches!(
-            platform_style,
-            PlatformStyle::Linux | PlatformStyle::Windows
-        );
+        platform_style,
+        PlatformStyle::Linux | PlatformStyle::Windows
+    );
     let size = size.into();
 
     if use_text {
         let element = Key::new(
-            keystroke_text(
-                keystroke.modifiers(),
-                keystroke.key(),
-                platform_style,
-            ),
+            keystroke_text(keystroke.modifiers(), keystroke.key(), platform_style),
             color,
         )
         .size(size)
@@ -427,13 +423,7 @@ pub fn text_for_keystrokes(keystrokes: &[Keystroke], _: &App) -> String {
     let platform_style = PlatformStyle::platform();
     keystrokes
         .iter()
-        .map(|keystroke| {
-            keystroke_text(
-                &keystroke.modifiers,
-                &keystroke.key,
-                platform_style,
-            )
-        })
+        .map(|keystroke| keystroke_text(&keystroke.modifiers, &keystroke.key, platform_style))
         .join(" ")
 }
 
@@ -441,13 +431,7 @@ pub fn text_for_keybinding_keystrokes(keystrokes: &[KeybindingKeystroke], _: &Ap
     let platform_style = PlatformStyle::platform();
     keystrokes
         .iter()
-        .map(|keystroke| {
-            keystroke_text(
-                keystroke.modifiers(),
-                keystroke.key(),
-                platform_style,
-            )
-        })
+        .map(|keystroke| keystroke_text(keystroke.modifiers(), keystroke.key(), platform_style))
         .join(" ")
 }
 
@@ -457,11 +441,7 @@ pub fn text_for_keystroke(modifiers: &Modifiers, key: &str, _: &App) -> String {
 }
 
 /// Returns a textual representation of the given [`Keystroke`].
-fn keystroke_text(
-    modifiers: &Modifiers,
-    key: &str,
-    platform_style: PlatformStyle,
-) -> String {
+fn keystroke_text(modifiers: &Modifiers, key: &str, platform_style: PlatformStyle) -> String {
     let mut text = String::new();
     let delimiter = '-';
 
@@ -523,9 +503,7 @@ impl Component for KeyBinding {
     }
 
     fn description() -> Option<&'static str> {
-        Some(
-            "A component that displays a key binding, supporting different platform styles.",
-        )
+        Some("A component that displays a key binding, supporting different platform styles.")
     }
 
     // fn preview(_window: &mut Window, cx: &mut App) -> Option<AnyElement> {
@@ -611,88 +589,43 @@ mod tests {
     fn test_text_for_keystroke() {
         let keystroke = Keystroke::parse("cmd-c").unwrap();
         assert_eq!(
-            keystroke_text(
-                &keystroke.modifiers,
-                &keystroke.key,
-                PlatformStyle::Mac,
-                false
-            ),
+            keystroke_text(&keystroke.modifiers, &keystroke.key, PlatformStyle::Mac),
             "Command-C".to_string()
         );
         assert_eq!(
-            keystroke_text(
-                &keystroke.modifiers,
-                &keystroke.key,
-                PlatformStyle::Linux,
-                false
-            ),
+            keystroke_text(&keystroke.modifiers, &keystroke.key, PlatformStyle::Linux),
             "Super-C".to_string()
         );
         assert_eq!(
-            keystroke_text(
-                &keystroke.modifiers,
-                &keystroke.key,
-                PlatformStyle::Windows,
-                false
-            ),
+            keystroke_text(&keystroke.modifiers, &keystroke.key, PlatformStyle::Windows),
             "Win-C".to_string()
         );
 
         let keystroke = Keystroke::parse("ctrl-alt-delete").unwrap();
         assert_eq!(
-            keystroke_text(
-                &keystroke.modifiers,
-                &keystroke.key,
-                PlatformStyle::Mac,
-                false
-            ),
+            keystroke_text(&keystroke.modifiers, &keystroke.key, PlatformStyle::Mac),
             "Control-Option-Delete".to_string()
         );
         assert_eq!(
-            keystroke_text(
-                &keystroke.modifiers,
-                &keystroke.key,
-                PlatformStyle::Linux,
-                false
-            ),
+            keystroke_text(&keystroke.modifiers, &keystroke.key, PlatformStyle::Linux),
             "Ctrl-Alt-Delete".to_string()
         );
         assert_eq!(
-            keystroke_text(
-                &keystroke.modifiers,
-                &keystroke.key,
-                PlatformStyle::Windows,
-                false
-            ),
+            keystroke_text(&keystroke.modifiers, &keystroke.key, PlatformStyle::Windows),
             "Ctrl-Alt-Delete".to_string()
         );
 
         let keystroke = Keystroke::parse("shift-pageup").unwrap();
         assert_eq!(
-            keystroke_text(
-                &keystroke.modifiers,
-                &keystroke.key,
-                PlatformStyle::Mac,
-                false
-            ),
+            keystroke_text(&keystroke.modifiers, &keystroke.key, PlatformStyle::Mac),
             "Shift-PageUp".to_string()
         );
         assert_eq!(
-            keystroke_text(
-                &keystroke.modifiers,
-                &keystroke.key,
-                PlatformStyle::Linux,
-                false,
-            ),
+            keystroke_text(&keystroke.modifiers, &keystroke.key, PlatformStyle::Linux),
             "Shift-PageUp".to_string()
         );
         assert_eq!(
-            keystroke_text(
-                &keystroke.modifiers,
-                &keystroke.key,
-                PlatformStyle::Windows,
-                false
-            ),
+            keystroke_text(&keystroke.modifiers, &keystroke.key, PlatformStyle::Windows),
             "Shift-PageUp".to_string()
         );
     }

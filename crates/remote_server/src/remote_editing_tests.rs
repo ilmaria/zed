@@ -4,17 +4,15 @@
 use crate::headless_project::HeadlessProject;
 use client::{Client, UserStore};
 use clock::FakeSystemClock;
-use collections::{HashMap, HashSet};
+use collections::HashSet;
 use editor::EditType;
-use language_model::{LanguageModelToolResultContent, fake_provider::FakeLanguageModel};
-use prompt_store::ProjectContext;
 
 use extension::ExtensionHostProxy;
 use fs::{FakeFs, Fs};
 use gpui::{AppContext as _, Entity, SharedString, TestAppContext};
 use http_client::{BlockedHttpClient, FakeHttpClient};
 use language::{
-    LanguageBuffer, FakeLspAdapter, LanguageConfig, LanguageMatcher, LanguageRegistry, LineEnding,
+    FakeLspAdapter, LanguageBuffer, LanguageConfig, LanguageMatcher, LanguageRegistry, LineEnding,
     language_settings::{AllLanguageSettings, language_settings},
 };
 use lsp::{CompletionContext, CompletionResponse, CompletionTriggerKind, LanguageServerName};
@@ -195,7 +193,10 @@ async fn test_remote_project_search(cx: &mut TestAppContext, server_cx: &mut Tes
 
     cx.run_until_parked();
 
-    async fn do_search(project: &Entity<Project>, mut cx: TestAppContext) -> Entity<LanguageBuffer> {
+    async fn do_search(
+        project: &Entity<Project>,
+        mut cx: TestAppContext,
+    ) -> Entity<LanguageBuffer> {
         let receiver = project.update(&mut cx, |project, cx| {
             project.search(
                 SearchQuery::text(
