@@ -1162,7 +1162,6 @@ impl ConnectionPool {
                                 .await
                                 .map(|connection| Arc::new(connection) as Arc<dyn RemoteConnection>)
                         }
-                        #[cfg(any(test, feature = "test-support"))]
                         RemoteConnectionOptions::Mock(opts) => match cx.update(|cx| {
                             cx.default_global::<crate::transport::mock::MockConnectionRegistry>()
                                 .take(&opts)
@@ -1218,7 +1217,6 @@ impl RemoteConnectionOptions {
             RemoteConnectionOptions::Ssh(opts) => opts.host.to_string(),
             RemoteConnectionOptions::Wsl(opts) => opts.distro_name.clone(),
             RemoteConnectionOptions::Docker(opts) => opts.name.clone(),
-            #[cfg(any(test, feature = "test-support"))]
             RemoteConnectionOptions::Mock(opts) => format!("mock-{}", opts.id),
         }
     }
