@@ -1,15 +1,11 @@
 use super::*;
-use crate::{compute_diff_between_snapshots, udiff::apply_diff_to_string};
+use crate::{
+    EditPredictionRejectReason, EditPredictionRejection, PredictEditsBody, PredictEditsResponse,
+    RawCompletionChoice, RawCompletionRequest, RawCompletionResponse, RawCompletionUsage,
+    RejectEditPredictionsBody, compute_diff_between_snapshots, udiff::apply_diff_to_string,
+};
 use client::{UserStore, test::FakeServer};
 use clock::{FakeSystemClock, ReplicaId};
-use cloud_api_types::{CreateLlmTokenResponse, LlmToken};
-use cloud_llm_client::{
-    EditPredictionRejectReason, EditPredictionRejection, PredictEditsBody, PredictEditsResponse,
-    RejectEditPredictionsBody,
-    predict_edits_v3::{
-        RawCompletionChoice, RawCompletionRequest, RawCompletionResponse, RawCompletionUsage,
-    },
-};
 use futures::{
     AsyncReadExt, StreamExt,
     channel::{mpsc, oneshot},
@@ -1429,8 +1425,6 @@ fn init_test_with_fake_client(
         });
 
         let client = client::Client::new(Arc::new(FakeSystemClock::new()), http_client, cx);
-        client.cloud_client().set_credentials(1, "test".into());
-
         let user_store = cx.new(|cx| UserStore::new(client.clone(), cx));
         let ep_store = EditPredictionStore::global(&client, &user_store, cx);
 
@@ -2025,16 +2019,6 @@ async fn make_test_ep_store(
             let completion_response = completion_response.clone();
             async move {
                 match (req.method(), req.uri().path()) {
-                    (&Method::POST, "/client/llm_tokens") => Ok(http_client::Response::builder()
-                        .status(200)
-                        .body(
-                            serde_json::to_string(&CreateLlmTokenResponse {
-                                token: LlmToken("the-llm-token".to_string()),
-                            })
-                            .unwrap()
-                            .into(),
-                        )
-                        .unwrap()),
                     (&Method::POST, "/predict_edits/v2") => {
                         let mut request_body = String::new();
                         req.into_body().read_to_string(&mut request_body).await?;

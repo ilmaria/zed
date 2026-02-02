@@ -80,8 +80,6 @@ pub struct ExtensionManifest {
     #[serde(default)]
     pub language_servers: BTreeMap<LanguageServerName, LanguageServerManifestEntry>,
     #[serde(default)]
-    pub context_servers: BTreeMap<Arc<str>, ContextServerManifestEntry>,
-    #[serde(default)]
     pub agent_servers: BTreeMap<Arc<str>, AgentServerManifestEntry>,
     #[serde(default)]
     pub slash_commands: BTreeMap<Arc<str>, SlashCommandManifestEntry>,
@@ -361,7 +359,6 @@ fn manifest_from_old_manifest(
             .map(|grammar_name| (grammar_name, Default::default()))
             .collect(),
         language_servers: Default::default(),
-        context_servers: BTreeMap::default(),
         agent_servers: BTreeMap::default(),
         slash_commands: BTreeMap::default(),
         snippets: None,
@@ -394,7 +391,6 @@ mod tests {
             languages: vec![],
             grammars: BTreeMap::default(),
             language_servers: BTreeMap::default(),
-            context_servers: BTreeMap::default(),
             agent_servers: BTreeMap::default(),
             slash_commands: BTreeMap::default(),
             snippets: None,

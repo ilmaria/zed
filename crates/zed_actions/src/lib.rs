@@ -83,12 +83,9 @@ pub enum ExtensionCategoryFilter {
     Languages,
     Grammars,
     LanguageServers,
-    ContextServers,
-    AgentServers,
     SlashCommands,
     IndexedDocsProviders,
     Snippets,
-    DebugAdapters,
 }
 
 /// Opens the extensions management interface.

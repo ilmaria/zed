@@ -1,6 +1,6 @@
-use cloud_llm_client::predict_edits_v3::Line;
 use language::{BufferSnapshot, LanguageId, Point, ToOffset as _, ToPoint as _};
-use std::ops::Range;
+use serde::{Deserialize, Serialize};
+use std::ops::{Add, Range, Sub};
 use tree_sitter::{Node, TreeCursor};
 use util::RangeExt;
 
@@ -27,6 +27,26 @@ pub struct EditPredictionExcerptOptions {
     pub min_bytes: usize,
     /// Target ratio of bytes before the cursor divided by total bytes in the window.
     pub target_before_cursor_over_total_bytes: f32,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd, Eq, Ord)]
+#[serde(transparent)]
+pub struct Line(pub u32);
+
+impl Add for Line {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self(self.0 + rhs.0)
+    }
+}
+
+impl Sub for Line {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self(self.0 - rhs.0)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -423,7 +443,8 @@ mod tests {
     use util::test::{generate_marked_text, marked_text_offsets_by};
 
     fn create_buffer(text: &str, cx: &mut TestAppContext) -> BufferSnapshot {
-        let buffer = cx.new(|cx| LanguageBuffer::local(text, cx).with_language(language::rust_lang(), cx));
+        let buffer =
+            cx.new(|cx| LanguageBuffer::local(text, cx).with_language(language::rust_lang(), cx));
         buffer.read_with(cx, |buffer, _| buffer.snapshot())
     }
 

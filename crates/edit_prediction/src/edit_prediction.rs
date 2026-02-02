@@ -1,12 +1,6 @@
 use anyhow::Result;
 use arrayvec::ArrayVec;
 use client::{Client, EditPredictionUsage, UserStore};
-use cloud_llm_client::predict_edits_v3::{self};
-use cloud_llm_client::{
-    EditPredictionRejectReason, EditPredictionRejection,
-    MAX_EDIT_PREDICTION_REJECTIONS_PER_REQUEST, MINIMUM_REQUIRED_VERSION_HEADER_NAME,
-    RejectEditPredictionsBodyRef, ZED_VERSION_HEADER_NAME,
-};
 use collections::{HashMap, HashSet};
 use db::kvp::KEY_VALUE_STORE;
 use edit_prediction_context::{RelatedExcerptStore, RelatedExcerptStoreEvent, RelatedFile};
@@ -28,9 +22,12 @@ use language::{BufferSnapshot, OffsetRangeExt};
 use project::{Project, ProjectPath, WorktreeId};
 use release_channel::AppVersion;
 use semver::Version;
-use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use settings::{EditPredictionProvider, SettingsStore, update_settings_file};
-use std::collections::{VecDeque, hash_map};
+use std::{
+    borrow::Cow,
+    collections::{VecDeque, hash_map},
+};
 use text::Edit;
 use workspace::Workspace;
 
@@ -87,6 +84,123 @@ const REJECT_REQUEST_DEBOUNCE: Duration = Duration::from_secs(15);
 struct EditPredictionStoreGlobal(Entity<EditPredictionStore>);
 
 impl Global for EditPredictionStoreGlobal {}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct RejectEditPredictionsBody {
+    pub rejections: Vec<EditPredictionRejection>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct RejectEditPredictionsBodyRef<'a> {
+    pub rejections: &'a [EditPredictionRejection],
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PredictEditsBody {
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub outline: Option<String>,
+    pub input_events: String,
+    pub input_excerpt: String,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub speculated_output: Option<String>,
+    /// Whether the user provided consent for sampling this interaction.
+    #[serde(default, alias = "data_collection_permission")]
+    pub can_collect_data: bool,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub diagnostic_groups: Option<Vec<(String, serde_json::Value)>>,
+    /// Info about the git repository state, only present when can_collect_data is true.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub git_info: Option<PredictEditsGitInfo>,
+    /// The trigger for this request.
+    #[serde(default)]
+    pub trigger: PredictEditsRequestTrigger,
+}
+
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum PredictEditsRequestTrigger {
+    Diagnostics,
+    Cli,
+    #[default]
+    Other,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PredictEditsGitInfo {
+    /// SHA of git HEAD commit at time of prediction.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub head_sha: Option<String>,
+    /// URL of the remote called `origin`.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub remote_origin_url: Option<String>,
+    /// URL of the remote called `upstream`.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub remote_upstream_url: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PredictEditsResponse {
+    pub request_id: String,
+    pub output_excerpt: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct EditPredictionRejection {
+    pub request_id: String,
+    #[serde(default)]
+    pub reason: EditPredictionRejectReason,
+    pub was_shown: bool,
+}
+
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum EditPredictionRejectReason {
+    /// New requests were triggered before this one completed
+    Canceled,
+    /// No edits returned
+    Empty,
+    /// Edits returned, but none remained after interpolation
+    InterpolatedEmpty,
+    /// The new prediction was preferred over the current one
+    Replaced,
+    /// The current prediction was preferred over the new one
+    CurrentPreferred,
+    /// The current prediction was discarded
+    #[default]
+    Discarded,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct RawCompletionRequest {
+    pub model: String,
+    pub prompt: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_tokens: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub temperature: Option<f32>,
+    pub stop: Vec<Cow<'static, str>>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct RawCompletionResponse {
+    pub id: String,
+    pub object: String,
+    pub created: u64,
+    pub model: String,
+    pub choices: Vec<RawCompletionChoice>,
+    pub usage: RawCompletionUsage,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct RawCompletionChoice {
+    pub text: String,
+    pub finish_reason: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RawCompletionUsage {
+    pub prompt_tokens: u32,
+    pub completion_tokens: u32,
+    pub total_tokens: u32,
+}
 
 pub struct EditPredictionStore {
     client: Arc<Client>,
@@ -164,7 +278,26 @@ pub struct EditPredictionFinishedDebugEvent {
     pub model_output: Option<String>,
 }
 
-pub type RequestDebugInfo = predict_edits_v3::DebugInfo;
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RequestDebugInfo {
+    pub prompt: String,
+    pub prompt_planning_time: Duration,
+    pub model_response: String,
+    pub inference_time: Duration,
+    pub parsing_time: Duration,
+}
+
+/// The maximum number of edit predictions that can be rejected per request.
+pub const MAX_EDIT_PREDICTION_REJECTIONS_PER_REQUEST: usize = 100;
+
+/// The name of the header used to indicate the minimum required Zed version.
+///
+/// This can be used to force a Zed upgrade in order to continue communicating
+/// with the LLM service.
+pub const MINIMUM_REQUIRED_VERSION_HEADER_NAME: &str = "x-zed-minimum-required-version";
+
+/// The name of the header used to indicate which version f Zed the client is running.
+pub const ZED_VERSION_HEADER_NAME: &str = "x-zed-version";
 
 const USER_ACTION_HISTORY_SIZE: usize = 16;
 

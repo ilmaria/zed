@@ -9,13 +9,12 @@ use extension_host::headless_host::HeadlessExtensionStore;
 use fs::Fs;
 use gpui::{App, AppContext as _, AsyncApp, Context, Entity, PromptLevel};
 use http_client::HttpClient;
-use language::{LanguageBuffer, BufferEvent, LanguageRegistry, proto::serialize_operation};
+use language::{BufferEvent, LanguageBuffer, LanguageRegistry, proto::serialize_operation};
 use node_runtime::NodeRuntime;
 use project::{
     LspStore, LspStoreEvent, ManifestTree, PrettierStore, ProjectEnvironment, ProjectPath,
     ToolchainStore, WorktreeId,
     buffer_store::{BufferStore, BufferStoreEvent},
-    debugger::{breakpoint_store::BreakpointStore, dap_store::DapStore},
     git_store::GitStore,
     image_store::ImageId,
     lsp_store::log_store::{self, GlobalLogStore, LanguageServerKind, LogKind},
@@ -50,8 +49,6 @@ pub struct HeadlessProject {
     pub buffer_store: Entity<BufferStore>,
     pub lsp_store: Entity<LspStore>,
     pub task_store: Entity<TaskStore>,
-    pub dap_store: Entity<DapStore>,
-    pub breakpoint_store: Entity<BreakpointStore>,
     pub settings_observer: Entity<SettingsObserver>,
     pub next_entry_id: Arc<AtomicUsize>,
     pub languages: Arc<LanguageRegistry>,
@@ -90,7 +87,6 @@ impl HeadlessProject {
         init_worktree_trust: bool,
         cx: &mut Context<Self>,
     ) -> Self {
-        debug_adapter_extension::init(proxy.clone(), cx);
         languages::init(languages.clone(), fs.clone(), node_runtime.clone(), cx);
 
         let worktree_store = cx.new(|cx| {
@@ -127,30 +123,6 @@ impl HeadlessProject {
             let mut buffer_store = BufferStore::local(worktree_store.clone(), cx);
             buffer_store.shared(REMOTE_SERVER_PROJECT_ID, session.clone(), cx);
             buffer_store
-        });
-
-        let breakpoint_store = cx.new(|_| {
-            let mut breakpoint_store =
-                BreakpointStore::local(worktree_store.clone(), buffer_store.clone());
-            breakpoint_store.shared(REMOTE_SERVER_PROJECT_ID, session.clone());
-
-            breakpoint_store
-        });
-
-        let dap_store = cx.new(|cx| {
-            let mut dap_store = DapStore::new_local(
-                http_client.clone(),
-                node_runtime.clone(),
-                fs.clone(),
-                environment.clone(),
-                toolchain_store.read(cx).as_language_toolchain_store(),
-                worktree_store.clone(),
-                breakpoint_store.clone(),
-                true,
-                cx,
-            );
-            dap_store.shared(REMOTE_SERVER_PROJECT_ID, session.clone(), cx);
-            dap_store
         });
 
         let git_store = cx.new(|cx| {
@@ -248,8 +220,6 @@ impl HeadlessProject {
         session.subscribe_to_entity(REMOTE_SERVER_PROJECT_ID, &lsp_store);
         session.subscribe_to_entity(REMOTE_SERVER_PROJECT_ID, &task_store);
         session.subscribe_to_entity(REMOTE_SERVER_PROJECT_ID, &toolchain_store);
-        session.subscribe_to_entity(REMOTE_SERVER_PROJECT_ID, &dap_store);
-        session.subscribe_to_entity(REMOTE_SERVER_PROJECT_ID, &breakpoint_store);
         session.subscribe_to_entity(REMOTE_SERVER_PROJECT_ID, &settings_observer);
         session.subscribe_to_entity(REMOTE_SERVER_PROJECT_ID, &git_store);
 
@@ -291,9 +261,6 @@ impl HeadlessProject {
         LspStore::init(&session);
         TaskStore::init(Some(&session));
         ToolchainStore::init(&session);
-        DapStore::init(&session, cx);
-        // todo(debugger): Re init breakpoint store when we set it up for collab
-        BreakpointStore::init(&session);
         GitStore::init(&session);
 
         HeadlessProject {
@@ -305,8 +272,6 @@ impl HeadlessProject {
             buffer_store,
             lsp_store,
             task_store,
-            dap_store,
-            breakpoint_store,
             languages,
             extensions,
             git_store,

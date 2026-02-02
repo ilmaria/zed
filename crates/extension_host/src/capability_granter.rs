@@ -106,7 +106,6 @@ mod tests {
             languages: vec![],
             grammars: BTreeMap::default(),
             language_servers: BTreeMap::default(),
-            context_servers: BTreeMap::default(),
             agent_servers: BTreeMap::default(),
             slash_commands: BTreeMap::default(),
             snippets: None,

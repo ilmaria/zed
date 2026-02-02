@@ -238,19 +238,6 @@ impl Onboarding {
         go_to_welcome_page(cx);
     }
 
-    fn handle_sign_in(_: &SignIn, window: &mut Window, cx: &mut App) {
-        let client = Client::global(cx);
-
-        window
-            .spawn(cx, async move |cx| {
-                client
-                    .sign_in_with_optional_connect(true, cx)
-                    .await
-                    .notify_async_err(cx);
-            })
-            .detach();
-    }
-
     fn handle_open_account(_: &OpenAccount, _: &mut Window, cx: &mut App) {
         cx.open_url(&zed_urls::account_url(cx))
     }
@@ -274,7 +261,6 @@ impl Render for Onboarding {
             .size_full()
             .bg(cx.theme().colors().editor_background)
             .on_action(Self::on_finish)
-            .on_action(Self::handle_sign_in)
             .on_action(Self::handle_open_account)
             .on_action(cx.listener(|_, _: &menu::SelectNext, window, cx| {
                 window.focus_next(cx);

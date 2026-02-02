@@ -44,7 +44,7 @@ use gpui::{
     WeakEntity,
 };
 use language::{
-    LanguageBuffer, BufferEvent, Language, LanguageRegistry,
+    BufferEvent, Language, LanguageBuffer, LanguageRegistry,
     proto::{deserialize_version, serialize_version},
 };
 use parking_lot::Mutex;

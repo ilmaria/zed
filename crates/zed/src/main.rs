@@ -490,7 +490,6 @@ fn main() {
 
         let node_runtime = NodeRuntime::new(client.http_client(), Some(shell_env_loaded_rx), rx);
 
-        debug_adapter_extension::init(extension_host_proxy.clone(), cx);
         languages::init(languages.clone(), fs.clone(), node_runtime.clone(), cx);
         let user_store = cx.new(|cx| UserStore::new(client.clone(), cx));
         let workspace_store = cx.new(|_| WorkspaceStore::new());
@@ -519,10 +518,6 @@ fn main() {
         Client::set_global(client.clone(), cx);
 
         zed::init(cx);
-        project::Project::init(&client, cx);
-        debugger_ui::init(cx);
-        debugger_tools::init(cx);
-        client::init(&client, cx);
 
         let system_id = cx.background_executor().block(system_id).ok();
         let installation_id = cx.background_executor().block(installation_id).ok();
@@ -565,9 +560,6 @@ fn main() {
         });
         AppState::set_global(Arc::downgrade(&app_state), cx);
 
-        auto_update::init(client.clone(), cx);
-        dap_adapters::init(cx);
-        auto_update_ui::init(cx);
         reliability::init(client.clone(), cx);
         extension_host::init(
             extension_host_proxy.clone(),
@@ -594,7 +586,6 @@ fn main() {
             cx,
         );
         zed::telemetry_log::init(cx);
-        zed::remote_debug::init(cx);
         edit_prediction_ui::init(cx);
         snippet_provider::init(cx);
         edit_prediction_registry::init(app_state.client.clone(), app_state.user_store.clone(), cx);
@@ -1020,16 +1011,6 @@ fn handle_open_request(request: OpenRequest, app_state: Arc<AppState>, cx: &mut 
 }
 
 async fn authenticate(client: Arc<Client>, cx: &AsyncApp) -> Result<()> {
-    if stdout_is_a_pty() {
-        if client::IMPERSONATE_LOGIN.is_some() {
-            client.sign_in_with_optional_connect(false, cx).await?;
-        } else if client.has_credentials(cx).await {
-            client.sign_in_with_optional_connect(true, cx).await?;
-        }
-    } else if client.has_credentials(cx).await {
-        client.sign_in_with_optional_connect(true, cx).await?;
-    }
-
     Ok(())
 }
 

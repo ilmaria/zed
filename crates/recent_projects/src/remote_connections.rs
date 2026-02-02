@@ -3,9 +3,8 @@ use std::{
     sync::Arc,
 };
 
-use anyhow::{Context as _, Result};
+use anyhow::{Context as _, Result, anyhow};
 use askpass::EncryptedPassword;
-use auto_update::AutoUpdater;
 use editor::Editor;
 use extension_host::ExtensionStore;
 use futures::channel::oneshot;
@@ -527,53 +526,24 @@ impl remote::RemoteClientDelegate for RemoteClientDelegate {
 
     fn download_server_binary_locally(
         &self,
-        platform: RemotePlatform,
-        release_channel: ReleaseChannel,
-        version: Option<Version>,
-        cx: &mut AsyncApp,
+        _platform: RemotePlatform,
+        _release_channel: ReleaseChannel,
+        _version: Option<Version>,
+        _cx: &mut AsyncApp,
     ) -> Task<anyhow::Result<PathBuf>> {
-        let this = self.clone();
-        cx.spawn(async move |cx| {
-            AutoUpdater::download_remote_server_release(
-                release_channel,
-                version.clone(),
-                platform.os.as_str(),
-                platform.arch.as_str(),
-                move |status, cx| this.set_status(Some(status), cx),
-                cx,
-            )
-            .await
-            .with_context(|| {
-                format!(
-                    "Downloading remote server binary (version: {}, os: {}, arch: {})",
-                    version
-                        .as_ref()
-                        .map(|v| format!("{}", v))
-                        .unwrap_or("unknown".to_string()),
-                    platform.os,
-                    platform.arch,
-                )
-            })
-        })
+        Task::ready(Err(anyhow!(
+            "download_server_binary_locally: not implemented"
+        )))
     }
 
     fn get_download_url(
         &self,
-        platform: RemotePlatform,
-        release_channel: ReleaseChannel,
-        version: Option<Version>,
-        cx: &mut AsyncApp,
+        _platform: RemotePlatform,
+        _release_channel: ReleaseChannel,
+        _version: Option<Version>,
+        _cx: &mut AsyncApp,
     ) -> Task<Result<Option<String>>> {
-        cx.spawn(async move |cx| {
-            AutoUpdater::get_remote_server_release_url(
-                release_channel,
-                version,
-                platform.os.as_str(),
-                platform.arch.as_str(),
-                cx,
-            )
-            .await
-        })
+        Task::ready(Ok(None))
     }
 }
 

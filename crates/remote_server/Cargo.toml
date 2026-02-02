@@ -28,8 +28,6 @@ clap.workspace = true
 client.workspace = true
 collections.workspace = true
 crashes.workspace = true
-dap_adapters.workspace = true
-debug_adapter_extension.workspace = true
 env_logger.workspace = true
 extension.workspace = true
 extension_host.workspace = true
@@ -78,10 +76,8 @@ libc.workspace = true
 minidumper.workspace = true
 
 [dev-dependencies]
-action_log.workspace = true
 client = { workspace = true, features = ["test-support"] }
 clock = { workspace = true, features = ["test-support"] }
-dap = { workspace = true, features = ["test-support"] }
 editor = { workspace = true, features = ["test-support"] }
 workspace = { workspace = true, features = ["test-support"] }
 fs = { workspace = true, features = ["test-support"] }

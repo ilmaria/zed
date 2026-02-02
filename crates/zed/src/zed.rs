@@ -6,7 +6,6 @@ mod migrate;
 mod open_listener;
 mod open_url_modal;
 mod quick_action_bar;
-pub mod remote_debug;
 pub mod telemetry_log;
 #[cfg(all(target_os = "macos", any(test, feature = "test-support")))]
 pub mod visual_tests;
@@ -19,7 +18,6 @@ use assets::Assets;
 use breadcrumbs::Breadcrumbs;
 use client::zed_urls;
 use collections::VecDeque;
-use debugger_ui::debugger_panel::DebugPanel;
 use editor::{EditType, Editor, MultiBuffer};
 use extension_host::ExtensionStore;
 use feature_flags::{FeatureFlagAppExt, PanicFeatureFlag};
@@ -621,7 +619,6 @@ fn initialize_panels(window: &mut Window, cx: &mut Context<Workspace>) {
         let outline_panel = OutlinePanel::load(workspace_handle.clone(), cx.clone());
         let terminal_panel = TerminalPanel::load(workspace_handle.clone(), cx.clone());
         let git_panel = GitPanel::load(workspace_handle.clone(), cx.clone());
-        let debug_panel = DebugPanel::load(workspace_handle.clone(), cx);
 
         async fn add_panel_when_ready(
             panel_task: impl Future<Output = anyhow::Result<Entity<impl workspace::Panel>>> + 'static,
@@ -643,7 +640,6 @@ fn initialize_panels(window: &mut Window, cx: &mut Context<Workspace>) {
             add_panel_when_ready(outline_panel, workspace_handle.clone(), cx.clone()),
             add_panel_when_ready(terminal_panel, workspace_handle.clone(), cx.clone()),
             add_panel_when_ready(git_panel, workspace_handle.clone(), cx.clone()),
-            add_panel_when_ready(debug_panel, workspace_handle.clone(), cx.clone()),
         );
 
         anyhow::Ok(())
@@ -1036,8 +1032,6 @@ fn initialize_pane(
             toolbar.add_item(project_search_bar, window, cx);
             let lsp_log_item = cx.new(|_| LspLogToolbarItemView::new());
             toolbar.add_item(lsp_log_item, window, cx);
-            let dap_log_item = cx.new(|_| debugger_tools::DapLogToolbarItemView::new());
-            toolbar.add_item(dap_log_item, window, cx);
             let telemetry_log_item =
                 cx.new(|cx| telemetry_log::TelemetryLogToolbarItemView::new(window, cx));
             toolbar.add_item(telemetry_log_item, window, cx);
@@ -4637,11 +4631,6 @@ mod tests {
             repl::init(app_state.fs.clone(), cx);
             repl::notebook::init(cx);
             tasks_ui::init(cx);
-            project::debugger::breakpoint_store::BreakpointStore::init(
-                &app_state.client.clone().into(),
-            );
-            project::debugger::dap_store::DapStore::init(&app_state.client.clone().into(), cx);
-            debugger_ui::init(cx);
             initialize_workspace(app_state.clone(), cx);
             search::init(cx);
             app_state

@@ -60,7 +60,6 @@ pub fn app_menus(cx: &mut App) -> Vec<Menu> {
             name: "Zed".into(),
             items: vec![
                 MenuItem::action("About Zed", zed_actions::About),
-                MenuItem::action("Check for Updates", auto_update::Check),
                 MenuItem::separator(),
                 MenuItem::submenu(Menu {
                     name: "Settings".into(),
@@ -266,19 +265,9 @@ pub fn app_menus(cx: &mut App) -> Vec<Menu> {
                         reveal_target: None,
                     },
                 ),
-                MenuItem::action("Start Debugger", debugger_ui::Start),
                 MenuItem::separator(),
                 MenuItem::action("Edit tasks.json...", crate::zed::OpenProjectTasks),
-                MenuItem::action("Edit debug.json...", zed_actions::OpenProjectDebugTasks),
                 MenuItem::separator(),
-                MenuItem::action("Continue", debugger_ui::Continue),
-                MenuItem::action("Step Over", debugger_ui::StepOver),
-                MenuItem::action("Step Into", debugger_ui::StepInto),
-                MenuItem::action("Step Out", debugger_ui::StepOut),
-                MenuItem::separator(),
-                MenuItem::action("Toggle Breakpoint", editor::actions::ToggleBreakpoint),
-                MenuItem::action("Edit Breakpoint", editor::actions::EditLogBreakpoint),
-                MenuItem::action("Clear All Breakpoints", debugger_ui::ClearAllBreakpoints),
             ],
         },
         Menu {
@@ -292,10 +281,6 @@ pub fn app_menus(cx: &mut App) -> Vec<Menu> {
         Menu {
             name: "Help".into(),
             items: vec![
-                MenuItem::action(
-                    "View Release Notes Locally",
-                    auto_update_ui::ViewReleaseNotesLocally,
-                ),
                 MenuItem::action("View Telemetry", zed_actions::OpenTelemetryLog),
                 MenuItem::action("View Dependency Licenses", zed_actions::OpenLicenses),
                 MenuItem::action("Show Welcome", onboarding::ShowWelcome),

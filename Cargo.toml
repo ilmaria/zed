@@ -1,38 +1,22 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/action_log",
     "crates/activity_indicator",
     "crates/askpass",
     "crates/assets",
-    "crates/auto_update",
-    "crates/auto_update_helper",
-    "crates/auto_update_ui",
-    "crates/aws_http_client",
     "crates/breadcrumbs",
     "crates/buffer_diff",
     "crates/cli",
     "crates/client",
     "crates/clock",
-    "crates/cloud_api_client",
-    "crates/cloud_api_types",
-    "crates/cloud_llm_client",
     "crates/collections",
     "crates/command_palette",
     "crates/command_palette_hooks",
     "crates/component",
     "crates/component_preview",
-    "crates/context_server",
     "crates/copilot",
     "crates/crashes",
-    "crates/credentials_provider",
-    "crates/dap",
-    "crates/dap_adapters",
     "crates/db",
-    "crates/debug_adapter_extension",
-    "crates/debugger_tools",
-    "crates/debugger_ui",
-    "crates/denoise",
     "crates/diagnostics",
     "crates/docs_preprocessor",
     "crates/edit_prediction",
@@ -79,7 +63,6 @@ members = [
     "crates/language_tools",
     "crates/languages",
     "crates/line_ending_selector",
-    "crates/lmstudio",
     "crates/lsp",
     "crates/markdown",
     "crates/markdown_preview",
@@ -157,13 +140,11 @@ members = [
     "crates/ui_prompt",
     "crates/util",
     "crates/util_macros",
-    "crates/vercel",
     "crates/which_key",
     "crates/watch",
     "crates/workspace",
     "crates/worktree",
     "crates/worktree_benchmarks",
-    "crates/x_ai",
     "crates/zed",
     "crates/zed_actions",
     "crates/zed_env_vars",
@@ -202,37 +183,24 @@ edition = "2024"
 # Workspace member crates
 #
 
-action_log = { path = "crates/action_log" }
 activity_indicator = { path = "crates/activity_indicator" }
 askpass = { path = "crates/askpass" }
 assets = { path = "crates/assets" }
-auto_update = { path = "crates/auto_update" }
-auto_update_ui = { path = "crates/auto_update_ui" }
-aws_http_client = { path = "crates/aws_http_client" }
 breadcrumbs = { path = "crates/breadcrumbs" }
 buffer_diff = { path = "crates/buffer_diff" }
 cli = { path = "crates/cli" }
 client = { path = "crates/client" }
 clock = { path = "crates/clock" }
-cloud_api_client = { path = "crates/cloud_api_client" }
-cloud_api_types = { path = "crates/cloud_api_types" }
-cloud_llm_client = { path = "crates/cloud_llm_client" }
 collections = { path = "crates/collections", version = "0.1.0" }
 command_palette = { path = "crates/command_palette" }
 command_palette_hooks = { path = "crates/command_palette_hooks" }
 component = { path = "crates/component" }
 component_preview  = { path = "crates/component_preview" }
-context_server = { path = "crates/context_server" }
 copilot = { path = "crates/copilot" }
 crashes = { path = "crates/crashes" }
 credentials_provider = { path = "crates/credentials_provider" }
 crossbeam = "0.8.4"
-dap = { path = "crates/dap" }
-dap_adapters = { path = "crates/dap_adapters" }
 db = { path = "crates/db" }
-debug_adapter_extension = { path = "crates/debug_adapter_extension" }
-debugger_tools = { path = "crates/debugger_tools" }
-debugger_ui = { path = "crates/debugger_ui" }
 derive_refineable = { path = "crates/refineable/derive_refineable" }
 diagnostics = { path = "crates/diagnostics" }
 editor = { path = "crates/editor" }
@@ -274,7 +242,6 @@ language_selector = { path = "crates/language_selector" }
 language_tools = { path = "crates/language_tools" }
 languages = { path = "crates/languages" }
 line_ending_selector = { path = "crates/line_ending_selector" }
-lmstudio = { path = "crates/lmstudio" }
 lsp = { path = "crates/lsp" }
 markdown = { path = "crates/markdown" }
 markdown_preview = { path = "crates/markdown_preview" }
@@ -309,7 +276,6 @@ remote = { path = "crates/remote" }
 remote_server = { path = "crates/remote_server" }
 repl = { path = "crates/repl" }
 reqwest_client = { path = "crates/reqwest_client" }
-rodio = { git = "https://github.com/RustAudio/rodio", rev ="e2074c6c2acf07b57cf717e076bdda7a9ac6e70b", features = ["wav", "playback", "wav_output", "recording"] }
 rope = { path = "crates/rope" }
 rpc = { path = "crates/rpc" }
 search = { path = "crates/search" }
@@ -347,13 +313,10 @@ ui_macros = { path = "crates/ui_macros" }
 ui_prompt = { path = "crates/ui_prompt" }
 util = { path = "crates/util" }
 util_macros = { path = "crates/util_macros" }
-vercel = { path = "crates/vercel" }
 which_key = { path = "crates/which_key" }
-
 watch = { path = "crates/watch" }
 workspace = { path = "crates/workspace" }
 worktree = { path = "crates/worktree" }
-x_ai = { path = "crates/x_ai" }
 zed = { path = "crates/zed" }
 zed_actions = { path = "crates/zed_actions" }
 zed_env_vars = { path = "crates/zed_env_vars" }
@@ -386,12 +349,6 @@ async-task = "4.7"
 async-trait = "0.1"
 async-tungstenite = "0.31.0"
 async_zip = { version = "0.0.18", features = ["deflate", "deflate64"] }
-aws-config = { version = "1.8.10", features = ["behavior-version-latest"] }
-aws-credential-types = { version = "1.2.8", features = [
-    "hardcoded-credentials",
-] }
-aws-smithy-runtime-api = { version = "1.9.2", features = ["http-1x", "client"] }
-aws-smithy-types = { version = "1.3.4", features = ["http-body-1-x"] }
 backtrace = "0.3"
 base64 = "0.22"
 bincode = "1.2.1"
@@ -744,7 +701,6 @@ edit_prediction_ui = { codegen-units = 1 }
 install_cli = { codegen-units = 1 }
 journal = { codegen-units = 1 }
 json_schema_store = { codegen-units = 1 }
-lmstudio = { codegen-units = 1 }
 menu = { codegen-units = 1 }
 notifications = { codegen-units = 1 }
 outline = { codegen-units = 1 }

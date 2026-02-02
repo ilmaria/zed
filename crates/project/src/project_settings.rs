@@ -1,7 +1,5 @@
 use anyhow::Context as _;
 use collections::HashMap;
-use context_server::ContextServerCommand;
-use dap::adapters::DebugAdapterName;
 use fs::Fs;
 use futures::StreamExt as _;
 use gpui::{AsyncApp, BorrowAppContext, Context, Entity, EventEmitter, Subscription, Task};
@@ -20,8 +18,8 @@ use serde::{Deserialize, Serialize};
 pub use settings::DirenvSettings;
 pub use settings::LspSettings;
 use settings::{
-    DapSettingsContent, InvalidSettingsError, LocalSettingsKind, RegisterSetting, Settings,
-    SettingsLocation, SettingsStore, parse_json_with_comments, watch_config_file,
+    InvalidSettingsError, LocalSettingsKind, RegisterSetting, Settings, SettingsLocation,
+    SettingsStore, parse_json_with_comments, watch_config_file,
 };
 use std::{cell::OnceCell, collections::BTreeMap, path::PathBuf, sync::Arc, time::Duration};
 use task::{DebugTaskFile, TaskTemplates, VsCodeDebugTaskFile, VsCodeTaskFile};
@@ -52,15 +50,6 @@ pub struct ProjectSettings {
 
     /// Common language server settings.
     pub global_lsp_settings: GlobalLspSettings,
-
-    /// Configuration for Debugger-related features
-    pub dap: HashMap<DebugAdapterName, DapSettings>,
-
-    /// Settings for context servers used for AI-related features.
-    pub context_servers: HashMap<Arc<str>, ContextServerSettings>,
-
-    /// Default timeout for context server requests in seconds.
-    pub context_server_timeout: u64,
 
     /// Configuration for Diagnostics-related features.
     pub diagnostics: DiagnosticsSettings,
@@ -122,113 +111,6 @@ pub struct GlobalLspSettings {
     ///
     /// Default: `true`
     pub button: bool,
-}
-
-#[derive(Deserialize, Serialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
-#[serde(tag = "source", rename_all = "snake_case")]
-pub enum ContextServerSettings {
-    Stdio {
-        /// Whether the context server is enabled.
-        #[serde(default = "default_true")]
-        enabled: bool,
-
-        #[serde(flatten)]
-        command: ContextServerCommand,
-    },
-    Http {
-        /// Whether the context server is enabled.
-        #[serde(default = "default_true")]
-        enabled: bool,
-        /// The URL of the remote context server.
-        url: String,
-        /// Optional authentication configuration for the remote server.
-        #[serde(skip_serializing_if = "HashMap::is_empty", default)]
-        headers: HashMap<String, String>,
-        /// Timeout for tool calls in milliseconds.
-        timeout: Option<u64>,
-    },
-    Extension {
-        /// Whether the context server is enabled.
-        #[serde(default = "default_true")]
-        enabled: bool,
-        /// The settings for this context server specified by the extension.
-        ///
-        /// Consult the documentation for the context server to see what settings
-        /// are supported.
-        settings: serde_json::Value,
-    },
-}
-
-impl From<settings::ContextServerSettingsContent> for ContextServerSettings {
-    fn from(value: settings::ContextServerSettingsContent) -> Self {
-        match value {
-            settings::ContextServerSettingsContent::Stdio { enabled, command } => {
-                ContextServerSettings::Stdio { enabled, command }
-            }
-            settings::ContextServerSettingsContent::Extension { enabled, settings } => {
-                ContextServerSettings::Extension { enabled, settings }
-            }
-            settings::ContextServerSettingsContent::Http {
-                enabled,
-                url,
-                headers,
-                timeout,
-            } => ContextServerSettings::Http {
-                enabled,
-                url,
-                headers,
-                timeout,
-            },
-        }
-    }
-}
-impl Into<settings::ContextServerSettingsContent> for ContextServerSettings {
-    fn into(self) -> settings::ContextServerSettingsContent {
-        match self {
-            ContextServerSettings::Stdio { enabled, command } => {
-                settings::ContextServerSettingsContent::Stdio { enabled, command }
-            }
-            ContextServerSettings::Extension { enabled, settings } => {
-                settings::ContextServerSettingsContent::Extension { enabled, settings }
-            }
-            ContextServerSettings::Http {
-                enabled,
-                url,
-                headers,
-                timeout,
-            } => settings::ContextServerSettingsContent::Http {
-                enabled,
-                url,
-                headers,
-                timeout,
-            },
-        }
-    }
-}
-
-impl ContextServerSettings {
-    pub fn default_extension() -> Self {
-        Self::Extension {
-            enabled: true,
-            settings: serde_json::json!({}),
-        }
-    }
-
-    pub fn enabled(&self) -> bool {
-        match self {
-            ContextServerSettings::Stdio { enabled, .. } => *enabled,
-            ContextServerSettings::Http { enabled, .. } => *enabled,
-            ContextServerSettings::Extension { enabled, .. } => *enabled,
-        }
-    }
-
-    pub fn set_enabled(&mut self, enabled: bool) {
-        match self {
-            ContextServerSettings::Stdio { enabled: e, .. } => *e = enabled,
-            ContextServerSettings::Http { enabled: e, .. } => *e = enabled,
-            ContextServerSettings::Extension { enabled: e, .. } => *e = enabled,
-        }
-    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -563,13 +445,6 @@ impl Settings for ProjectSettings {
             path_style: git.path_style.unwrap().into(),
         };
         Self {
-            context_servers: project
-                .context_servers
-                .clone()
-                .into_iter()
-                .map(|(key, value)| (key, value.into()))
-                .collect(),
-            context_server_timeout: project.context_server_timeout.unwrap_or(60),
             lsp: project
                 .lsp
                 .clone()
@@ -584,12 +459,6 @@ impl Settings for ProjectSettings {
                     .button
                     .unwrap(),
             },
-            dap: project
-                .dap
-                .clone()
-                .into_iter()
-                .map(|(key, value)| (DebugAdapterName(key.into()), DapSettings::from(value)))
-                .collect(),
             diagnostics: DiagnosticsSettings {
                 button: diagnostics.button.unwrap(),
                 include_warnings: diagnostics.include_warnings.unwrap(),
@@ -1338,29 +1207,4 @@ pub fn local_settings_kind_to_proto(kind: LocalSettingsKind) -> proto::LocalSett
         LocalSettingsKind::Editorconfig => proto::LocalSettingsKind::Editorconfig,
         LocalSettingsKind::Debug => proto::LocalSettingsKind::Debug,
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct DapSettings {
-    pub binary: DapBinary,
-    pub args: Vec<String>,
-    pub env: HashMap<String, String>,
-}
-
-impl From<DapSettingsContent> for DapSettings {
-    fn from(content: DapSettingsContent) -> Self {
-        DapSettings {
-            binary: content
-                .binary
-                .map_or_else(|| DapBinary::Default, |binary| DapBinary::Custom(binary)),
-            args: content.args.unwrap_or_default(),
-            env: content.env.unwrap_or_default(),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum DapBinary {
-    Default,
-    Custom(String),
 }

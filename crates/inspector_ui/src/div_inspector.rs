@@ -10,8 +10,8 @@ use gpui::{
 };
 use language::language_settings::SoftWrap;
 use language::{
-    Anchor, LanguageBuffer, BufferSnapshot, CodeLabel, Diagnostic, DiagnosticEntry, DiagnosticSet,
-    DiagnosticSeverity, LanguageServerId, Point, ToOffset as _, ToPoint as _,
+    Anchor, BufferSnapshot, CodeLabel, Diagnostic, DiagnosticEntry, DiagnosticSet,
+    DiagnosticSeverity, LanguageBuffer, LanguageServerId, Point, ToOffset as _, ToPoint as _,
 };
 use project::lsp_store::CompletionDocumentation;
 use project::{
@@ -87,7 +87,9 @@ impl DivInspector {
                 // Rust Analyzer doesn't get started for it.
                 let rust_language_result = languages.language_for_name("Rust").await;
                 let rust_style_buffer = rust_language_result.map(|rust_language| {
-                    cx.new(|cx| LanguageBuffer::local("", cx).with_language_async(rust_language, cx))
+                    cx.new(|cx| {
+                        LanguageBuffer::local("", cx).with_language_async(rust_language, cx)
+                    })
                 });
 
                 match json_style_buffer.and_then(|json_style_buffer| {
@@ -496,7 +498,6 @@ impl DivInspector {
             editor.set_soft_wrap_mode(SoftWrap::EditorWidth, cx);
             editor.set_show_line_numbers(false, cx);
             editor.set_show_code_actions(false, cx);
-            editor.set_show_breakpoints(false, cx);
             editor.set_show_git_diff_gutter(false, cx);
             editor.set_show_runnables(false, cx);
             editor.set_show_edit_predictions(Some(false), window, cx);

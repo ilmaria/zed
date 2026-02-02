@@ -62,10 +62,8 @@ pub(crate) fn settings_data(cx: &App) -> Vec<SettingsPage> {
         search_and_files_page(),
         window_and_layout_page(),
         panels_page(),
-        debugger_page(),
         terminal_page(),
         version_control_page(),
-        collaboration_page(),
         ai_page(),
         network_page(),
     ]
@@ -2988,7 +2986,7 @@ fn search_and_files_page() -> SettingsPage {
 }
 
 fn window_and_layout_page() -> SettingsPage {
-    fn status_bar_section() -> [SettingsPageItem; 9] {
+    fn status_bar_section() -> [SettingsPageItem; 8] {
         [
             SettingsPageItem::SectionHeader("Status Bar"),
             SettingsPageItem::SettingItem(SettingItem {
@@ -3115,19 +3113,6 @@ fn window_and_layout_page() -> SettingsPage {
                             .search
                             .get_or_insert_default()
                             .button = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Debugger Button",
-                description: "Show the debugger button in the status bar.",
-                field: Box::new(SettingField {
-                    json_path: Some("debugger.button"),
-                    pick: |settings_content| settings_content.debugger.as_ref()?.button.as_ref(),
-                    write: |settings_content, value| {
-                        settings_content.debugger.get_or_insert_default().button = value;
                     },
                 }),
                 metadata: None,
@@ -4806,25 +4791,6 @@ fn panels_page() -> SettingsPage {
         ]
     }
 
-    fn debugger_panel_section() -> [SettingsPageItem; 2] {
-        [
-            SettingsPageItem::SectionHeader("Debugger Panel"),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Debugger Panel Dock",
-                description: "The dock position of the debug panel.",
-                field: Box::new(SettingField {
-                    json_path: Some("debugger.dock"),
-                    pick: |settings_content| settings_content.debugger.as_ref()?.dock.as_ref(),
-                    write: |settings_content, value| {
-                        settings_content.debugger.get_or_insert_default().dock = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-        ]
-    }
-
     fn notification_panel_section() -> [SettingsPageItem; 4] {
         [
             SettingsPageItem::SectionHeader("Notification Panel"),
@@ -4969,124 +4935,8 @@ fn panels_page() -> SettingsPage {
             terminal_panel_section(),
             outline_panel_section(),
             git_panel_section(),
-            debugger_panel_section(),
             notification_panel_section(),
-            collaboration_panel_section(),
         ],
-    }
-}
-
-fn debugger_page() -> SettingsPage {
-    fn general_section() -> [SettingsPageItem; 6] {
-        [
-            SettingsPageItem::SectionHeader("General"),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Stepping Granularity",
-                description: "Determines the stepping granularity for debug operations.",
-                field: Box::new(SettingField {
-                    json_path: Some("debugger.stepping_granularity"),
-                    pick: |settings_content| {
-                        settings_content
-                            .debugger
-                            .as_ref()?
-                            .stepping_granularity
-                            .as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content
-                            .debugger
-                            .get_or_insert_default()
-                            .stepping_granularity = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Save Breakpoints",
-                description: "Whether breakpoints should be reused across Zed sessions.",
-                field: Box::new(SettingField {
-                    json_path: Some("debugger.save_breakpoints"),
-                    pick: |settings_content| {
-                        settings_content
-                            .debugger
-                            .as_ref()?
-                            .save_breakpoints
-                            .as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content
-                            .debugger
-                            .get_or_insert_default()
-                            .save_breakpoints = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Timeout",
-                description: "Time in milliseconds until timeout error when connecting to a TCP debug adapter.",
-                field: Box::new(SettingField {
-                    json_path: Some("debugger.timeout"),
-                    pick: |settings_content| settings_content.debugger.as_ref()?.timeout.as_ref(),
-                    write: |settings_content, value| {
-                        settings_content.debugger.get_or_insert_default().timeout = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Log DAP Communications",
-                description: "Whether to log messages between active debug adapters and Zed.",
-                field: Box::new(SettingField {
-                    json_path: Some("debugger.log_dap_communications"),
-                    pick: |settings_content| {
-                        settings_content
-                            .debugger
-                            .as_ref()?
-                            .log_dap_communications
-                            .as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content
-                            .debugger
-                            .get_or_insert_default()
-                            .log_dap_communications = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Format DAP Log Messages",
-                description: "Whether to format DAP messages when adding them to debug adapter logger.",
-                field: Box::new(SettingField {
-                    json_path: Some("debugger.format_dap_log_messages"),
-                    pick: |settings_content| {
-                        settings_content
-                            .debugger
-                            .as_ref()?
-                            .format_dap_log_messages
-                            .as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content
-                            .debugger
-                            .get_or_insert_default()
-                            .format_dap_log_messages = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-        ]
-    }
-
-    SettingsPage {
-        title: "Debugger",
-        items: concat_sections![general_section()],
     }
 }
 
@@ -6282,145 +6132,6 @@ fn version_control_page() -> SettingsPage {
     }
 }
 
-fn collaboration_page() -> SettingsPage {
-    fn calls_section() -> [SettingsPageItem; 3] {
-        [
-            SettingsPageItem::SectionHeader("Calls"),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Mute On Join",
-                description: "Whether the microphone should be muted when joining a channel or a call.",
-                field: Box::new(SettingField {
-                    json_path: Some("calls.mute_on_join"),
-                    pick: |settings_content| settings_content.calls.as_ref()?.mute_on_join.as_ref(),
-                    write: |settings_content, value| {
-                        settings_content.calls.get_or_insert_default().mute_on_join = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Share On Join",
-                description: "Whether your current project should be shared when joining an empty channel.",
-                field: Box::new(SettingField {
-                    json_path: Some("calls.share_on_join"),
-                    pick: |settings_content| {
-                        settings_content.calls.as_ref()?.share_on_join.as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content.calls.get_or_insert_default().share_on_join = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-        ]
-    }
-
-    fn experimental_section() -> [SettingsPageItem; 6] {
-        [
-            SettingsPageItem::SectionHeader("Experimental"),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Rodio Audio",
-                description: "Opt into the new audio system.",
-                field: Box::new(SettingField {
-                    json_path: Some("audio.experimental.rodio_audio"),
-                    pick: |settings_content| settings_content.audio.as_ref()?.rodio_audio.as_ref(),
-                    write: |settings_content, value| {
-                        settings_content.audio.get_or_insert_default().rodio_audio = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Auto Microphone Volume",
-                description: "Automatically adjust microphone volume (requires rodio audio).",
-                field: Box::new(SettingField {
-                    json_path: Some("audio.experimental.auto_microphone_volume"),
-                    pick: |settings_content| {
-                        settings_content
-                            .audio
-                            .as_ref()?
-                            .auto_microphone_volume
-                            .as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content
-                            .audio
-                            .get_or_insert_default()
-                            .auto_microphone_volume = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Auto Speaker Volume",
-                description: "Automatically adjust volume of other call members (requires rodio audio).",
-                field: Box::new(SettingField {
-                    json_path: Some("audio.experimental.auto_speaker_volume"),
-                    pick: |settings_content| {
-                        settings_content
-                            .audio
-                            .as_ref()?
-                            .auto_speaker_volume
-                            .as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content
-                            .audio
-                            .get_or_insert_default()
-                            .auto_speaker_volume = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Denoise",
-                description: "Remove background noises (requires rodio audio).",
-                field: Box::new(SettingField {
-                    json_path: Some("audio.experimental.denoise"),
-                    pick: |settings_content| settings_content.audio.as_ref()?.denoise.as_ref(),
-                    write: |settings_content, value| {
-                        settings_content.audio.get_or_insert_default().denoise = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Legacy Audio Compatible",
-                description: "Use audio parameters compatible with previous versions (requires rodio audio).",
-                field: Box::new(SettingField {
-                    json_path: Some("audio.experimental.legacy_audio_compatible"),
-                    pick: |settings_content| {
-                        settings_content
-                            .audio
-                            .as_ref()?
-                            .legacy_audio_compatible
-                            .as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content
-                            .audio
-                            .get_or_insert_default()
-                            .legacy_audio_compatible = value;
-                    },
-                }),
-                metadata: None,
-                files: USER,
-            }),
-        ]
-    }
-
-    SettingsPage {
-        title: "Collaboration",
-        items: concat_sections![calls_section(), experimental_section()],
-    }
-}
-
 fn ai_page() -> SettingsPage {
     fn general_section() -> [SettingsPageItem; 2] {
         [
@@ -6437,27 +6148,6 @@ fn ai_page() -> SettingsPage {
                 }),
                 metadata: None,
                 files: USER,
-            }),
-        ]
-    }
-
-    fn context_servers_section() -> [SettingsPageItem; 2] {
-        [
-            SettingsPageItem::SectionHeader("Context Servers"),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Context Server Timeout",
-                description: "Default timeout in seconds for context server tool calls. Can be overridden per-server in context_servers configuration.",
-                field: Box::new(SettingField {
-                    json_path: Some("context_server_timeout"),
-                    pick: |settings_content| {
-                        settings_content.project.context_server_timeout.as_ref()
-                    },
-                    write: |settings_content, value| {
-                        settings_content.project.context_server_timeout = value;
-                    },
-                }),
-                metadata: None,
-                files: USER | PROJECT,
             }),
         ]
     }
@@ -6495,7 +6185,6 @@ fn ai_page() -> SettingsPage {
         title: "AI",
         items: concat_sections![
             general_section(),
-            context_servers_section(),
             edit_prediction_language_settings_section(),
             edit_prediction_display_sub_section()
         ],
@@ -7596,7 +7285,7 @@ fn language_settings_data() -> Box<[SettingsPageItem]> {
         ]
     }
 
-    fn miscellaneous_section() -> [SettingsPageItem; 6] {
+    fn miscellaneous_section() -> [SettingsPageItem; 5] {
         [
             SettingsPageItem::SectionHeader("Miscellaneous"),
             SettingsPageItem::SettingItem(SettingItem {
@@ -7615,32 +7304,6 @@ fn language_settings_data() -> Box<[SettingsPageItem]> {
                         })
                     },
                 }),
-                metadata: None,
-                files: USER | PROJECT,
-            }),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Debuggers",
-                description: "Preferred debuggers for this language.",
-                field: Box::new(
-                    SettingField {
-                        json_path: Some("languages.$(language).debuggers"),
-                        pick: |settings_content| {
-                            language_settings_field(settings_content, |language| {
-                                language.debuggers.as_ref()
-                            })
-                        },
-                        write: |settings_content, value| {
-                            language_settings_field_mut(
-                                settings_content,
-                                value,
-                                |language, value| {
-                                    language.debuggers = value;
-                                },
-                            )
-                        },
-                    }
-                    .unimplemented(),
-                ),
                 metadata: None,
                 files: USER | PROJECT,
             }),
@@ -7958,38 +7621,6 @@ fn non_editor_language_settings_data() -> Box<[SettingsPageItem]> {
         ]
     }
 
-    fn debugger_section() -> [SettingsPageItem; 2] {
-        [
-            SettingsPageItem::SectionHeader("Debuggers"),
-            SettingsPageItem::SettingItem(SettingItem {
-                title: "Debuggers",
-                description: "Preferred debuggers for this language.",
-                field: Box::new(
-                    SettingField {
-                        json_path: Some("languages.$(language).debuggers"),
-                        pick: |settings_content| {
-                            language_settings_field(settings_content, |language| {
-                                language.debuggers.as_ref()
-                            })
-                        },
-                        write: |settings_content, value| {
-                            language_settings_field_mut(
-                                settings_content,
-                                value,
-                                |language, value| {
-                                    language.debuggers = value;
-                                },
-                            )
-                        },
-                    }
-                    .unimplemented(),
-                ),
-                metadata: None,
-                files: USER | PROJECT,
-            }),
-        ]
-    }
-
     fn prettier_section() -> [SettingsPageItem; 5] {
         [
             SettingsPageItem::SectionHeader("Prettier"),
@@ -8086,12 +7717,7 @@ fn non_editor_language_settings_data() -> Box<[SettingsPageItem]> {
         ]
     }
 
-    concat_sections!(
-        lsp_section(),
-        lsp_completions_section(),
-        debugger_section(),
-        prettier_section(),
-    )
+    concat_sections!(lsp_section(), lsp_completions_section(), prettier_section(),)
 }
 
 fn edit_prediction_language_settings_section() -> [SettingsPageItem; 3] {

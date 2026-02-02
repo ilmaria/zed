@@ -26,7 +26,6 @@ wasmtime::component::bindgen!({
         "zed:extension/platform": latest::zed::extension::platform,
         "zed:extension/process": latest::zed::extension::process,
         "zed:extension/slash-command": latest::zed::extension::slash_command,
-        "zed:extension/context-server": latest::zed::extension::context_server,
     },
 });
 

@@ -63,16 +63,11 @@ pub fn init(cx: &mut App) {
                         ExtensionCategoryFilter::LanguageServers => {
                             ExtensionProvides::LanguageServers
                         }
-                        ExtensionCategoryFilter::ContextServers => {
-                            ExtensionProvides::ContextServers
-                        }
-                        ExtensionCategoryFilter::AgentServers => ExtensionProvides::AgentServers,
                         ExtensionCategoryFilter::SlashCommands => ExtensionProvides::SlashCommands,
                         ExtensionCategoryFilter::IndexedDocsProviders => {
                             ExtensionProvides::IndexedDocsProviders
                         }
                         ExtensionCategoryFilter::Snippets => ExtensionProvides::Snippets,
-                        ExtensionCategoryFilter::DebugAdapters => ExtensionProvides::DebugAdapters,
                     });
 
                     let existing = workspace
@@ -186,12 +181,9 @@ fn extension_provides_label(provides: ExtensionProvides) -> &'static str {
         ExtensionProvides::Languages => "Languages",
         ExtensionProvides::Grammars => "Grammars",
         ExtensionProvides::LanguageServers => "Language Servers",
-        ExtensionProvides::ContextServers => "MCP Servers",
-        ExtensionProvides::AgentServers => "Agent Servers",
         ExtensionProvides::SlashCommands => "Slash Commands",
         ExtensionProvides::IndexedDocsProviders => "Indexed Docs Providers",
         ExtensionProvides::Snippets => "Snippets",
-        ExtensionProvides::DebugAdapters => "Debug Adapters",
     }
 }
 
@@ -602,7 +594,7 @@ impl ExtensionsPage {
 
         let repository_url = extension.repository.clone();
 
-        let can_configure = !extension.context_servers.is_empty();
+        let can_configure = false;
 
         ExtensionCard::new()
             .child(
@@ -994,11 +986,6 @@ impl ExtensionsPage {
             };
         }
 
-        let is_configurable = extension
-            .manifest
-            .provides
-            .contains(&ExtensionProvides::ContextServers);
-
         match status.clone() {
             ExtensionStatus::NotInstalled => ExtensionCardButtons {
                 install_or_uninstall: Button::new(
@@ -1043,13 +1030,7 @@ impl ExtensionsPage {
                 )
                 .style(ButtonStyle::OutlinedGhost)
                 .disabled(true),
-                configure: is_configurable.then(|| {
-                    Button::new(
-                        SharedString::from(format!("configure-{}", extension.id)),
-                        "Configure",
-                    )
-                    .disabled(true)
-                }),
+                configure: None,
                 upgrade: Some(
                     Button::new(SharedString::from(extension.id.clone()), "Upgrade").disabled(true),
                 ),
@@ -1071,31 +1052,7 @@ impl ExtensionsPage {
                         });
                     }
                 }),
-                configure: is_configurable.then(|| {
-                    Button::new(
-                        SharedString::from(format!("configure-{}", extension.id)),
-                        "Configure",
-                    )
-                    .style(ButtonStyle::OutlinedGhost)
-                    .on_click({
-                        let extension_id = extension.id.clone();
-                        move |_, _, cx| {
-                            if let Some(manifest) = ExtensionStore::global(cx)
-                                .read(cx)
-                                .extension_manifest_for_id(&extension_id)
-                                .cloned()
-                                && let Some(events) = extension::ExtensionEvents::try_global(cx)
-                            {
-                                events.update(cx, |this, cx| {
-                                    this.emit(
-                                        extension::Event::ConfigureExtensionRequested(manifest),
-                                        cx,
-                                    )
-                                });
-                            }
-                        }
-                    })
-                }),
+                configure: None,
                 upgrade: if installed_version == extension.manifest.version {
                     None
                 } else {
@@ -1142,13 +1099,7 @@ impl ExtensionsPage {
                 )
                 .style(ButtonStyle::OutlinedGhost)
                 .disabled(true),
-                configure: is_configurable.then(|| {
-                    Button::new(
-                        SharedString::from(format!("configure-{}", extension.id)),
-                        "Configure",
-                    )
-                    .disabled(true)
-                }),
+                configure: None,
                 upgrade: None,
             },
         }
@@ -1407,9 +1358,7 @@ impl ExtensionsPage {
                 Banner::new()
                     .severity(Severity::Success)
                     .child(Label::new(label).mt_0p5())
-                    .map(|this| {
-                        this.action_slot(docs_url_button)
-                    }),
+                    .map(|this| this.action_slot(docs_url_button)),
             )
             .into_any_element()
     }

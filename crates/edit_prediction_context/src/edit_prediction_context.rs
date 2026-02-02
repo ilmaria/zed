@@ -22,7 +22,6 @@ mod excerpt;
 #[cfg(test)]
 mod fake_definition_lsp;
 
-pub use cloud_llm_client::predict_edits_v3::Line;
 pub use excerpt::{EditPredictionExcerpt, EditPredictionExcerptOptions, EditPredictionExcerptText};
 pub use zeta_prompt::{RelatedExcerpt, RelatedFile};
 

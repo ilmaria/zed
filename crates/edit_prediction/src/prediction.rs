@@ -4,10 +4,10 @@ use std::{
     time::{Duration, Instant},
 };
 
-use cloud_llm_client::EditPredictionRejectReason;
+use crate::EditPredictionRejectReason;
 use edit_prediction_types::interpolate_edits;
 use gpui::{AsyncApp, Entity, SharedString};
-use language::{Anchor, LanguageBuffer, BufferSnapshot, EditPreview, TextBufferSnapshot};
+use language::{Anchor, BufferSnapshot, EditPreview, LanguageBuffer, TextBufferSnapshot};
 use zeta_prompt::ZetaPromptInput;
 
 #[derive(Clone, Default, Debug, PartialEq, Eq, Hash)]

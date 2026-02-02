@@ -19,9 +19,7 @@ use crate::application_menu::{
     ActivateDirection, ActivateMenuLeft, ActivateMenuRight, OpenApplicationMenu,
 };
 
-use auto_update::AutoUpdateStatus;
 use client::{Client, UserStore, zed_urls};
-use cloud_llm_client::{Plan, PlanV1, PlanV2};
 use gpui::{
     Action, AnyElement, App, Context, Corner, Element, Entity, Focusable, InteractiveElement,
     IntoElement, MouseButton, ParentElement, Render, StatefulInteractiveElement, Styled,
@@ -174,26 +172,13 @@ impl Render for TitleBar {
 
         let status = self.client.status();
         let status = &*status.borrow();
-        let user = self.user_store.read(cx).current_user();
-
-        let signed_in = user.is_some();
 
         children.push(
             h_flex()
-                .map(|this| {
-                    if signed_in {
-                        this.pr_1p5()
-                    } else {
-                        this.pr_1()
-                    }
-                })
+                .pr_1()
                 .gap_1()
                 .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                 .children(self.render_connection_status(status, cx))
-                .when(
-                    user.is_none() && TitleBarSettings::get_global(cx).show_sign_in,
-                    |this| this.child(self.render_sign_in_button(cx)),
-                )
                 .when(TitleBarSettings::get_global(cx).show_user_menu, |this| {
                     this.child(self.render_user_menu_button(cx))
                 })
@@ -508,7 +493,7 @@ impl TitleBar {
     fn render_connection_status(
         &self,
         status: &client::Status,
-        cx: &mut Context<Self>,
+        _cx: &mut Context<Self>,
     ) -> Option<AnyElement> {
         match status {
             client::Status::ConnectionError
@@ -522,158 +507,37 @@ impl TitleBar {
                     .tooltip(Tooltip::text("Disconnected"))
                     .into_any_element(),
             ),
-            client::Status::UpgradeRequired => {
-                let auto_updater = auto_update::AutoUpdater::get(cx);
-                let label = match auto_updater.map(|auto_update| auto_update.read(cx).status()) {
-                    Some(AutoUpdateStatus::Updated { .. }) => "Please restart Zed to Collaborate",
-                    Some(AutoUpdateStatus::Installing { .. })
-                    | Some(AutoUpdateStatus::Downloading { .. })
-                    | Some(AutoUpdateStatus::Checking) => "Updating...",
-                    Some(AutoUpdateStatus::Idle)
-                    | Some(AutoUpdateStatus::Errored { .. })
-                    | None => "Please update Zed to Collaborate",
-                };
-
-                Some(
-                    Button::new("connection-status", label)
-                        .label_size(LabelSize::Small)
-                        .on_click(|_, window, cx| {
-                            if let Some(auto_updater) = auto_update::AutoUpdater::get(cx)
-                                && auto_updater.read(cx).status().is_updated()
-                            {
-                                workspace::reload(cx);
-                                return;
-                            }
-                            auto_update::check(&Default::default(), window, cx);
-                        })
-                        .into_any_element(),
-                )
-            }
-            _ => None,
+            client::Status::UpgradeRequired | _ => None,
         }
     }
 
-    pub fn render_sign_in_button(&mut self, _: &mut Context<Self>) -> Button {
-        let client = self.client.clone();
-        Button::new("sign_in", "Sign In")
-            .label_size(LabelSize::Small)
-            .on_click(move |_, window, cx| {
-                let client = client.clone();
-                window
-                    .spawn(cx, async move |cx| {
-                        client
-                            .sign_in_with_optional_connect(true, cx)
-                            .await
-                            .notify_async_err(cx);
-                    })
-                    .detach();
-            })
-    }
-
-    pub fn render_user_menu_button(&mut self, cx: &mut Context<Self>) -> impl Element {
-        let user_store = self.user_store.read(cx);
-        let user = user_store.current_user();
-
-        let user_avatar = user.as_ref().map(|u| u.avatar_uri.clone());
-        let user_login = user.as_ref().map(|u| u.github_login.clone());
-
-        let is_signed_in = user.is_some();
-
-        let has_subscription_period = user_store.subscription_period().is_some();
-        let plan = user_store.plan().filter(|_| {
-            // Since the user might be on the legacy free plan we filter based on whether we have a subscription period.
-            has_subscription_period
-        });
-
-        let free_chip_bg = cx
-            .theme()
-            .colors()
-            .editor_background
-            .opacity(0.5)
-            .blend(cx.theme().colors().text_accent.opacity(0.05));
-
-        let pro_chip_bg = cx
-            .theme()
-            .colors()
-            .editor_background
-            .opacity(0.5)
-            .blend(cx.theme().colors().text_accent.opacity(0.2));
-
+    pub fn render_user_menu_button(&mut self, _cx: &mut Context<Self>) -> impl Element {
         PopoverMenu::new("user-menu")
             .anchor(Corner::TopRight)
             .menu(move |window, cx| {
                 ContextMenu::build(window, cx, |menu, _, _cx| {
-                    let user_login = user_login.clone();
-
-                    let (plan_name, label_color, bg_color) = match plan {
-                        None | Some(Plan::V1(PlanV1::ZedFree) | Plan::V2(PlanV2::ZedFree)) => {
-                            ("Free", Color::Default, free_chip_bg)
-                        }
-                        Some(Plan::V1(PlanV1::ZedProTrial) | Plan::V2(PlanV2::ZedProTrial)) => {
-                            ("Pro Trial", Color::Accent, pro_chip_bg)
-                        }
-                        Some(Plan::V1(PlanV1::ZedPro) | Plan::V2(PlanV2::ZedPro)) => {
-                            ("Pro", Color::Accent, pro_chip_bg)
-                        }
-                    };
-
-                    menu.when(is_signed_in, |this| {
-                        this.custom_entry(
-                            move |_window, _cx| {
-                                let user_login = user_login.clone().unwrap_or_default();
-
-                                h_flex()
-                                    .w_full()
-                                    .justify_between()
-                                    .child(Label::new(user_login))
-                                    .child(
-                                        Chip::new(plan_name.to_string())
-                                            .bg_color(bg_color)
-                                            .label_color(label_color),
-                                    )
-                                    .into_any_element()
-                            },
-                            move |_, cx| {
-                                cx.open_url(&zed_urls::account_url(cx));
-                            },
+                    menu.action("Settings", zed_actions::OpenSettings.boxed_clone())
+                        .action("Keymap", Box::new(zed_actions::OpenKeymap))
+                        .action(
+                            "Themes…",
+                            zed_actions::theme_selector::Toggle::default().boxed_clone(),
                         )
-                        .separator()
-                    })
-                    .action("Settings", zed_actions::OpenSettings.boxed_clone())
-                    .action("Keymap", Box::new(zed_actions::OpenKeymap))
-                    .action(
-                        "Themes…",
-                        zed_actions::theme_selector::Toggle::default().boxed_clone(),
-                    )
-                    .action(
-                        "Icon Themes…",
-                        zed_actions::icon_theme_selector::Toggle::default().boxed_clone(),
-                    )
-                    .action(
-                        "Extensions",
-                        zed_actions::Extensions::default().boxed_clone(),
-                    )
-                    .when(is_signed_in, |this| {
-                        this.separator()
-                            .action("Sign Out", client::SignOut.boxed_clone())
-                    })
+                        .action(
+                            "Icon Themes…",
+                            zed_actions::icon_theme_selector::Toggle::default().boxed_clone(),
+                        )
+                        .action(
+                            "Extensions",
+                            zed_actions::Extensions::default().boxed_clone(),
+                        )
                 })
                 .into()
             })
             .map(|this| {
-                if is_signed_in && TitleBarSettings::get_global(cx).show_user_picture {
-                    this.trigger_with_tooltip(
-                        ButtonLike::new("user-menu")
-                            .children(user_avatar.clone().map(|avatar| Avatar::new(avatar))),
-                        Tooltip::text("Toggle User Menu"),
-                    )
-                } else {
-                    this.trigger_with_tooltip(
-                        IconButton::new("user-menu", IconName::ChevronDown)
-                            .icon_size(IconSize::Small),
-                        Tooltip::text("Toggle User Menu"),
-                    )
-                }
+                this.trigger_with_tooltip(
+                    IconButton::new("user-menu", IconName::ChevronDown).icon_size(IconSize::Small),
+                    Tooltip::text("Toggle User Menu"),
+                )
             })
             .anchor(gpui::Corner::TopRight)
     }

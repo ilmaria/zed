@@ -39,13 +39,6 @@ pub fn init(cx: &mut App) {
         })
         .detach();
     }
-
-    cx.observe_global::<dap::DapRegistry>(|cx| {
-        cx.update_global::<SchemaStore, _>(|schema_store, cx| {
-            schema_store.notify_schema_changed("zed://schemas/debug_tasks", cx);
-        });
-    })
-    .detach();
 }
 
 #[derive(Default)]
@@ -205,12 +198,6 @@ pub async fn resolve_schema_request_inner(
             root_schema_from_action_schema(schema, &mut generator).to_value()
         }
         "tasks" => task::TaskTemplates::generate_json_schema(),
-        "debug_tasks" => {
-            let adapter_schemas = cx.read_global::<dap::DapRegistry, _>(|dap_registry, _| {
-                dap_registry.adapters_schema()
-            });
-            task::DebugTaskFile::generate_json_schema(&adapter_schemas)
-        }
         "package_json" => package_json_schema(),
         "tsconfig" => tsconfig_schema(),
         "zed_inspector_style" => {

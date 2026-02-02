@@ -10,12 +10,11 @@ use std::{
 
 use anyhow::Result;
 use collections::{HashMap, HashSet, VecDeque};
-use dap::DapRegistry;
 use gpui::{App, AppContext as _, Context, Entity, SharedString, Task, WeakEntity};
 use itertools::Itertools;
 use language::{
-    LanguageBuffer, ContextLocation, ContextProvider, File, Language, LanguageToolchainStore, Location,
-    language_settings::language_settings,
+    ContextLocation, ContextProvider, File, Language, LanguageBuffer, LanguageToolchainStore,
+    Location, language_settings::language_settings,
 };
 use lsp::{LanguageServerId, LanguageServerName};
 use paths::{debug_task_file_name, task_file_name};
@@ -273,74 +272,6 @@ impl Inventory {
 
     pub fn last_scheduled_scenario(&self) -> Option<&(DebugScenario, DebugScenarioContext)> {
         self.last_scheduled_scenarios.back()
-    }
-
-    pub fn list_debug_scenarios(
-        &self,
-        task_contexts: &TaskContexts,
-        lsp_tasks: Vec<(TaskSourceKind, task::ResolvedTask)>,
-        current_resolved_tasks: Vec<(TaskSourceKind, task::ResolvedTask)>,
-        add_current_language_tasks: bool,
-        cx: &mut App,
-    ) -> Task<(
-        Vec<(DebugScenario, DebugScenarioContext)>,
-        Vec<(TaskSourceKind, DebugScenario)>,
-    )> {
-        let mut scenarios = Vec::new();
-
-        if let Some(worktree_id) = task_contexts
-            .active_worktree_context
-            .iter()
-            .chain(task_contexts.other_worktree_contexts.iter())
-            .map(|context| context.0)
-            .next()
-        {
-            scenarios.extend(self.worktree_scenarios_from_settings(worktree_id));
-        }
-        scenarios.extend(self.global_debug_scenarios_from_settings());
-
-        let last_scheduled_scenarios = self.last_scheduled_scenarios.iter().cloned().collect();
-
-        let adapter = task_contexts.location().and_then(|location| {
-            let (file, language) = {
-                let buffer = location.buffer.read(cx);
-                (buffer.file(), buffer.language())
-            };
-            let language_name = language.as_ref().map(|l| l.name());
-            let adapter = language_settings(language_name, file, cx)
-                .debuggers
-                .first()
-                .map(SharedString::from)
-                .or_else(|| {
-                    language.and_then(|l| l.config().debuggers.first().map(SharedString::from))
-                });
-            adapter.map(|adapter| (adapter, DapRegistry::global(cx).locators()))
-        });
-        cx.background_spawn(async move {
-            if let Some((adapter, locators)) = adapter {
-                for (kind, task) in
-                    lsp_tasks
-                        .into_iter()
-                        .chain(current_resolved_tasks.into_iter().filter(|(kind, _)| {
-                            add_current_language_tasks
-                                || !matches!(kind, TaskSourceKind::Language { .. })
-                        }))
-                {
-                    let adapter = adapter.clone().into();
-
-                    for locator in locators.values() {
-                        if let Some(scenario) = locator
-                            .create_scenario(task.original_task(), task.display_label(), &adapter)
-                            .await
-                        {
-                            scenarios.push((kind, scenario));
-                            break;
-                        }
-                    }
-                }
-            }
-            (last_scheduled_scenarios, scenarios)
-        })
     }
 
     pub fn task_template_by_label(
@@ -1272,115 +1203,6 @@ mod tests {
                 "3_task".to_string(),
                 "10_hello".to_string(),
             ],
-        );
-    }
-
-    #[gpui::test]
-    async fn test_reloading_debug_scenarios(cx: &mut TestAppContext) {
-        init_test(cx);
-        let inventory = cx.update(|cx| Inventory::new(cx));
-        inventory.update(cx, |inventory, _| {
-            inventory
-                .update_file_based_scenarios(
-                    TaskSettingsLocation::Global(Path::new("")),
-                    Some(
-                        r#"
-                        [{
-                            "label": "test scenario",
-                            "adapter": "CodeLLDB",
-                            "request": "launch",
-                            "program": "wowzer",
-                        }]
-                        "#,
-                    ),
-                )
-                .unwrap();
-        });
-
-        let (_, scenario) = inventory
-            .update(cx, |this, cx| {
-                this.list_debug_scenarios(&TaskContexts::default(), vec![], vec![], false, cx)
-            })
-            .await
-            .1
-            .first()
-            .unwrap()
-            .clone();
-
-        inventory.update(cx, |this, _| {
-            this.scenario_scheduled(scenario.clone(), TaskContext::default(), None, None);
-        });
-
-        assert_eq!(
-            inventory
-                .update(cx, |this, cx| {
-                    this.list_debug_scenarios(&TaskContexts::default(), vec![], vec![], false, cx)
-                })
-                .await
-                .0
-                .first()
-                .unwrap()
-                .clone()
-                .0,
-            scenario
-        );
-
-        inventory.update(cx, |this, _| {
-            this.update_file_based_scenarios(
-                TaskSettingsLocation::Global(Path::new("")),
-                Some(
-                    r#"
-                        [{
-                            "label": "test scenario",
-                            "adapter": "Delve",
-                            "request": "launch",
-                            "program": "wowzer",
-                        }]
-                        "#,
-                ),
-            )
-            .unwrap();
-        });
-
-        assert_eq!(
-            inventory
-                .update(cx, |this, cx| {
-                    this.list_debug_scenarios(&TaskContexts::default(), vec![], vec![], false, cx)
-                })
-                .await
-                .0
-                .first()
-                .unwrap()
-                .0
-                .adapter,
-            "Delve",
-        );
-
-        inventory.update(cx, |this, _| {
-            this.update_file_based_scenarios(
-                TaskSettingsLocation::Global(Path::new("")),
-                Some(
-                    r#"
-                        [{
-                            "label": "testing scenario",
-                            "adapter": "Delve",
-                            "request": "launch",
-                            "program": "wowzer",
-                        }]
-                        "#,
-                ),
-            )
-            .unwrap();
-        });
-
-        assert!(
-            inventory
-                .update(cx, |this, cx| {
-                    this.list_debug_scenarios(&TaskContexts::default(), vec![], vec![], false, cx)
-                })
-                .await
-                .0
-                .is_empty(),
         );
     }
 

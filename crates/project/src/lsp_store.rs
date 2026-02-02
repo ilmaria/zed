@@ -61,11 +61,11 @@ use gpui::{
 use http_client::HttpClient;
 use itertools::Itertools as _;
 use language::{
-    Bias, BinaryStatus, LanguageBuffer, BufferRow, BufferSnapshot, CachedLspAdapter, Capability, CodeLabel,
+    Bias, BinaryStatus, BufferRow, BufferSnapshot, CachedLspAdapter, Capability, CodeLabel,
     Diagnostic, DiagnosticEntry, DiagnosticSet, DiagnosticSourceKind, Diff, File as _, Language,
-    LanguageName, LanguageRegistry, LocalFile, LspAdapter, LspAdapterDelegate, LspInstaller,
-    ManifestDelegate, ManifestName, Patch, PointUtf16, TextBufferSnapshot, ToOffset, ToPointUtf16,
-    Toolchain, Transaction, Unclipped,
+    LanguageBuffer, LanguageName, LanguageRegistry, LocalFile, LspAdapter, LspAdapterDelegate,
+    LspInstaller, ManifestDelegate, ManifestName, Patch, PointUtf16, TextBufferSnapshot, ToOffset,
+    ToPointUtf16, Toolchain, Transaction, Unclipped,
     language_settings::{FormatOnSave, Formatter, LanguageSettings, language_settings},
     point_to_lsp,
     proto::{
@@ -2343,7 +2343,11 @@ impl LocalLspStore {
         anyhow::Ok(())
     }
 
-    fn initialize_buffer(&mut self, buffer_handle: &Entity<LanguageBuffer>, cx: &mut Context<LspStore>) {
+    fn initialize_buffer(
+        &mut self,
+        buffer_handle: &Entity<LanguageBuffer>,
+        cx: &mut Context<LspStore>,
+    ) {
         let buffer = buffer_handle.read(cx);
 
         let file = buffer.file().cloned();
@@ -2427,7 +2431,12 @@ impl LocalLspStore {
         }
     }
 
-    pub(crate) fn reset_buffer(&mut self, buffer: &Entity<LanguageBuffer>, old_file: &File, cx: &mut App) {
+    pub(crate) fn reset_buffer(
+        &mut self,
+        buffer: &Entity<LanguageBuffer>,
+        old_file: &File,
+        cx: &mut App,
+    ) {
         buffer.update(cx, |buffer, cx| {
             let Some(language) = buffer.language() else {
                 return;
@@ -4288,7 +4297,11 @@ impl LspStore {
         }
     }
 
-    fn on_buffer_added(&mut self, buffer: &Entity<LanguageBuffer>, cx: &mut Context<Self>) -> Result<()> {
+    fn on_buffer_added(
+        &mut self,
+        buffer: &Entity<LanguageBuffer>,
+        cx: &mut Context<Self>,
+    ) -> Result<()> {
         buffer
             .read(cx)
             .set_language_registry(self.languages.clone());
@@ -6494,9 +6507,7 @@ impl LspStore {
                     );
                     server.request::<lsp::request::ResolveCompletionItem>(*lsp_completion.clone())
                 }
-                CompletionSource::BufferWord { .. }
-                | CompletionSource::Dap { .. }
-                | CompletionSource::Custom => {
+                CompletionSource::BufferWord { .. } | CompletionSource::Custom => {
                     return Ok(());
                 }
             }
@@ -6631,9 +6642,7 @@ impl LspStore {
                     }
                     serde_json::to_string(lsp_completion).unwrap().into_bytes()
                 }
-                CompletionSource::Custom
-                | CompletionSource::Dap { .. }
-                | CompletionSource::BufferWord { .. } => {
+                CompletionSource::Custom | CompletionSource::BufferWord { .. } => {
                     return Ok(());
                 }
             }
@@ -11999,10 +12008,6 @@ impl LspStore {
                 serialized_completion.source = proto::completion::Source::Custom as i32;
                 serialized_completion.resolved = true;
             }
-            CompletionSource::Dap { sort_text } => {
-                serialized_completion.source = proto::completion::Source::Dap as i32;
-                serialized_completion.sort_text = Some(sort_text.clone());
-            }
         }
 
         serialized_completion
@@ -12057,11 +12062,6 @@ impl LspStore {
                         resolved: completion.resolved,
                     }
                 }
-                Some(proto::completion::Source::Dap) => CompletionSource::Dap {
-                    sort_text: completion
-                        .sort_text
-                        .context("expected sort text to exist")?,
-                },
                 _ => anyhow::bail!("Unexpected completion source {}", completion.source),
             },
         })
@@ -13198,7 +13198,11 @@ impl LspStore {
 
     /// Gets the most recent LSP data for the given buffer: if the data is absent or out of date,
     /// new [`BufferLspData`] will be created to replace the previous state.
-    pub fn latest_lsp_data(&mut self, buffer: &Entity<LanguageBuffer>, cx: &mut App) -> &mut BufferLspData {
+    pub fn latest_lsp_data(
+        &mut self,
+        buffer: &Entity<LanguageBuffer>,
+        cx: &mut App,
+    ) -> &mut BufferLspData {
         let (buffer_id, buffer_version) =
             buffer.read_with(cx, |buffer, _| (buffer.remote_id(), buffer.version()));
         let lsp_data = self

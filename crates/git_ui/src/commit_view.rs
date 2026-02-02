@@ -15,8 +15,8 @@ use gpui::{
     ParentElement, PromptLevel, Render, Styled, Task, WeakEntity, Window, actions,
 };
 use language::{
-    Anchor, LanguageBuffer, Capability, DiskState, File, LanguageRegistry, LineEnding, OffsetRangeExt as _,
-    Point, ReplicaId, Rope, TextBuffer,
+    Anchor, Capability, DiskState, File, LanguageBuffer, LanguageRegistry, LineEnding,
+    OffsetRangeExt as _, Point, ReplicaId, Rope, TextBuffer,
 };
 use multi_buffer::PathKey;
 use project::{Project, WorktreeId, git_store::Repository};
@@ -203,7 +203,6 @@ impl CommitView {
                 Editor::for_multibuffer(multibuffer.clone(), Some(project.clone()), window, cx);
 
             editor.disable_inline_diagnostics();
-            editor.set_show_breakpoints(false, cx);
             editor.set_show_diff_review_button(true, cx);
             editor.set_expand_all_diff_hunks(cx);
             editor.disable_header_for_buffer(message_buffer.read(cx).remote_id(), cx);

@@ -1,13 +1,6 @@
 use super::{Client, Status, TypedEnvelope, proto};
 use anyhow::{Context as _, Result};
 use chrono::{DateTime, Utc};
-use cloud_api_client::websocket_protocol::MessageToClient;
-use cloud_api_client::{GetAuthenticatedUserResponse, PlanInfo};
-use cloud_llm_client::{
-    EDIT_PREDICTIONS_USAGE_AMOUNT_HEADER_NAME, EDIT_PREDICTIONS_USAGE_LIMIT_HEADER_NAME,
-    MODEL_REQUESTS_USAGE_AMOUNT_HEADER_NAME, MODEL_REQUESTS_USAGE_LIMIT_HEADER_NAME, Plan,
-    UsageLimit,
-};
 use collections::{HashMap, HashSet, hash_map::Entry};
 use derive_more::Deref;
 use feature_flags::FeatureFlagAppExt;
@@ -110,7 +103,6 @@ pub struct UserStore {
     update_contacts_tx: mpsc::UnboundedSender<UpdateContacts>,
     model_request_usage: Option<ModelRequestUsage>,
     edit_prediction_usage: Option<EditPredictionUsage>,
-    plan_info: Option<PlanInfo>,
     current_user: watch::Receiver<Option<Arc<User>>>,
     contacts: Vec<Arc<Contact>>,
     incoming_contact_requests: Vec<Arc<User>>,
@@ -162,7 +154,6 @@ pub struct EditPredictionUsage(pub RequestUsage);
 
 #[derive(Debug, Clone, Copy)]
 pub struct RequestUsage {
-    pub limit: UsageLimit,
     pub amount: i32,
 }
 
@@ -175,16 +166,10 @@ impl UserStore {
             client.add_message_handler(cx.weak_entity(), Self::handle_show_contacts),
         ];
 
-        client.add_message_to_client_handler({
-            let this = cx.weak_entity();
-            move |message, cx| Self::handle_message_to_client(this.clone(), message, cx)
-        });
-
         Self {
             users: Default::default(),
             by_github_login: Default::default(),
             current_user: current_user_rx,
-            plan_info: None,
             model_request_usage: None,
             edit_prediction_usage: None,
             contacts: Default::default(),
@@ -216,51 +201,7 @@ impl UserStore {
                     match status {
                         Status::Authenticated
                         | Status::Reauthenticated
-                        | Status::Connected { .. } => {
-                            if let Some(user_id) = client.user_id() {
-                                let response = client
-                                    .cloud_client()
-                                    .get_authenticated_user()
-                                    .await
-                                    .log_err();
-
-                                let current_user_and_response = if let Some(response) = response {
-                                    let user = Arc::new(User {
-                                        id: user_id,
-                                        github_login: response.user.github_login.clone().into(),
-                                        avatar_uri: response.user.avatar_url.clone().into(),
-                                        name: response.user.name.clone(),
-                                    });
-
-                                    Some((user, response))
-                                } else {
-                                    None
-                                };
-                                current_user_tx
-                                    .send(
-                                        current_user_and_response
-                                            .as_ref()
-                                            .map(|(user, _)| user.clone()),
-                                    )
-                                    .await
-                                    .ok();
-
-                                cx.update(|cx| {
-                                    if let Some((user, response)) = current_user_and_response {
-                                        this.update(cx, |this, cx| {
-                                            this.by_github_login
-                                                .insert(user.github_login.clone(), user_id);
-                                            this.users.insert(user_id, user);
-                                            this.update_authenticated_user(response, cx)
-                                        })
-                                    } else {
-                                        anyhow::Ok(())
-                                    }
-                                })?;
-
-                                this.update(cx, |_, cx| cx.notify())?;
-                            }
-                        }
+                        | Status::Connected { .. } => {}
                         Status::SignedOut => {
                             current_user_tx.send(None).await.ok();
                             this.update(cx, |this, cx| {
@@ -672,72 +613,26 @@ impl UserStore {
         self.current_user.borrow().clone()
     }
 
-    pub fn plan(&self) -> Option<Plan> {
-        #[cfg(debug_assertions)]
-        if let Ok(plan) = std::env::var("ZED_SIMULATE_PLAN").as_ref() {
-            use cloud_llm_client::PlanV1;
-
-            return match plan.as_str() {
-                "free" => Some(Plan::V1(PlanV1::ZedFree)),
-                "trial" => Some(Plan::V1(PlanV1::ZedProTrial)),
-                "pro" => Some(Plan::V1(PlanV1::ZedPro)),
-                _ => {
-                    panic!("ZED_SIMULATE_PLAN must be one of 'free', 'trial', or 'pro'");
-                }
-            };
-        }
-
-        self.plan_info.as_ref().map(|info| info.plan())
-    }
-
     pub fn subscription_period(&self) -> Option<(DateTime<Utc>, DateTime<Utc>)> {
-        self.plan_info
-            .as_ref()
-            .and_then(|plan| plan.subscription_period)
-            .map(|subscription_period| {
-                (
-                    subscription_period.started_at.0,
-                    subscription_period.ended_at.0,
-                )
-            })
+        None
     }
 
     pub fn trial_started_at(&self) -> Option<DateTime<Utc>> {
-        self.plan_info
-            .as_ref()
-            .and_then(|plan| plan.trial_started_at)
-            .map(|trial_started_at| trial_started_at.0)
+        None
     }
 
     /// Returns whether the user's account is too new to use the service.
     pub fn account_too_young(&self) -> bool {
-        self.plan_info
-            .as_ref()
-            .map(|plan| plan.is_account_too_young)
-            .unwrap_or_default()
+        true
     }
 
     /// Returns whether the current user has overdue invoices and usage should be blocked.
     pub fn has_overdue_invoices(&self) -> bool {
-        self.plan_info
-            .as_ref()
-            .map(|plan| plan.has_overdue_invoices)
-            .unwrap_or_default()
+        true
     }
 
     pub fn is_usage_based_billing_enabled(&self) -> bool {
-        self.plan_info
-            .as_ref()
-            .map(|plan| plan.is_usage_based_billing_enabled)
-            .unwrap_or_default()
-    }
-
-    pub fn model_request_usage(&self) -> Option<ModelRequestUsage> {
-        if self.plan().is_some_and(|plan| plan.is_v2()) {
-            return None;
-        }
-
-        self.model_request_usage
+        true
     }
 
     pub fn update_model_request_usage(&mut self, usage: ModelRequestUsage, cx: &mut Context<Self>) {
@@ -758,62 +653,7 @@ impl UserStore {
         cx.notify();
     }
 
-    pub fn clear_plan_and_usage(&mut self) {
-        self.plan_info = None;
-        self.model_request_usage = None;
-        self.edit_prediction_usage = None;
-    }
-
-    fn update_authenticated_user(
-        &mut self,
-        response: GetAuthenticatedUserResponse,
-        cx: &mut Context<Self>,
-    ) {
-        let staff = response.user.is_staff && !*feature_flags::ZED_DISABLE_STAFF;
-        cx.update_flags(staff, response.feature_flags);
-        if let Some(client) = self.client.upgrade() {
-            client
-                .telemetry
-                .set_authenticated_user_info(Some(response.user.metrics_id.clone()), staff);
-        }
-
-        self.model_request_usage = Some(ModelRequestUsage(RequestUsage {
-            limit: response.plan.usage.model_requests.limit,
-            amount: response.plan.usage.model_requests.used as i32,
-        }));
-        self.edit_prediction_usage = Some(EditPredictionUsage(RequestUsage {
-            limit: response.plan.usage.edit_predictions.limit,
-            amount: response.plan.usage.edit_predictions.used as i32,
-        }));
-        self.plan_info = Some(response.plan);
-        cx.emit(Event::PrivateUserInfoUpdated);
-    }
-
-    fn handle_message_to_client(this: WeakEntity<Self>, message: &MessageToClient, cx: &App) {
-        cx.spawn(async move |cx| {
-            match message {
-                MessageToClient::UserUpdated => {
-                    let cloud_client = cx
-                        .update(|cx| {
-                            this.read_with(cx, |this, _cx| {
-                                this.client.upgrade().map(|client| client.cloud_client())
-                            })
-                        })?
-                        .ok_or(anyhow::anyhow!("Failed to get Cloud client"))?;
-
-                    let response = cloud_client.get_authenticated_user().await?;
-                    cx.update(|cx| {
-                        this.update(cx, |this, cx| {
-                            this.update_authenticated_user(response, cx);
-                        })
-                    })?;
-                }
-            }
-
-            anyhow::Ok(())
-        })
-        .detach_and_log_err(cx);
-    }
+    pub fn clear_plan_and_usage(&mut self) {}
 
     pub fn watch_current_user(&self) -> watch::Receiver<Option<Arc<User>>> {
         self.current_user.clone()
@@ -939,10 +779,7 @@ impl Collaborator {
 
 impl RequestUsage {
     pub fn over_limit(&self) -> bool {
-        match self.limit {
-            UsageLimit::Limited(limit) => self.amount >= limit,
-            UsageLimit::Unlimited => false,
-        }
+        true
     }
 
     fn from_headers(
@@ -953,33 +790,24 @@ impl RequestUsage {
         let limit = headers
             .get(limit_name)
             .with_context(|| format!("missing {limit_name:?} header"))?;
-        let limit = UsageLimit::from_str(limit.to_str()?)?;
 
         let amount = headers
             .get(amount_name)
             .with_context(|| format!("missing {amount_name:?} header"))?;
         let amount = amount.to_str()?.parse::<i32>()?;
 
-        Ok(Self { limit, amount })
+        Ok(Self { amount })
     }
 }
 
 impl ModelRequestUsage {
     pub fn from_headers(headers: &HeaderMap<HeaderValue>) -> Result<Self> {
-        Ok(Self(RequestUsage::from_headers(
-            MODEL_REQUESTS_USAGE_LIMIT_HEADER_NAME,
-            MODEL_REQUESTS_USAGE_AMOUNT_HEADER_NAME,
-            headers,
-        )?))
+        Ok(Self(RequestUsage { amount: 0 }))
     }
 }
 
 impl EditPredictionUsage {
     pub fn from_headers(headers: &HeaderMap<HeaderValue>) -> Result<Self> {
-        Ok(Self(RequestUsage::from_headers(
-            EDIT_PREDICTIONS_USAGE_LIMIT_HEADER_NAME,
-            EDIT_PREDICTIONS_USAGE_AMOUNT_HEADER_NAME,
-            headers,
-        )?))
+        Ok(Self(RequestUsage { amount: 0 }))
     }
 }

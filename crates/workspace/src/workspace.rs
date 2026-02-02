@@ -75,7 +75,6 @@ use postage::stream::Stream;
 use project::{
     DirectoryLister, Project, ProjectEntryId, ProjectPath, ResolvedPath, Worktree, WorktreeId,
     WorktreeSettings,
-    debugger::{breakpoint_store::BreakpointStoreEvent, session::ThreadStatus},
     project_settings::ProjectSettings,
     toolchain_store::ToolchainStoreEvent,
     trusted_worktrees::{RemoteHostLocation, TrustedWorktrees, TrustedWorktreesEvent},
@@ -191,10 +190,6 @@ pub trait DebuggerProvider {
     );
 
     fn task_scheduled(&self, cx: &mut App);
-    fn debug_scenario_scheduled(&self, cx: &mut App);
-    fn debug_scenario_scheduled_last(&self, cx: &App) -> bool;
-
-    fn active_thread_state(&self, cx: &App) -> Option<ThreadStatus>;
 }
 
 actions!(
@@ -256,8 +251,6 @@ actions!(
         SaveAs,
         /// Saves without formatting.
         SaveWithoutFormat,
-        /// Shuts down all debug adapters.
-        ShutdownDebugAdapters,
         /// Suppresses the current notification.
         SuppressNotification,
         /// Toggles the bottom dock.
@@ -1122,7 +1115,6 @@ pub struct Workspace {
     on_prompt_for_new_path: Option<PromptForNewPath>,
     on_prompt_for_open_path: Option<PromptForOpenPath>,
     terminal_provider: Option<Box<dyn TerminalProvider>>,
-    debugger_provider: Option<Arc<dyn DebuggerProvider>>,
     serializable_items_tx: UnboundedSender<Box<dyn SerializableItemHandle>>,
     _items_serializer: Task<Result<()>>,
     session_id: Option<String>,
@@ -1257,18 +1249,6 @@ impl Workspace {
         })
         .detach();
 
-        cx.subscribe_in(
-            &project.read(cx).breakpoint_store(),
-            window,
-            |workspace, _, event, window, cx| match event {
-                BreakpointStoreEvent::BreakpointsUpdated(_, _)
-                | BreakpointStoreEvent::BreakpointsCleared(_) => {
-                    workspace.serialize_workspace(window, cx);
-                }
-                BreakpointStoreEvent::SetDebugLine | BreakpointStoreEvent::ClearDebugLines => {}
-            },
-        )
-        .detach();
         if let Some(toolchain_store) = project.read(cx).toolchain_store() {
             cx.subscribe_in(
                 &toolchain_store,
@@ -1475,7 +1455,6 @@ impl Workspace {
             on_prompt_for_new_path: None,
             on_prompt_for_open_path: None,
             terminal_provider: None,
-            debugger_provider: None,
             serializable_items_tx,
             _items_serializer,
             session_id: Some(session_id),
@@ -2098,14 +2077,6 @@ impl Workspace {
 
     pub fn set_terminal_provider(&mut self, provider: impl TerminalProvider + 'static) {
         self.terminal_provider = Some(Box::new(provider));
-    }
-
-    pub fn set_debugger_provider(&mut self, provider: impl DebuggerProvider + 'static) {
-        self.debugger_provider = Some(Arc::new(provider));
-    }
-
-    pub fn debugger_provider(&self) -> Option<Arc<dyn DebuggerProvider>> {
-        self.debugger_provider.clone()
     }
 
     pub fn prompt_for_open_path(
@@ -4659,12 +4630,6 @@ impl Workspace {
 
         match self.serialize_workspace_location(cx) {
             WorkspaceLocation::Location(location, paths) => {
-                let breakpoints = self.project.update(cx, |project, cx| {
-                    project
-                        .breakpoint_store()
-                        .read(cx)
-                        .all_source_breakpoints(cx)
-                });
                 let user_toolchains = self
                     .project
                     .read(cx)
@@ -4685,7 +4650,6 @@ impl Workspace {
                     docks,
                     centered_layout: self.centered_layout,
                     session_id: self.session_id.clone(),
-                    breakpoints,
                     window_id: Some(window.window_handle().window_id().as_u64()),
                     user_toolchains,
                 };
@@ -4876,17 +4840,6 @@ impl Workspace {
 
                 cx.notify();
             })?;
-
-            let _ = project
-                .update(cx, |project, cx| {
-                    project
-                        .breakpoint_store()
-                        .update(cx, |breakpoint_store, cx| {
-                            breakpoint_store
-                                .with_serialized_breakpoints(serialized_workspace.breakpoints, cx)
-                        })
-                })
-                .await;
 
             // Clean up all the items that have _not_ been loaded. Our ItemIds aren't stable. That means
             // after loading the items, we might have different items and in order to avoid
@@ -5845,19 +5798,6 @@ impl Render for Workspace {
         let mut context = KeyContext::new_with_defaults();
         context.add("Workspace");
         context.set("keyboard_layout", cx.keyboard_layout().name().to_string());
-        if let Some(status) = self
-            .debugger_provider
-            .as_ref()
-            .and_then(|provider| provider.active_thread_state(cx))
-        {
-            match status {
-                ThreadStatus::Running | ThreadStatus::Stepping => {
-                    context.add("debugger_running");
-                }
-                ThreadStatus::Stopped => context.add("debugger_stopped"),
-                ThreadStatus::Exited | ThreadStatus::Ended => {}
-            }
-        }
 
         if self.left_dock.read(cx).is_open() {
             if let Some(active_panel) = self.left_dock.read(cx).active_panel() {
@@ -6425,34 +6365,7 @@ pub fn last_session_workspace_locations(
     DB.last_session_workspace_locations(last_session_id, last_session_window_stack)
         .log_err()
 }
-/*
-actions!(
-    collab,
-    [
-        /// Opens the channel notes for the current call.
-        ///
-        /// Use `collab_panel::OpenSelectedChannelNotes` to open the channel notes for the selected
-        /// channel in the collab panel.
-        ///
-        /// If you want to open a specific channel, use `zed::OpenZedUrl` with a channel notes URL -
-        /// can be copied via "Copy link to section" in the context menu of the channel notes
-        /// buffer. These URLs look like `https://zed.dev/channel/channel-name-CHANNEL_ID/notes`.
-        OpenChannelNotes,
-        /// Mutes your microphone.
-        Mute,
-        /// Deafens yourself (mute both microphone and speakers).
-        Deafen,
-        /// Leaves the current call.
-        LeaveCall,
-        /// Shares the current project with collaborators.
-        ShareProject,
-        /// Shares your screen with collaborators.
-        ScreenShare,
-        /// Copies the current room name and session id for debugging purposes.
-        CopyRoomId,
-    ]
-);
-*/
+
 actions!(
     zed,
     [

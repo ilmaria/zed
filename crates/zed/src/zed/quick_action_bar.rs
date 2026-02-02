@@ -14,7 +14,7 @@ use gpui::{
     FocusHandle, Focusable, InteractiveElement, ParentElement, Render, Styled, Subscription,
     WeakEntity, Window, anchored, deferred, point,
 };
-use project::{project_settings::DiagnosticSeverity};
+use project::project_settings::DiagnosticSeverity;
 use search::{BufferSearchBar, buffer_search};
 use settings::{Settings, SettingsStore};
 use ui::{
@@ -25,7 +25,7 @@ use workspace::item::ItemBufferKind;
 use workspace::{
     ToolbarItemEvent, ToolbarItemLocation, ToolbarItemView, Workspace, item::ItemHandle,
 };
-use zed_actions::{outline::ToggleOutline};
+use zed_actions::outline::ToggleOutline;
 
 const MAX_CODE_ACTION_MENU_LINES: u32 = 16;
 
@@ -95,7 +95,6 @@ impl Render for QuickActionBar {
         let editor_value = editor.read(cx);
         let selection_menu_enabled = editor_value.selection_menu_enabled(cx);
         let inlay_hints_enabled = editor_value.inlay_hints_enabled();
-        let inline_values_enabled = editor_value.inline_values_enabled();
         let supports_diagnostics = editor_value.mode().is_full();
         let diagnostics_enabled = editor_value.diagnostics_max_severity != DiagnosticSeverity::Off;
         let supports_inline_diagnostics = editor_value.inline_diagnostics_enabled();
@@ -308,27 +307,6 @@ impl Render for QuickActionBar {
                                                 .ok();
                                         }
                                     },
-                                );
-
-                                menu = menu.toggleable_entry(
-                                    "Inline Values",
-                                    inline_values_enabled,
-                                    IconPosition::Start,
-                                    Some(editor::actions::ToggleInlineValues.boxed_clone()),
-                                    {
-                                        let editor = editor.clone();
-                                        move |window, cx| {
-                                            editor
-                                                .update(cx, |editor, cx| {
-                                                    editor.toggle_inline_values(
-                                                        &editor::actions::ToggleInlineValues,
-                                                        window,
-                                                        cx,
-                                                    );
-                                                })
-                                                .ok();
-                                        }
-                                    }
                                 );
                             }
 

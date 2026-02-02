@@ -41,12 +41,9 @@ pub enum ExtensionProvides {
     Languages,
     Grammars,
     LanguageServers,
-    ContextServers,
-    AgentServers,
     SlashCommands,
     IndexedDocsProviders,
     Snippets,
-    DebugAdapters,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]

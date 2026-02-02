@@ -46,20 +46,6 @@ pub struct ProjectSettingsContent {
 
     pub terminal: Option<ProjectTerminalSettingsContent>,
 
-    /// Configuration for Debugger-related features
-    #[serde(default)]
-    pub dap: HashMap<Arc<str>, DapSettingsContent>,
-
-    /// Settings for context servers used for AI-related features.
-    #[serde(default)]
-    pub context_servers: HashMap<Arc<str>, ContextServerSettingsContent>,
-
-    /// Default timeout in seconds for context server tool calls.
-    /// Can be overridden per-server in context_servers configuration.
-    ///
-    /// Default: 60
-    pub context_server_timeout: Option<u64>,
-
     /// Configuration for how direnv configuration should be loaded
     pub load_direnv: Option<DirenvSettings>,
 
@@ -189,15 +175,6 @@ pub struct GlobalLspSettingsContent {
     ///
     /// Default: `true`
     pub button: Option<bool>,
-}
-
-#[with_fallible_options]
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema, MergeFrom)]
-#[serde(rename_all = "snake_case")]
-pub struct DapSettingsContent {
-    pub binary: Option<String>,
-    pub args: Option<Vec<String>>,
-    pub env: Option<HashMap<String, String>>,
 }
 
 #[with_fallible_options]

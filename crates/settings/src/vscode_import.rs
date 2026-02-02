@@ -171,7 +171,6 @@ impl VsCodeSettings {
 
     pub fn settings_content(&self) -> SettingsContent {
         SettingsContent {
-            audio: None,
             auto_update: None,
             base_keymap: Some(BaseKeymapContent::VSCode),
             calls: None,
@@ -386,9 +385,6 @@ impl VsCodeSettings {
             worktree: self.worktree_settings_content(),
             lsp: Default::default(),
             terminal: None,
-            dap: Default::default(),
-            context_servers: self.context_servers(),
-            context_server_timeout: None,
             load_direnv: None,
             slash_commands: None,
             git_hosting_providers: None,
@@ -542,37 +538,6 @@ impl VsCodeSettings {
             }),
             ..Default::default()
         })
-    }
-
-    fn context_servers(&self) -> HashMap<Arc<str>, ContextServerSettingsContent> {
-        #[derive(Deserialize)]
-        struct VsCodeContextServerCommand {
-            command: PathBuf,
-            args: Option<Vec<String>>,
-            env: Option<HashMap<String, String>>,
-            // note: we don't support envFile and type
-        }
-        let Some(mcp) = self.read_value("mcp").and_then(|v| v.as_object()) else {
-            return Default::default();
-        };
-        mcp.iter()
-            .filter_map(|(k, v)| {
-                Some((
-                    k.clone().into(),
-                    ContextServerSettingsContent::Stdio {
-                        enabled: true,
-                        command: serde_json::from_value::<VsCodeContextServerCommand>(v.clone())
-                            .ok()
-                            .map(|cmd| ContextServerCommand {
-                                path: cmd.command,
-                                args: cmd.args.unwrap_or_default(),
-                                env: cmd.env,
-                                timeout: None,
-                            })?,
-                    },
-                ))
-            })
-            .collect()
     }
 
     fn item_settings_content(&self) -> Option<ItemSettingsContent> {

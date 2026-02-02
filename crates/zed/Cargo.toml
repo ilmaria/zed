@@ -31,7 +31,6 @@ visual-tests = [
     "dep:image",
     "dep:semver",
     "dep:tempfile",
-    "dep:action_log",
     "workspace/test-support",
     "project/test-support",
     "editor/test-support",
@@ -58,8 +57,6 @@ activity_indicator.workspace = true
 anyhow.workspace = true
 askpass.workspace = true
 assets.workspace = true
-auto_update.workspace = true
-auto_update_ui.workspace = true
 bincode.workspace = true
 breadcrumbs.workspace = true
 clap.workspace = true
@@ -71,11 +68,7 @@ component.workspace = true
 component_preview.workspace = true
 copilot.workspace = true
 crashes.workspace = true
-dap_adapters.workspace = true
 db.workspace = true
-debug_adapter_extension.workspace = true
-debugger_tools.workspace = true
-debugger_ui.workspace = true
 diagnostics.workspace = true
 editor.workspace = true
 encoding_selector.workspace = true
@@ -103,10 +96,8 @@ image = { workspace = true, optional = true }
 semver = { workspace = true, optional = true }
 tempfile = { workspace = true, optional = true }
 clock = { workspace = true, optional = true }
-action_log = { workspace = true, optional = true }
 gpui_tokio.workspace = true
 rayon.workspace = true
-
 edit_prediction.workspace = true
 edit_prediction_ui.workspace = true
 http_client.workspace = true
@@ -206,7 +197,6 @@ winresource = "0.1"
 ashpd.workspace = true
 
 [dev-dependencies]
-dap = { workspace = true, features = ["test-support"] }
 editor = { workspace = true, features = ["test-support"] }
 gpui = { workspace = true, features = ["test-support", "screen-capture"] }
 image_viewer = { workspace = true, features = ["test-support"] }
