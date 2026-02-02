@@ -1,37 +1,25 @@
 #[cfg(any(test, feature = "test-support"))]
 pub mod test;
 
-mod proxy;
 pub mod telemetry;
 pub mod user;
 pub mod zed_urls;
 
-use anyhow::{Context as _, Result, anyhow};
-use async_tungstenite::tungstenite::{
-    client::IntoClientRequest,
-    error::Error as WebsocketError,
-    http::{HeaderValue, Request, StatusCode},
-};
+use anyhow::{Context as _, Result};
+use async_tungstenite::tungstenite::{error::Error as WebsocketError, http::StatusCode};
 use clock::SystemClock;
-use feature_flags::FeatureFlagAppExt as _;
-use futures::{
-    AsyncReadExt, FutureExt, SinkExt, Stream, StreamExt, TryFutureExt as _, TryStreamExt,
-    channel::oneshot, future::BoxFuture,
-};
+use futures::{FutureExt, Stream, TryFutureExt as _, future::BoxFuture};
 use gpui::{App, AsyncApp, Entity, Global, Task, WeakEntity, actions};
-use http_client::{HttpClient, HttpClientWithUrl, http, read_proxy_from_env};
+use http_client::{HttpClientWithUrl, read_proxy_from_env};
 use parking_lot::RwLock;
 use postage::watch;
-use proxy::connect_proxy_stream;
 use rand::prelude::*;
-use release_channel::{AppVersion, ReleaseChannel};
 use rpc::proto::{AnyTypedEnvelope, EnvelopedMessage, PeerId, RequestMessage};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use settings::{RegisterSetting, Settings, SettingsContent};
+use std::cmp;
 use std::{
     any::TypeId,
-    convert::TryFrom,
-    fmt::Write as _,
     future::Future,
     marker::PhantomData,
     path::PathBuf,
@@ -41,10 +29,8 @@ use std::{
     },
     time::{Duration, Instant},
 };
-use std::{cmp, pin::Pin};
 use telemetry::Telemetry;
 use thiserror::Error;
-use tokio::net::TcpStream;
 use url::Url;
 use util::{ConnectionResult, ResultExt};
 
@@ -54,7 +40,6 @@ pub use user::*;
 
 static ZED_SERVER_URL: LazyLock<Option<String>> =
     LazyLock::new(|| std::env::var("ZED_SERVER_URL").ok());
-static ZED_RPC_URL: LazyLock<Option<String>> = LazyLock::new(|| std::env::var("ZED_RPC_URL").ok());
 
 pub static IMPERSONATE_LOGIN: LazyLock<Option<String>> = LazyLock::new(|| {
     std::env::var("ZED_IMPERSONATE")
@@ -144,8 +129,8 @@ impl Settings for ProxySettings {
     }
 }
 
-pub fn init(client: &Arc<Client>, cx: &mut App) {
-    let client = Arc::downgrade(client);
+pub fn init(client: &Arc<Client>, _cx: &mut App) {
+    let _client = Arc::downgrade(client);
 }
 
 struct GlobalClient(Arc<Client>);
@@ -159,11 +144,6 @@ pub struct Client {
     telemetry: Arc<Telemetry>,
     state: RwLock<ClientState>,
     handler_set: parking_lot::Mutex<ProtoMessageHandlerSet>,
-
-    #[allow(clippy::type_complexity)]
-    #[cfg(any(test, feature = "test-support"))]
-    establish_connection:
-        RwLock<Option<Box<dyn 'static + Send + Sync + Fn(&AsyncApp) -> Task<Result<()>>>>>,
 
     #[cfg(any(test, feature = "test-support"))]
     rpc_url: RwLock<Option<Url>>,
@@ -392,8 +372,6 @@ impl Client {
             state: Default::default(),
             handler_set: Default::default(),
 
-            #[cfg(any(test, feature = "test-support"))]
-            establish_connection: Default::default(),
             #[cfg(any(test, feature = "test-support"))]
             rpc_url: RwLock::default(),
         })
@@ -647,7 +625,7 @@ impl Client {
 
     pub async fn connect(
         self: &Arc<Self>,
-        try_provider: bool,
+        _try_provider: bool,
         cx: &AsyncApp,
     ) -> ConnectionResult<()> {
         let was_disconnected = match *self.status().borrow() {
@@ -677,133 +655,6 @@ impl Client {
         }
 
         ConnectionResult::Timeout
-    }
-
-    async fn set_connection(self: &Arc<Self>, conn: Connection, cx: &AsyncApp) -> Result<()> {
-        let executor = cx.background_executor();
-        log::debug!("add connection to peer");
-        let (connection_id, handle_io, mut incoming) = self.peer.add_connection(conn, {
-            let executor = executor.clone();
-            move |duration| executor.timer(duration)
-        });
-        let handle_io = executor.spawn(handle_io);
-
-        let peer_id = async {
-            log::debug!("waiting for server hello");
-            let message = incoming.next().await.context("no hello message received")?;
-            log::debug!("got server hello");
-            let hello_message_type_name = message.payload_type_name().to_string();
-            let hello = message
-                .into_any()
-                .downcast::<TypedEnvelope<proto::Hello>>()
-                .map_err(|_| {
-                    anyhow!(
-                        "invalid hello message received: {:?}",
-                        hello_message_type_name
-                    )
-                })?;
-            let peer_id = hello.payload.peer_id.context("invalid peer id")?;
-            Ok(peer_id)
-        };
-
-        let peer_id = match peer_id.await {
-            Ok(peer_id) => peer_id,
-            Err(error) => {
-                self.peer.disconnect(connection_id);
-                return Err(error);
-            }
-        };
-
-        log::debug!(
-            "set status to connected (connection id: {:?}, peer id: {:?})",
-            connection_id,
-            peer_id
-        );
-        self.set_status(
-            Status::Connected {
-                peer_id,
-                connection_id,
-            },
-            cx,
-        );
-
-        cx.spawn({
-            let this = self.clone();
-            async move |cx| {
-                while let Some(message) = incoming.next().await {
-                    this.handle_message(message, cx);
-                    // Don't starve the main thread when receiving lots of messages at once.
-                    smol::future::yield_now().await;
-                }
-            }
-        })
-        .detach();
-
-        cx.spawn({
-            let this = self.clone();
-            async move |cx| match handle_io.await {
-                Ok(()) => {
-                    if *this.status().borrow()
-                        == (Status::Connected {
-                            connection_id,
-                            peer_id,
-                        })
-                    {
-                        this.set_status(Status::SignedOut, cx);
-                    }
-                }
-                Err(err) => {
-                    log::error!("connection error: {:?}", err);
-                    this.set_status(Status::ConnectionLost, cx);
-                }
-            }
-        })
-        .detach();
-
-        Ok(())
-    }
-
-    fn rpc_url(
-        &self,
-        http: Arc<HttpClientWithUrl>,
-        release_channel: Option<ReleaseChannel>,
-    ) -> impl Future<Output = Result<url::Url>> + use<> {
-        #[cfg(any(test, feature = "test-support"))]
-        let url_override = self.rpc_url.read().clone();
-
-        async move {
-            #[cfg(any(test, feature = "test-support"))]
-            if let Some(url) = url_override {
-                return Ok(url);
-            }
-
-            if let Some(url) = &*ZED_RPC_URL {
-                return Url::parse(url).context("invalid rpc url");
-            }
-
-            let mut url = http.build_url("/rpc");
-            if let Some(preview_param) =
-                release_channel.and_then(|channel| channel.release_query_param())
-            {
-                url += "?";
-                url += preview_param;
-            }
-
-            let response = http.get(&url, Default::default(), false).await?;
-            anyhow::ensure!(
-                response.status().is_redirection(),
-                "unexpected /rpc response status {}",
-                response.status()
-            );
-            let collab_url = response
-                .headers()
-                .get("Location")
-                .context("missing location header in /rpc response")?
-                .to_str()
-                .map_err(EstablishConnectionError::other)?
-                .to_string();
-            Url::parse(&collab_url).with_context(|| format!("parsing collab rpc url {collab_url}"))
-        }
     }
 
     pub fn disconnect(self: &Arc<Self>, cx: &AsyncApp) {

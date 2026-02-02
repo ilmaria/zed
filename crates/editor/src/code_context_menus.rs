@@ -15,7 +15,6 @@ use ordered_float::OrderedFloat;
 use project::lsp_store::CompletionDocumentation;
 use project::{CodeAction, Completion, TaskSourceKind};
 use project::{CompletionDisplayOptions, CompletionSource};
-use task::TaskContext;
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -1393,19 +1392,16 @@ pub struct AvailableCodeAction {
 pub struct CodeActionContents {
     tasks: Option<Rc<ResolvedTasks>>,
     actions: Option<Rc<[AvailableCodeAction]>>,
-    pub(crate) context: TaskContext,
 }
 
 impl CodeActionContents {
     pub(crate) fn new(
         tasks: Option<ResolvedTasks>,
         actions: Option<Rc<[AvailableCodeAction]>>,
-        context: TaskContext,
     ) -> Self {
         Self {
             tasks: tasks.map(Rc::new),
             actions,
-            context,
         }
     }
 
@@ -1456,8 +1452,6 @@ impl CodeActionContents {
                     action: available.action.clone(),
                     provider: available.provider.clone(),
                 });
-            } else {
-                index -= actions.len();
             }
         }
         None

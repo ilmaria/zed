@@ -5,8 +5,7 @@ use crate::{ExtensionManifest, ExtensionSettings};
 use anyhow::{Context as _, Result, anyhow, bail};
 use async_trait::async_trait;
 use extension::{
-    CodeLabel, Command, Completion, ExtensionCapability, ExtensionHostProxy, KeyValueStoreDelegate,
-    ProjectDelegate, SlashCommand, SlashCommandArgumentCompletion, SlashCommandOutput, Symbol,
+    CodeLabel, Command, Completion, ExtensionCapability, ExtensionHostProxy, KeyValueStoreDelegate, SlashCommand, SlashCommandArgumentCompletion, SlashCommandOutput, Symbol,
     WorktreeDelegate,
 };
 use fs::{Fs, normalize_path};
@@ -37,7 +36,6 @@ use std::{
     },
     time::Duration,
 };
-use task::{DebugScenario, SpawnInTerminal, TaskTemplate, ZedDebugConfig};
 use util::paths::SanitizedPath;
 use wasmtime::{
     CacheStore, Engine, Store,

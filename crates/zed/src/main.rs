@@ -1010,7 +1010,7 @@ fn handle_open_request(request: OpenRequest, app_state: Arc<AppState>, cx: &mut 
     }
 }
 
-async fn authenticate(client: Arc<Client>, cx: &AsyncApp) -> Result<()> {
+async fn authenticate(_client: Arc<Client>, _cx: &AsyncApp) -> Result<()> {
     Ok(())
 }
 

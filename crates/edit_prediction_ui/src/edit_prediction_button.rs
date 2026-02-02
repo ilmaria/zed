@@ -1,5 +1,4 @@
 use anyhow::Result;
-use client::{UserStore, zed_urls};
 use copilot::Copilot;
 use edit_prediction::EditPredictionStore;
 use edit_prediction_types::EditPredictionDelegateHandle;
@@ -28,7 +27,7 @@ use std::{
 use text::EditType;
 use ui::{
     ContextMenu, ContextMenuEntry, DocumentationSide, IconButton, IconButtonShape, Indicator,
-    PopoverMenu, PopoverMenuHandle, ProgressBar, Tooltip, prelude::*,
+    PopoverMenu, PopoverMenuHandle, Tooltip, prelude::*,
 };
 use workspace::{StatusItemView, Workspace, create_and_open_local_file, item::ItemHandle};
 use zed_actions::OpenSettingsAt;
@@ -56,7 +55,6 @@ pub struct EditPredictionButton {
     file: Option<Arc<dyn File>>,
     edit_prediction_provider: Option<Arc<dyn EditPredictionDelegateHandle>>,
     fs: Arc<dyn Fs>,
-    user_store: Entity<UserStore>,
     popover_menu_handle: PopoverMenuHandle<ContextMenu>,
 }
 
@@ -173,7 +171,6 @@ impl Render for EditPredictionButton {
 impl EditPredictionButton {
     pub fn new(
         fs: Arc<dyn Fs>,
-        user_store: Entity<UserStore>,
         popover_menu_handle: PopoverMenuHandle<ContextMenu>,
         cx: &mut Context<Self>,
     ) -> Self {
@@ -195,7 +192,6 @@ impl EditPredictionButton {
             language: None,
             file: None,
             edit_prediction_provider: None,
-            user_store,
             popover_menu_handle,
             fs,
         }

@@ -19,7 +19,7 @@ use crate::application_menu::{
     ActivateDirection, ActivateMenuLeft, ActivateMenuRight, OpenApplicationMenu,
 };
 
-use client::{Client, UserStore, zed_urls};
+use client::Client;
 use gpui::{
     Action, AnyElement, App, Context, Corner, Element, Entity, Focusable, InteractiveElement,
     IntoElement, MouseButton, ParentElement, Render, StatefulInteractiveElement, Styled,
@@ -31,11 +31,10 @@ use project::{
 };
 use settings::{Settings, SettingsLocation};
 use std::sync::Arc;
-use theme::ActiveTheme;
 use title_bar_settings::TitleBarSettings;
-use ui::{Avatar, ButtonLike, Chip, ContextMenu, PopoverMenu, TintColor, Tooltip, prelude::*};
+use ui::{ContextMenu, PopoverMenu, TintColor, Tooltip, prelude::*};
 use util::{ResultExt, rel_path::RelPath};
-use workspace::{ToggleWorktreeSecurity, Workspace, notifications::NotifyResultExt};
+use workspace::{ToggleWorktreeSecurity, Workspace};
 
 pub use onboarding_banner::restore_banner;
 
@@ -120,7 +119,6 @@ pub fn init(cx: &mut App) {
 pub struct TitleBar {
     platform_titlebar: Entity<PlatformTitleBar>,
     project: Entity<Project>,
-    user_store: Entity<UserStore>,
     client: Arc<Client>,
     workspace: WeakEntity<Workspace>,
     application_menu: Option<Entity<ApplicationMenu>>,
@@ -276,7 +274,6 @@ impl TitleBar {
             application_menu,
             workspace: workspace.weak_handle(),
             project,
-            user_store,
             client,
             _subscriptions: subscriptions,
             banner,

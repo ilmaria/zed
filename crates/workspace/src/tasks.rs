@@ -1,11 +1,10 @@
 use std::process::ExitStatus;
 
 use anyhow::Result;
-use gpui::{AppContext, Context, Entity, Task};
-use language::LanguageBuffer;
-use project::{TaskSourceKind, WorktreeId};
+use gpui::{AppContext, Context, Task};
+use project::TaskSourceKind;
 use remote::ConnectionState;
-use task::{DebugScenario, ResolvedTask, SpawnInTerminal, TaskContext, TaskTemplate};
+use task::{ResolvedTask, SpawnInTerminal, TaskContext, TaskTemplate};
 use ui::Window;
 
 use crate::{Toast, Workspace, notifications::NotificationId};

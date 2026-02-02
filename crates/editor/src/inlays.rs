@@ -19,7 +19,7 @@ pub mod inlay_hints;
 
 use std::{any::TypeId, sync::OnceLock};
 
-use gpui::{Context, HighlightStyle, Hsla, Rgba, Task};
+use gpui::{Context, HighlightStyle, Hsla, Rgba};
 use multi_buffer::Anchor;
 use project::{InlayHint, InlayId};
 use text::Rope;
@@ -125,22 +125,6 @@ impl Inlay {
         match self.content {
             InlayContent::Color(color) => Some(color),
             _ => None,
-        }
-    }
-}
-
-pub struct InlineValueCache {
-    pub enabled: bool,
-    pub inlays: Vec<InlayId>,
-    pub refresh_task: Task<Option<()>>,
-}
-
-impl InlineValueCache {
-    pub fn new(enabled: bool) -> Self {
-        Self {
-            enabled,
-            inlays: Vec::new(),
-            refresh_task: Task::ready(None),
         }
     }
 }

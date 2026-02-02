@@ -3,7 +3,6 @@ use anyhow::{Context as _, Result};
 use chrono::{DateTime, Utc};
 use collections::{HashMap, HashSet, hash_map::Entry};
 use derive_more::Deref;
-use feature_flags::FeatureFlagAppExt;
 use futures::{Future, StreamExt, channel::mpsc};
 use gpui::{
     App, AsyncApp, Context, Entity, EventEmitter, SharedString, SharedUri, Task, WeakEntity,
@@ -11,12 +10,9 @@ use gpui::{
 use http_client::http::{HeaderMap, HeaderValue};
 use postage::{sink::Sink, watch};
 use rpc::proto::{RequestMessage, UsersResponse};
-use std::{
-    str::FromStr as _,
-    sync::{Arc, Weak},
-};
+use std::sync::{Arc, Weak};
 use text::ReplicaId;
-use util::{ResultExt, TryFutureExt as _};
+use util::TryFutureExt as _;
 
 pub type UserId = u64;
 
@@ -195,7 +191,7 @@ impl UserStore {
                 drop(client);
                 while let Some(status) = status.next().await {
                     // if the client is dropped, the app is shutting down.
-                    let Some(client) = weak.upgrade() else {
+                    let Some(_client) = weak.upgrade() else {
                         return Ok(());
                     };
                     match status {
@@ -781,33 +777,16 @@ impl RequestUsage {
     pub fn over_limit(&self) -> bool {
         true
     }
-
-    fn from_headers(
-        limit_name: &str,
-        amount_name: &str,
-        headers: &HeaderMap<HeaderValue>,
-    ) -> Result<Self> {
-        let limit = headers
-            .get(limit_name)
-            .with_context(|| format!("missing {limit_name:?} header"))?;
-
-        let amount = headers
-            .get(amount_name)
-            .with_context(|| format!("missing {amount_name:?} header"))?;
-        let amount = amount.to_str()?.parse::<i32>()?;
-
-        Ok(Self { amount })
-    }
 }
 
 impl ModelRequestUsage {
-    pub fn from_headers(headers: &HeaderMap<HeaderValue>) -> Result<Self> {
+    pub fn from_headers(_headers: &HeaderMap<HeaderValue>) -> Result<Self> {
         Ok(Self(RequestUsage { amount: 0 }))
     }
 }
 
 impl EditPredictionUsage {
-    pub fn from_headers(headers: &HeaderMap<HeaderValue>) -> Result<Self> {
+    pub fn from_headers(_headers: &HeaderMap<HeaderValue>) -> Result<Self> {
         Ok(Self(RequestUsage { amount: 0 }))
     }
 }

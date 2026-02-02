@@ -995,7 +995,7 @@ impl settings::Settings for DisableAiSettings {
 }
 
 impl Project {
-    pub fn init(client: &Arc<Client>, cx: &mut App) {
+    pub fn init(client: &Arc<Client>, _cx: &mut App) {
         let client: AnyProtoClient = client.clone().into();
         client.add_entity_message_handler(Self::handle_update_project);
         client.add_entity_message_handler(Self::handle_unshare_project);

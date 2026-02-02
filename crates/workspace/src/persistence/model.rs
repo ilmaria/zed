@@ -17,7 +17,7 @@ use project::Project;
 use remote::RemoteConnectionOptions;
 use std::{
     collections::BTreeMap,
-    path::{Path, PathBuf},
+    path::PathBuf,
     sync::Arc,
 };
 use util::ResultExt;

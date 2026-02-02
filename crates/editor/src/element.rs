@@ -60,7 +60,7 @@ use multi_buffer::{
 };
 
 use edit_prediction_types::EditPredictionGranularity;
-use project::{DisableAiSettings, Entry, ProjectPath, project_settings::ProjectSettings};
+use project::{DisableAiSettings, Entry, project_settings::ProjectSettings};
 use settings::{
     GitGutterSetting, GitHunkStyleSetting, IndentGuideBackgroundColoring, IndentGuideColoring,
     RelativeLineNumbers, Settings,
@@ -3229,7 +3229,7 @@ impl EditorElement {
 
             let color = active_rows
                 .get(&display_row)
-                .map(|spec| cx.theme().colors().editor_active_line_number)
+                .map(|_spec| cx.theme().colors().editor_active_line_number)
                 .unwrap_or_else(|| cx.theme().colors().editor_line_number);
             let shaped_line =
                 self.shape_line_number(SharedString::from(&line_number), color, window);
@@ -9582,17 +9582,16 @@ impl Element for EditorElement {
                         })
                         .unwrap_or_else(|| (Vec::new(), Vec::new(), HashMap::default()));
 
-                    let (selections, mut active_rows, newest_selection_head) = self
-                        .layout_selections(
-                            start_anchor,
-                            end_anchor,
-                            &local_selections,
-                            &snapshot,
-                            start_row,
-                            end_row,
-                            window,
-                            cx,
-                        );
+                    let (selections, active_rows, newest_selection_head) = self.layout_selections(
+                        start_anchor,
+                        end_anchor,
+                        &local_selections,
+                        &snapshot,
+                        start_row,
+                        end_row,
+                        window,
+                        cx,
+                    );
 
                     // relative rows are based on newest selection, even outside the visible area
                     let current_selection_head = self.editor.update(cx, |editor, cx| {

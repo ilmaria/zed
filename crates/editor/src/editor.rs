@@ -6339,14 +6339,14 @@ impl Editor {
                                         tasks.column,
                                     )),
                                 });
-                        anyhow::Ok((resolved_tasks, task_context))
+                        anyhow::Ok(resolved_tasks)
                     }
                 })
             }
         };
 
         cx.spawn_in(window, async move |editor, cx| {
-            let (resolved_tasks, task_context) = runnable_task.await?;
+            let resolved_tasks = runnable_task.await?;
             let code_actions = code_actions_task.await;
             let spawn_straight_away = quick_launch
                 && resolved_tasks
@@ -6358,11 +6358,7 @@ impl Editor {
 
             editor.update_in(cx, |editor, window, cx| {
                 crate::hover_popover::hide_hover(editor, cx);
-                let actions = CodeActionContents::new(
-                    resolved_tasks,
-                    code_actions,
-                    task_context.unwrap_or_default(),
-                );
+                let actions = CodeActionContents::new(resolved_tasks, code_actions);
 
                 // Don't show the menu if there are no actions available
                 if actions.is_empty() {
@@ -16394,35 +16390,6 @@ impl Editor {
             self.change_selections(SelectionEffects::scroll(autoscroll), window, cx, |s| {
                 s.select_ranges([destination..destination]);
             });
-        }
-    }
-
-    fn go_to_line<T: 'static>(
-        &mut self,
-        position: Anchor,
-        highlight_color: Option<Hsla>,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        let snapshot = self.snapshot(window, cx).display_snapshot;
-        let position = position.to_point(&snapshot.buffer_snapshot());
-        let start = snapshot
-            .buffer_snapshot()
-            .clip_point(Point::new(position.row, 0), Bias::Left);
-        let end = start + Point::new(1, 0);
-        let start = snapshot.buffer_snapshot().anchor_before(start);
-        let end = snapshot.buffer_snapshot().anchor_before(end);
-
-        self.highlight_rows::<T>(
-            start..end,
-            highlight_color
-                .unwrap_or_else(|| cx.theme().colors().editor_highlighted_line_background),
-            Default::default(),
-            cx,
-        );
-
-        if self.buffer.read(cx).is_singleton() {
-            self.request_autoscroll(Autoscroll::center().for_anchor(start), cx);
         }
     }
 

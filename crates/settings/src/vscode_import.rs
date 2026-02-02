@@ -3,11 +3,10 @@ use anyhow::{Context as _, Result, anyhow};
 use collections::HashMap;
 use fs::Fs;
 use paths::{cursor_settings_file_paths, vscode_settings_file_paths};
-use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::{
     num::{NonZeroU32, NonZeroUsize},
-    path::{Path, PathBuf},
+    path::Path,
     sync::Arc,
 };
 

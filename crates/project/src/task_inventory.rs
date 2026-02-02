@@ -546,19 +546,6 @@ impl Inventory {
         self.templates_from_settings.global_scenarios()
     }
 
-    fn global_debug_scenarios_from_settings(
-        &self,
-    ) -> impl '_ + Iterator<Item = (TaskSourceKind, DebugScenario)> {
-        self.scenarios_from_settings.global_scenarios()
-    }
-
-    fn worktree_scenarios_from_settings(
-        &self,
-        worktree: WorktreeId,
-    ) -> impl '_ + Iterator<Item = (TaskSourceKind, DebugScenario)> {
-        self.scenarios_from_settings.worktree_scenarios(worktree)
-    }
-
     fn worktree_templates_from_settings(
         &self,
         worktree: WorktreeId,
@@ -1018,7 +1005,7 @@ mod tests {
     use pretty_assertions::assert_eq;
     use serde_json::json;
     use settings::SettingsLocation;
-    use std::path::Path;
+
     use util::rel_path::rel_path;
 
     use crate::task_store::TaskStore;

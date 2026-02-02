@@ -1,5 +1,5 @@
 use crate::multibuffer_hint::MultibufferHint;
-use client::{Client, UserStore, zed_urls};
+use client::{UserStore, zed_urls};
 use db::kvp::KEY_VALUE_STORE;
 use fs::Fs;
 use gpui::{
@@ -22,7 +22,6 @@ use workspace::{
     AppState, Workspace, WorkspaceId,
     dock::DockPosition,
     item::{Item, ItemEvent},
-    notifications::NotifyResultExt as _,
     open_new, register_serializable_item, with_active_or_new_workspace,
 };
 use zed_actions::OpenOnboarding;
