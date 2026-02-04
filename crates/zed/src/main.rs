@@ -518,6 +518,7 @@ fn main() {
         Client::set_global(client.clone(), cx);
 
         zed::init(cx);
+        project::Project::init(&client, cx);
 
         let system_id = cx.background_executor().block(system_id).ok();
         let installation_id = cx.background_executor().block(installation_id).ok();

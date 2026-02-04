@@ -129,10 +129,6 @@ impl Settings for ProxySettings {
     }
 }
 
-pub fn init(client: &Arc<Client>, _cx: &mut App) {
-    let _client = Arc::downgrade(client);
-}
-
 struct GlobalClient(Arc<Client>);
 
 impl Global for GlobalClient {}

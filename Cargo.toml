@@ -197,7 +197,6 @@ component = { path = "crates/component" }
 component_preview  = { path = "crates/component_preview" }
 copilot = { path = "crates/copilot" }
 crashes = { path = "crates/crashes" }
-credentials_provider = { path = "crates/credentials_provider" }
 crossbeam = "0.8.4"
 db = { path = "crates/db" }
 derive_refineable = { path = "crates/refineable/derive_refineable" }

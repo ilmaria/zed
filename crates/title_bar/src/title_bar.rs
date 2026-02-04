@@ -134,6 +134,14 @@ impl Render for TitleBar {
 
         let mut children = Vec::new();
 
+        let has_restricted_worktrees = TrustedWorktrees::try_get_global(cx)
+            .map(|trusted_worktrees| {
+                trusted_worktrees
+                    .read(cx)
+                    .has_restricted_worktrees(&self.project.read(cx).worktree_store(), cx)
+            })
+            .unwrap_or(false);
+
         children.push(
             h_flex()
                 .gap_1()
@@ -149,7 +157,9 @@ impl Render for TitleBar {
                                 title_bar.child(menu)
                             },
                         )
-                        .children(self.render_restricted_mode(cx))
+                        .when(has_restricted_worktrees, |this| {
+                            this.child(self.render_restricted_mode(cx))
+                        })
                         .when(render_project_items, |title_bar| {
                             title_bar
                                 .when(title_bar_settings.show_project_items, |title_bar| {
@@ -184,11 +194,20 @@ impl Render for TitleBar {
         );
 
         if show_menus {
+            let restricted_mode_button = self.render_restricted_mode(cx);
             self.platform_titlebar.update(cx, |this, _| {
                 this.set_children(
                     self.application_menu
                         .clone()
-                        .map(|menu| menu.into_any_element()),
+                        .map(|menu| {
+                            h_flex()    
+                                .gap_1()
+                                .child(menu.into_any_element())
+                                .when(has_restricted_worktrees, |this|
+                                    this.child(restricted_mode_button)
+                                )
+                                .into_any_element()
+                        }),
                 );
             });
 
@@ -301,18 +320,7 @@ impl TitleBar {
             .next()
     }
 
-    pub fn render_restricted_mode(&self, cx: &mut Context<Self>) -> Option<AnyElement> {
-        let has_restricted_worktrees = TrustedWorktrees::try_get_global(cx)
-            .map(|trusted_worktrees| {
-                trusted_worktrees
-                    .read(cx)
-                    .has_restricted_worktrees(&self.project.read(cx).worktree_store(), cx)
-            })
-            .unwrap_or(false);
-        if !has_restricted_worktrees {
-            return None;
-        }
-
+    pub fn render_restricted_mode(&self, cx: &mut Context<Self>) -> AnyElement {
         let button = Button::new("restricted_mode_trigger", "Restricted Mode")
             .style(ButtonStyle::Tinted(TintColor::Warning))
             .label_size(LabelSize::Small)
@@ -341,9 +349,9 @@ impl TitleBar {
 
         if cfg!(macos_sdk_26) {
             // Make up for Tahoe's traffic light buttons having less spacing around them
-            Some(div().child(button).ml_0p5().into_any_element())
+            div().child(button).ml_0p5().into_any_element()
         } else {
-            Some(button.into_any_element())
+            button.into_any_element()
         }
     }
 
