@@ -4472,7 +4472,6 @@ mod tests {
                 "project_symbols",
                 "projects",
                 "remote_debug",
-                "repl",
                 "search",
                 "settings_editor",
                 "settings_profile_selector",
@@ -4627,8 +4626,6 @@ mod tests {
                 cx,
             );
             image_viewer::init(cx);
-            repl::init(app_state.fs.clone(), cx);
-            repl::notebook::init(cx);
             tasks_ui::init(cx);
             initialize_workspace(app_state.clone(), cx);
             search::init(cx);

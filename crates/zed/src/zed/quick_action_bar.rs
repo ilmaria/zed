@@ -1,5 +1,4 @@
 mod preview;
-mod repl_menu;
 
 use editor::actions::{
     AddSelectionAbove, AddSelectionBelow, CodeActionSource, DuplicateLineDown, GoToDiagnostic,
@@ -10,20 +9,20 @@ use editor::actions::{
 use editor::code_context_menus::{CodeContextMenu, ContextMenuOrigin};
 use editor::{Editor, EditorSettings};
 use gpui::{
-    Action, AnchoredPositionMode, ClickEvent, Context, Corner, ElementId, Entity, EventEmitter,
-    FocusHandle, Focusable, InteractiveElement, ParentElement, Render, Styled, Subscription,
-    WeakEntity, Window, anchored, deferred, point,
+    anchored, deferred, point, Action, AnchoredPositionMode, ClickEvent, Context, Corner,
+    ElementId, Entity, EventEmitter, FocusHandle, Focusable, InteractiveElement, ParentElement,
+    Render, Styled, Subscription, WeakEntity, Window,
 };
 use project::project_settings::DiagnosticSeverity;
-use search::{BufferSearchBar, buffer_search};
+use search::{buffer_search, BufferSearchBar};
 use settings::{Settings, SettingsStore};
 use ui::{
-    ButtonStyle, ContextMenu, ContextMenuEntry, DocumentationSide, IconButton, IconName, IconSize,
-    PopoverMenu, PopoverMenuHandle, Tooltip, prelude::*,
+    prelude::*, ButtonStyle, ContextMenu, ContextMenuEntry, DocumentationSide, IconButton,
+    IconName, IconSize, PopoverMenu, PopoverMenuHandle, Tooltip,
 };
 use workspace::item::ItemBufferKind;
 use workspace::{
-    ToolbarItemEvent, ToolbarItemLocation, ToolbarItemView, Workspace, item::ItemHandle,
+    item::ItemHandle, ToolbarItemEvent, ToolbarItemLocation, ToolbarItemView, Workspace,
 };
 use zed_actions::outline::ToggleOutline;
 
@@ -526,7 +525,6 @@ impl Render for QuickActionBar {
         h_flex()
             .id("quick action bar")
             .gap(DynamicSpacing::Base01.rems(cx))
-            .children(self.render_repl_menu(cx))
             .children(self.render_preview_button(self.workspace.clone(), cx))
             .children(search_button)
             .children(code_actions_dropdown)

@@ -176,13 +176,6 @@
     },
   },
   {
-    "context": "Editor && jupyter && !ContextEditor",
-    "bindings": {
-      "ctrl-shift-enter": "repl::Run",
-      "ctrl-alt-enter": "repl::RunInPlace",
-    },
-  },
-  {
     "context": "Editor",
     "bindings": {
       "ctrl-k ctrl-r": "git::Restore",

@@ -174,14 +174,6 @@
     },
   },
   {
-    "context": "Editor && jupyter && !ContextEditor",
-    "use_key_equivalents": true,
-    "bindings": {
-      "ctrl-shift-enter": "repl::Run",
-      "ctrl-alt-enter": "repl::RunInPlace",
-    },
-  },
-  {
     "context": "Editor",
     "use_key_equivalents": true,
     "bindings": {
